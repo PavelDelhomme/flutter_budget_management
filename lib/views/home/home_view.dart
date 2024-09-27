@@ -1,3 +1,4 @@
+import 'package:budget_management/views/map_exemple/map.dart';
 import 'package:flutter/material.dart';
 
 import '../navigation/custom_drawer.dart';
@@ -8,12 +9,13 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    /*return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
       ),
       drawer: const CustomDrawer(),
       body: const TabNavigation(),
-    );
+    );*/
+    return const MapPage();
   }
 }
