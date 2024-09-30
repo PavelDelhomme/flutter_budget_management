@@ -62,6 +62,7 @@ dependencies:
   # Other
   flutter_speed_dial: ^7.0.0
   another_flushbar: ^1.10.24
+  fl_chart: ^0.69.0
 
 dev_dependencies:
   flutter_test:

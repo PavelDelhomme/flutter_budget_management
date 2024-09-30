@@ -1,27 +1,27 @@
 class CategoryModel {
-  String id;
-  String userId;
   String name;
+  double allocatedAmount;
+  double spentAmount;
 
   CategoryModel({
-    required this.id,
-    required this.userId,
     required this.name,
+    required this.allocatedAmount,
+    this.spentAmount = 0.0,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'userId': userId,
       'name': name,
+      'allocatedAmount': allocatedAmount,
+      'spentAmount': spentAmount,
     };
   }
 
-  static CategoryModel fromMap(Map<String, dynamic> map, String documentId) {
+  static CategoryModel fromMap(Map<String, dynamic> map) {
     return CategoryModel(
-      id: documentId,
-      userId: map['userId'],
       name: map['name'],
+      allocatedAmount: map['allocatedAmount'],
+      spentAmount: map['spentAmount'],
     );
   }
 }

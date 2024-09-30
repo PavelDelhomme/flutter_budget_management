@@ -1,13 +1,49 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class ProfileView extends StatelessWidget {
+class ProfileView extends StatefulWidget {
   const ProfileView({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final User? user = FirebaseAuth.instance.currentUser;
+  _ProfileViewState createState() => _ProfileViewState();
+}
 
+class _ProfileViewState extends State<ProfileView> {
+  final TextEditingController _incomeController = TextEditingController();
+  User? user = FirebaseAuth.instance.currentUser;
+  double _currentIncome = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserIncome();
+  }
+
+  Future<void> _loadUserIncome() async {
+    if (user != null) {
+      final incomeSnapshot = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
+      setState(() {
+        _currentIncome = incomeSnapshot['income'] ?? 0.0;
+        _incomeController.text = _currentIncome.toString();
+      });
+    }
+  }
+
+  Future<void> _saveIncome() async {
+    if (user != null && _incomeController.text.isNotEmpty) {
+      double income = double.tryParse(_incomeController.text) ?? 0.0;
+      await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
+        'income': income,
+      }, SetOptions(merge: true));
+      setState(() {
+        _currentIncome = income;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Mon Profil"),
@@ -26,11 +62,16 @@ class ProfileView extends StatelessWidget {
             const SizedBox(height: 10),
             Text('ID utilisateur : ${user?.uid ?? 'Non disponible'}'),
             const SizedBox(height: 20),
+            TextField(
+              controller: _incomeController,
+              decoration: const InputDecoration(
+                labelText: 'Revenu mensuel',
+              ),
+              keyboardType: TextInputType.number,
+            ),
             ElevatedButton(
-              onPressed: () {
-                // Ajoute une action pour mettre à jour le profil
-              },
-              child: const Text('Mettre à jour le profil'),
+              onPressed: _saveIncome,
+              child: const Text('Enregistrer le revenu'),
             ),
           ],
         ),

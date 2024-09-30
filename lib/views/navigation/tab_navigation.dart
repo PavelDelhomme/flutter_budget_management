@@ -3,7 +3,9 @@ import '../budget/summary_view.dart';
 import '../budget/transaction_view.dart';
 
 class TabNavigation extends StatefulWidget {
-  const TabNavigation({super.key});
+  final String? budgetId; // Ajouter un paramètre budgetId
+
+  const TabNavigation({super.key, this.budgetId});
 
   @override
   _TabNavigationState createState() => _TabNavigationState();
@@ -33,9 +35,9 @@ class _TabNavigationState extends State<TabNavigation> with SingleTickerProvider
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          SummaryView(),  // Vue Résumé
-          TransactionsView(),  // Vue Transactions
+        children: [
+          const SummaryView(),  // Vue Résumé
+          TransactionsView(budgetId: widget.budgetId),  // Vue Transactions global ou par budget)
         ],
       ),
     );

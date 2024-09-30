@@ -12,7 +12,7 @@ class HomeView extends StatelessWidget {
         title: const Text('Home'),
       ),
       drawer: const CustomDrawer(),
-      body: const TabNavigation(),
+      body: const TabNavigation(budgetId: null),  // Transactions globales
     );
   }
 }

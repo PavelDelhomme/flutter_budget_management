@@ -1,22 +1,25 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'category.dart';
 
 class BudgetModel {
   String id;
   String userId;
   String description;
   double totalAmount;
-  String categoryId;
   Timestamp startDate;
   Timestamp endDate;
+  List<CategoryModel> categories;
 
   BudgetModel({
     required this.id,
     required this.userId,
     required this.description,
     required this.totalAmount,
-    required this.categoryId,
     required this.startDate,
     required this.endDate,
+    required this.categories,
   });
 
   Map<String, dynamic> toMap() {
@@ -25,9 +28,9 @@ class BudgetModel {
       'userId': userId,
       'description': description,
       'totalAmount': totalAmount,
-      'categoryId': categoryId,
       'startDate': startDate,
       'endDate': endDate,
+      'categories': categories.map((c) => c.toMap()).toList(),
     };
   }
 
@@ -37,9 +40,11 @@ class BudgetModel {
       userId: map['userId'],
       description: map['description'],
       totalAmount: map['totalAmount'],
-      categoryId: map['categoryId'],
       startDate: map['startDate'],
       endDate: map['endDate'],
+      categories: (map['categories'] as List)
+          .map((categoryMap) => CategoryModel.fromMap(categoryMap))
+          .toList(),
     );
   }
 }
