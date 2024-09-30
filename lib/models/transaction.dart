@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class Transaction {
+class TransactionModel {
   String id;
   String userId;
   double amount;
@@ -8,7 +8,7 @@ class Transaction {
   Timestamp date;
   String description;
 
-  Transaction({
+  TransactionModel({
     required this.id,
     required this.userId,
     required this.amount,
@@ -28,8 +28,8 @@ class Transaction {
     };
   }
 
-  static Transaction fromMap(Map<String, dynamic> map, String documentId) {
-    return Transaction(
+  static TransactionModel fromMap(Map<String, dynamic> map, String documentId) {
+    return TransactionModel(
       id: documentId,
       userId: map['userId'],
       amount: map['amount'],

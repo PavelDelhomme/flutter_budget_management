@@ -1,12 +1,12 @@
-class Category {
+class CategoryModel {
   String id;
   String userId;
   String name;
 
-  Category({
+  CategoryModel({
     required this.id,
     required this.userId,
-    required this.name
+    required this.name,
   });
 
   Map<String, dynamic> toMap() {
@@ -17,8 +17,8 @@ class Category {
     };
   }
 
-  static Category fromMap(Map<String, dynamic> map, String documentId) {
-    return Category(
+  static CategoryModel fromMap(Map<String, dynamic> map, String documentId) {
+    return CategoryModel(
       id: documentId,
       userId: map['userId'],
       name: map['name'],
