@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BudgetView extends StatelessWidget {
   const BudgetView({Key? key}) : super(key: key);
@@ -9,23 +10,34 @@ class BudgetView extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Gérer mes Budgets'),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Page de gestion des budgets',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // Action pour ajouter ou gérer un budget
-              },
-              child: const Text('Ajouter un budget'),
-            ),
-          ],
-        ),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance.collection('budgets').snapshots(),
+        builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          var budgets = snapshot.data!.docs;
+
+          if (budgets.isEmpty) {
+            return const Center(child: Text('Aucun budget disponible.'));
+          }
+
+          return ListView.builder(
+            itemCount: budgets.length,
+            itemBuilder: (context, index) {
+              var budget = budgets[index];
+              return ListTile(
+                title: Text(budget['description']),
+                subtitle: Text('Montant: \$${budget['totalAmount']}'),
+                trailing: const Icon(Icons.arrow_forward),
+                onTap: () {
+                  // Action pour afficher les détails du budget
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }

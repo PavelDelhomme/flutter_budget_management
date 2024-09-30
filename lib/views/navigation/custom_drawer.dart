@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../authentication/connexion_view.dart';
+import '../home/home_view.dart';
 import '../budget/budget_view.dart';
 import '../profile/profile_view.dart';
 import '../settings/settings_view.dart';
@@ -34,15 +34,15 @@ class CustomDrawer extends StatelessWidget {
             decoration: const BoxDecoration(
               color: Colors.blue,
             ),
-            child: Text('Hello, ${user?.email ?? 'Utilisateur'}'),
+            child: Text('Bonjour, ${user?.email ?? 'Utilisateur'}'),
           ),
           ListTile(
-            leading: const Icon(Icons.account_circle),
-            title: const Text('Profil'),
+            leading: const Icon(Icons.home),
+            title: const Text('Accueil'),
             onTap: () {
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const ProfileView()),
+                MaterialPageRoute(builder: (context) => const HomeView()),
               );
             },
           ),
@@ -53,6 +53,16 @@ class CustomDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const BudgetView()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.account_circle),
+            title: const Text('Profil'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileView()),
               );
             },
           ),
@@ -68,7 +78,7 @@ class CustomDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.logout),
-            title: const Text('Se déconnecter'),
+            title: const Text('Déconnexion'),
             onTap: () => _signOut(context),
           ),
         ],

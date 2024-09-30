@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../budget/summary_view.dart';
 import '../budget/transaction_view.dart';
 
@@ -35,8 +34,8 @@ class _TabNavigationState extends State<TabNavigation> with SingleTickerProvider
       body: TabBarView(
         controller: _tabController,
         children: const [
-          SummaryView(),
-          TransactionsView(),
+          SummaryView(),  // Vue Résumé
+          TransactionsView(),  // Vue Transactions
         ],
       ),
     );
