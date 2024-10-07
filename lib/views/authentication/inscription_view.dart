@@ -39,10 +39,12 @@ class InscriptionViewState extends State<InscriptionView> {
 
         await _db.collection('users').doc(newUser.id).set(newUser.toMap());
 
-        // Après l'inscription, rediriger vers la vue pour définir les revenus
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => DefineIncomeView(userId: newUser.id)),
-        );
+        if (mounted) {
+          // Après l'inscription, rediriger vers la vue pour définir les revenus
+          Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => DefineIncomeView(userId: newUser.id)),
+          );
+        }
       } on FirebaseAuthException catch (e) {
         String errorMessage;
         if (e.code == 'email-already-in-use') {
@@ -54,9 +56,11 @@ class InscriptionViewState extends State<InscriptionView> {
           SnackBar(content: Text(errorMessage)),
         );
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }

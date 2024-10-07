@@ -1,9 +1,10 @@
+import 'package:budget_management/views/navigation/custom_drawer.dart';
 import 'package:flutter/material.dart';
 import '../budget/summary_view.dart';
 import '../budget/transaction/transaction_view.dart';
 
 class TabNavigation extends StatefulWidget {
-  final String? budgetId; // Ajouter un paramètre budgetId
+  final String? budgetId;
 
   const TabNavigation({super.key, this.budgetId});
 
@@ -23,16 +24,13 @@ class _TabNavigationState extends State<TabNavigation> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Budget Manager'),
-        bottom: TabBar(
+      appBar: TabBar(
           controller: _tabController,
           tabs: const [
             Tab(text: 'Résumé'),
             Tab(text: 'Transactions'),
           ],
         ),
-      ),
       body: TabBarView(
         controller: _tabController,
         children: [

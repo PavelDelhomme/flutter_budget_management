@@ -14,6 +14,15 @@ class SummaryView extends StatefulWidget {
 }
 
 class _SummaryViewState extends State<SummaryView> {
+
+  @override
+  void initState() {
+    super.initState();
+    setState(() {
+      _getBudgetSummary();
+    });
+  }
+
   Future<Map<String, dynamic>?> _getBudgetSummary() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -47,6 +56,7 @@ class _SummaryViewState extends State<SummaryView> {
           }
         }
 
+        // Calcul du revenu du mois et des économies
         final incomes = await getUserIncomes(user.uid, DateTime.now().month, DateTime.now().year);
         monthlyIncome = incomes.fold(0.0, (sum, income) => sum + income.amount);
         double remainingBalance = monthlyIncome - totalExpenses;
