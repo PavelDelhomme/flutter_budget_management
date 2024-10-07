@@ -29,14 +29,14 @@ class _SummaryViewState extends State<SummaryView> {
 
         // Récupération des données des budgets
         for (var doc in budgetSnapshot.docs) {
-          totalBudget += doc['totalAmount'];
+          totalBudget += (doc['totalAmount'] as num).toDouble();  // Somme des budgets prévus
           for (var category in doc['categories']) {
             categoriesData.add({
               'name': category['name'],
-              'allocatedAmount': category['allocatedAmount'],
-              'spentAmount': category['spentAmount'] ?? 0.0,
+              'allocatedAmount': (category['allocatedAmount'] as num).toDouble(),
+              'spentAmount': (category['spentAmount'] as num?)?.toDouble() ?? 0.0,
             });
-            totalExpenses += category['spentAmount'] ?? 0.0;
+            totalExpenses += (category['spentAmount'] as num?)?.toDouble() ?? 0.0;  // Total des dépenses réelles
           }
         }
 
@@ -47,11 +47,12 @@ class _SummaryViewState extends State<SummaryView> {
             .get();
 
         if (userDoc.exists) {
-          monthlyIncome = userDoc['income'] ?? 0.0;
+          monthlyIncome = (userDoc['income'] as num?)?.toDouble() ?? 0.0;  // Conversion explicite
         }
 
         // Calcul du solde restant en tenant compte du revenu mensuel
-        double remainingBalance = (totalBudget + monthlyIncome) - totalExpenses;
+        // Correction : le solde restant doit être le revenu - les dépenses
+        double remainingBalance = monthlyIncome - totalExpenses;
 
         return {
           'totalBudget': totalBudget,
@@ -104,11 +105,11 @@ class _SummaryViewState extends State<SummaryView> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Total Budget: \$${totalBudget.toStringAsFixed(2)}',
+                  'Total Budget (Prévu): \$${totalBudget.toStringAsFixed(2)}',
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  'Dépenses: \$${totalExpenses.toStringAsFixed(2)}',
+                  'Dépenses (Réelles): \$${totalExpenses.toStringAsFixed(2)}',
                   style: const TextStyle(fontSize: 20),
                 ),
                 Text(

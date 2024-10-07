@@ -49,11 +49,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (user != null && _descriptionController.text.isNotEmpty && _amountController.text.isNotEmpty && _selectedCategory != null) {
       final amount = double.tryParse(_amountController.text) ?? 0.0;
 
-      final selectedCategoryData = _categories.firstWhere(
-            (category) => category['name'] == _selectedCategory,
-        orElse: () => {},
-      );
-
       await FirebaseFirestore.instance.collection('transactions').add({
         'userId': user.uid,
         'budgetId': widget.budgetId,
@@ -63,19 +58,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         'date': Timestamp.now(),
       });
 
-      if (selectedCategoryData.isNotEmpty) {
-        final updatedCategory = {
-          ...selectedCategoryData,
-          'spentAmount': (selectedCategoryData['spentAmount'] ?? 0.0) + amount,
-        };
+      // Mettre à jour directement le montant dépensé dans la catégorie
+      final budgetRef = FirebaseFirestore.instance.collection('budgets').doc(widget.budgetId);
+      final budgetDoc = await budgetRef.get();
+      if (budgetDoc.exists) {
+        final List<dynamic> categories = budgetDoc.data()?['categories'] ?? [];
+        final categoryIndex = categories.indexWhere((category) => category['name'] == _selectedCategory);
 
-        await FirebaseFirestore.instance.collection('budgets').doc(widget.budgetId).update({
-          'categories': FieldValue.arrayRemove([selectedCategoryData]),
-        });
+        if (categoryIndex != -1) {
+          final updatedCategory = {
+            ...categories[categoryIndex],
+            'spentAmount': (categories[categoryIndex]['spentAmount'] ?? 0.0) + amount,
+          };
+          categories[categoryIndex] = updatedCategory;
 
-        await FirebaseFirestore.instance.collection('budgets').doc(widget.budgetId).update({
-          'categories': FieldValue.arrayUnion([updatedCategory]),
-        });
+          // Mise à jour des catégories
+          await budgetRef.update({'categories': categories});
+        }
       }
 
       Navigator.pop(context);
