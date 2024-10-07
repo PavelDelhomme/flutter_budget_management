@@ -3,6 +3,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/income.dart';
 import '../utils.dart';
 
+Future<List<IncomeModel>> getUserIncomes(String userId, int month, int year) async {
+  final snapshot = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(userId)
+      .collection('incomes')
+      .where('month', isEqualTo: month)
+      .where('year', isEqualTo: year)
+      .get();
+
+  return snapshot.docs.map((doc) => IncomeModel.fromMap(doc.data(), doc.id)).toList();
+}
+
 Future<void> addIncome({
   required String userId,
   required String source,
@@ -12,7 +24,6 @@ Future<void> addIncome({
   required bool isRecurring,
 }) async {
   final income = IncomeModel(
-    id: generateIncomeId(),
     userId: userId,
     source: source,
     amount: amount,
@@ -22,22 +33,10 @@ Future<void> addIncome({
   );
 
   await FirebaseFirestore.instance
-    .collection('incomes')
-    .doc(income.id)
-    .set(income.toMap());
-}
-
-Future<List<IncomeModel>> getUserIncomes(String userId, int month, int year) async {
-  final incomeSnapshot = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(userId)
       .collection('incomes')
-      .where("userId", isEqualTo: userId)
-      .where("month", isEqualTo: month)
-      .where("year", isEqualTo: year)
-      .get();
-
-  return incomeSnapshot.docs.map((doc) {
-    return IncomeModel.fromMap(doc.data(), doc.id);
-  }).toList();
+      .add(income.toMap());
 }
 
 Future<void> updateIncome({
@@ -62,7 +61,11 @@ Future<void> updateIncome({
   await FirebaseFirestore.instance.collection('incomes').doc(incomeId).update(income.toMap());
 }
 
-// Supprimer un revenu
-Future<void> deleteIncome(String incomeId) async {
-  await FirebaseFirestore.instance.collection('incomes').doc(incomeId).delete();
+Future<void> deleteIncome(String userId, String incomeId) async {
+  await FirebaseFirestore.instance
+      .collection('users')
+      .doc(userId)
+      .collection('incomes')
+      .doc(incomeId)
+      .delete();
 }

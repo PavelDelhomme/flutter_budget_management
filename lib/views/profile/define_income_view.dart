@@ -40,7 +40,7 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
       });
 
       if (_editingIncome != null) {
-        // Si un revenu est en cours d'édition, on le met à jour
+        // Met à jour un revenu existant
         await updateIncome(
           incomeId: _editingIncome!.id!,
           userId: widget.userId,
@@ -52,7 +52,7 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
         );
         log("Revenu modifié : $source, Montant: $amount");
       } else {
-        // Sinon, on ajoute un nouveau revenu
+        // Ajoute un nouveau revenu
         await addIncome(
           userId: widget.userId,
           source: source,
@@ -80,7 +80,7 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
         _isLoading = true;
       });
 
-      await deleteIncome(income.id!);
+      await deleteIncome(widget.userId, income.id!);
       log("Revenu supprimé : ${income.source}");
 
       _loadIncomes();
@@ -191,12 +191,11 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
-                  // Si les champs source et montant ne sont pas vides, on les enregistre avant de continuer
                   if (_sourceController.text.isNotEmpty && _amountController.text.isNotEmpty) {
-                    await _saveIncome(); // Enregistre les revenus non validés
+                    await _saveIncome();
                   }
 
-                  // Puis passe à l'étape de création de budget
+                  // Passe à l'étape de création de budget
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (context) => const AddBudgetScreen()),
                   );

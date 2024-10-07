@@ -101,6 +101,7 @@ class _SummaryViewState extends State<SummaryView> {
             final remainingBalance = data['remainingBalance'] ?? 0.0;
             final forecastBalance = data['forecastBalance'] ?? 0.0;
             final categoriesData = data['categoriesData'] as List<Map<String, dynamic>>;
+            final monthlyIncome = data['monthlyIncome'] ?? 0.0; // Revenu mensuel total
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,6 +112,10 @@ class _SummaryViewState extends State<SummaryView> {
                 ),
                 Text(
                   'Dépenses (Réelles): \$${totalExpenses.toStringAsFixed(2)}',
+                  style: const TextStyle(fontSize: 20),
+                ),
+                Text(
+                  'Revenu mensuel: \$${monthlyIncome.toStringAsFixed(2)}', // Affichage du revenu total
                   style: const TextStyle(fontSize: 20),
                 ),
                 Text(
