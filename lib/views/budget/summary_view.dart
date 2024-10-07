@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../views/budget/add_budget_screen.dart';
+import '../../services/income_service.dart';  // Import du service de gestion des revenus
 
 class SummaryView extends StatefulWidget {
   const SummaryView({Key? key}) : super(key: key);
@@ -24,10 +25,9 @@ class _SummaryViewState extends State<SummaryView> {
 
         double totalBudget = 0.0;
         double totalExpenses = 0.0;
-        double monthlyIncome = 0.0; // Variable pour stocker les revenus mensuels
+        double monthlyIncome = 0.0;
         List<Map<String, dynamic>> categoriesData = [];
 
-        // Récupération des données des budgets
         for (var doc in budgetSnapshot.docs) {
           totalBudget += (doc['totalAmount'] as num).toDouble();  // Somme des budgets prévus
           for (var category in doc['categories']) {
@@ -36,22 +36,17 @@ class _SummaryViewState extends State<SummaryView> {
               'allocatedAmount': (category['allocatedAmount'] as num).toDouble(),
               'spentAmount': (category['spentAmount'] as num?)?.toDouble() ?? 0.0,
             });
-            totalExpenses += (category['spentAmount'] as num?)?.toDouble() ?? 0.0;  // Total des dépenses réelles
+            totalExpenses += (category['spentAmount'] as num?)?.toDouble() ?? 0.0;
           }
         }
 
-        // Récupération du revenu mensuel de l'utilisateur
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
+        // Récupération des revenus pour le mois courant
+        final currentMonth = DateTime.now().month;
+        final currentYear = DateTime.now().year;
+        final incomes = await getUserIncomes(currentMonth, currentYear);
+        monthlyIncome = incomes.fold(0.0, (sum, income) => sum + income.amount);
 
-        if (userDoc.exists) {
-          monthlyIncome = (userDoc['income'] as num?)?.toDouble() ?? 0.0;  // Conversion explicite
-        }
-
-        // Calcul du solde restant en tenant compte du revenu mensuel
-        // Correction : le solde restant doit être le revenu - les dépenses
+        // Calcul du solde restant
         double remainingBalance = monthlyIncome - totalExpenses;
 
         return {
@@ -138,11 +133,15 @@ class _SummaryViewState extends State<SummaryView> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
+                  onPressed: () async {
+                    final result = await Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const AddBudgetScreen()),
                     );
+
+                    if (result == true) {
+                      setState(() {});  // Rafraîchir la vue pour actualiser les données
+                    }
                   },
                   child: const Text('Créer un nouveau budget'),
                 ),

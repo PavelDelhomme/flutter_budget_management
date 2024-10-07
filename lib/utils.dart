@@ -10,3 +10,8 @@ String generateBudgetId() {
   final random = Random();
   return 'budget_${random.nextInt(1000000)}_${DateTime.now().millisecondsSinceEpoch}';
 }
+
+String generateIncomeId() {
+  final random = Random();
+  return 'income_${random.nextInt(1000000)}_${DateTime.now().millisecondsSinceEpoch}';
+}

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/user.dart';
-import '../home/home_view.dart';
+import '../profile/define_income_view.dart'; // On crée un nouvel écran pour définir les revenus
 
 class InscriptionView extends StatefulWidget {
   const InscriptionView({super.key});
@@ -39,17 +39,13 @@ class InscriptionViewState extends State<InscriptionView> {
 
         await _db.collection('users').doc(newUser.id).set(newUser.toMap());
 
-        await _db.collection('userSettings').doc(userCredential.user!.uid).set({
-          'reminderEnabled': false,
-          'reminderTime': 10,
-        });
-
+        // Après l'inscription, rediriger vers la vue pour définir les revenus
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeView()),
+          MaterialPageRoute(builder: (context) => DefineIncomeView(userId: newUser.id)),
         );
       } on FirebaseAuthException catch (e) {
         String errorMessage;
-        if (e.code == 'email-already-in-user') {
+        if (e.code == 'email-already-in-use') {
           errorMessage = 'Cette adresse email est déjà utilisée.';
         } else {
           errorMessage = 'Echec de l\'inscription : ${e.message}';

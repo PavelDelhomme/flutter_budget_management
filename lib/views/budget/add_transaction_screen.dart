@@ -1,7 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../../utils.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';  // Pour formater les dates
 
 class AddTransactionScreen extends StatefulWidget {
   final String? budgetId;
@@ -15,6 +15,7 @@ class AddTransactionScreen extends StatefulWidget {
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _dateController = TextEditingController();
   String? _selectedCategory;
   List<Map<String, dynamic>> _categories = [];
   bool _isLoadingCategories = true;
@@ -84,6 +85,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && _descriptionController.text.isNotEmpty && _amountController.text.isNotEmpty && _selectedCategory != null) {
       final amount = double.tryParse(_amountController.text) ?? 0.0;
+      final date = DateTime.tryParse(_dateController.text) ?? DateTime.now();
 
       await FirebaseFirestore.instance.collection('transactions').add({
         'userId': user.uid,
@@ -91,7 +93,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         'category': _selectedCategory,
         'description': _descriptionController.text,
         'amount': amount,
-        'date': Timestamp.now(),
+        'date': Timestamp.fromDate(date),
       });
 
       // Mettre à jour directement le montant dépensé dans la catégorie
@@ -137,6 +139,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               controller: _amountController,
               decoration: const InputDecoration(labelText: 'Montant'),
               keyboardType: TextInputType.number,
+            ),
+            TextField(
+              controller: _dateController,
+              decoration: const InputDecoration(labelText: 'Date'),
+              keyboardType: TextInputType.datetime,
+              onTap: () async {
+                DateTime? selectedDate = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2101),
+                );
+                if (selectedDate != null) {
+                  _dateController.text = DateFormat.yMd().format(selectedDate);
+                }
+              },
             ),
             DropdownButton<String>(
               value: _selectedCategory,
