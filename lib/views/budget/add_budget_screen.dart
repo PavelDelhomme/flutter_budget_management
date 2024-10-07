@@ -4,7 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/budget.dart';
 import '../../models/category.dart';
 import '../../services/income_service.dart';
-import '../../utils.dart';  // Service pour gérer les revenus
+import '../../utils.dart';
+import '../home/home_view.dart';  // Service pour gérer les revenus
 
 class AddBudgetScreen extends StatefulWidget {
   const AddBudgetScreen({Key? key}) : super(key: key);
@@ -23,8 +24,12 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   bool _isLoading = true; // Indicateur de chargement des revenus
 
   // Variables pour le mois et l'année
-  int _selectedMonth = DateTime.now().month;
-  int _selectedYear = DateTime.now().year;
+  int _selectedMonth = DateTime
+      .now()
+      .month;
+  int _selectedYear = DateTime
+      .now()
+      .year;
 
   @override
   void initState() {
@@ -35,29 +40,52 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   Future<void> _loadUserIncome() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final incomes = await getUserIncomes(user.uid, _selectedMonth, _selectedYear);
-      setState(() {
-        _totalIncome = incomes.fold(0.0, (sum, income) => sum + income.amount);
-        _remainingIncome = _totalIncome;
-        _isLoading = false;
-      });
+      try {
+        final incomes = await getUserIncomes(user.uid, _selectedMonth, _selectedYear);
+
+        // Assurez-vous que les revenus sont correctement récupérés
+        if (incomes.isNotEmpty) {
+          setState(() {
+            _totalIncome = incomes.fold(0.0, (sum, income) => sum + income.amount);
+            _remainingIncome = _totalIncome;
+          });
+        } else {
+          // Aucun revenu trouvé pour ce mois, vous pouvez avertir l'utilisateur ici
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Aucun revenu trouvé pour ce mois.")),
+          );
+        }
+      } catch (e) {
+        // En cas d'erreur lors de la récupération des revenus
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Erreur lors de la récupération des revenus.")),
+        );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   void _addCategory() {
     final categoryName = _categoryNameController.text;
-    final categoryAmount = double.tryParse(_categoryAmountController.text) ?? 0.0;
+    final categoryAmount = double.tryParse(_categoryAmountController.text) ??
+        0.0;
 
-    if (categoryName.isNotEmpty && categoryAmount > 0 && categoryAmount <= _remainingIncome) {
+    if (categoryName.isNotEmpty && categoryAmount > 0 &&
+        categoryAmount <= _remainingIncome) {
       setState(() {
-        _categories.add(CategoryModel(name: categoryName, allocatedAmount: categoryAmount));
+        _categories.add(
+            CategoryModel(name: categoryName, allocatedAmount: categoryAmount));
         _remainingIncome -= categoryAmount;
         _categoryNameController.clear();
         _categoryAmountController.clear();
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Veuillez entrer des informations valides pour la catégorie.")),
+        const SnackBar(content: Text(
+            "Veuillez entrer des informations valides pour la catégorie.")),
       );
     }
   }
@@ -65,7 +93,8 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   void _editCategory(int index) {
     final category = _categories[index];
     final _editNameController = TextEditingController(text: category.name);
-    final _editAmountController = TextEditingController(text: category.allocatedAmount.toString());
+    final _editAmountController = TextEditingController(
+        text: category.allocatedAmount.toString());
 
     showDialog(
       context: context,
@@ -77,7 +106,8 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
             children: [
               TextField(
                 controller: _editNameController,
-                decoration: const InputDecoration(labelText: "Nom de la catégorie"),
+                decoration: const InputDecoration(
+                    labelText: "Nom de la catégorie"),
               ),
               TextField(
                 controller: _editAmountController,
@@ -90,16 +120,20 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
             TextButton(
               onPressed: () {
                 final newName = _editNameController.text;
-                final newAmount = double.tryParse(_editAmountController.text) ?? category.allocatedAmount;
+                final newAmount = double.tryParse(_editAmountController.text) ??
+                    category.allocatedAmount;
 
-                if (newName.isNotEmpty && newAmount > 0 && newAmount <= (_remainingIncome + category.allocatedAmount)) {
+                if (newName.isNotEmpty && newAmount > 0 && newAmount <=
+                    (_remainingIncome + category.allocatedAmount)) {
                   setState(() {
                     _remainingIncome += category.allocatedAmount - newAmount;
-                    _categories[index] = CategoryModel(name: newName, allocatedAmount: newAmount);
+                    _categories[index] = CategoryModel(
+                        name: newName, allocatedAmount: newAmount);
                   });
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Montant alloué supérieur au revenu restant.")),
+                    const SnackBar(content: Text(
+                        "Montant alloué supérieur au revenu restant.")),
                   );
                 }
                 Navigator.pop(context);
@@ -122,11 +156,15 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   Future<void> _createBudget() async {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user != null && _categories.isNotEmpty && _descriptionController.text.isNotEmpty) {
+    if (user != null && _categories.isNotEmpty) {
+      final description = _descriptionController.text.isEmpty
+          ? 'Budget sans description'
+          : _descriptionController.text;
+
       final budget = BudgetModel(
         id: generateBudgetId(),
         userId: user.uid,
-        description: _descriptionController.text,
+        description: description,
         totalAmount: _totalIncome - _remainingIncome,
         savings: _remainingIncome,
         month: _selectedMonth,
@@ -138,7 +176,13 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
 
       await FirebaseFirestore.instance.collection('budgets').doc(budget.id).set(budget.toMap());
 
-      Navigator.pop(context);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeView()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Veuillez ajouter au moins une catégorie.')),
+      );
     }
   }
 
@@ -147,20 +191,22 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     if (_categories.isEmpty) {
       shouldLeave = await showDialog(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Quitter sans créer un budget?'),
-          content: const Text('Vous n\'avez pas encore créé de budget. Êtes-vous sûr de vouloir quitter cette page?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Non'),
+        builder: (context) =>
+            AlertDialog(
+              title: const Text('Quitter sans créer un budget?'),
+              content: const Text(
+                  'Vous n\'avez pas encore créé de budget. Êtes-vous sûr de vouloir quitter cette page?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Non'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Oui'),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Oui'),
-            ),
-          ],
-        ),
       ) ?? false; // Gère le cas où le showDialog retourne null
     } else {
       shouldLeave = true;
@@ -168,109 +214,117 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     return shouldLeave;
   }
 
+
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Créer un budget mensuel"),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(labelText: 'Description du budget'),
-                ),
-                const SizedBox(height: 20),
-                DropdownButton<int>(
-                  value: _selectedMonth,
-                  items: List.generate(12, (index) {
-                    return DropdownMenuItem(
-                      value: index + 1,
-                      child: Text('Mois ${index + 1}'),
-                    );
-                  }),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedMonth = value!;
-                    });
-                  },
-                ),
-                DropdownButton<int>(
-                  value: _selectedYear,
-                  items: List.generate(5, (index) {
-                    return DropdownMenuItem(
-                      value: DateTime.now().year - index,
-                      child: Text('${DateTime.now().year - index}'),
-                    );
-                  }),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedYear = value!;
-                    });
-                  },
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Revenu total: \$${_totalIncome.toStringAsFixed(2)}',
-                  style: const TextStyle(fontSize: 20),
-                ),
-                Text(
-                  'Revenu restant: \$${_remainingIncome.toStringAsFixed(2)}',
-                  style: const TextStyle(fontSize: 18, color: Colors.green),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _categoryNameController,
-                  decoration: const InputDecoration(labelText: 'Nom de la catégorie'),
-                ),
-                TextField(
-                  controller: _categoryAmountController,
-                  decoration: const InputDecoration(labelText: 'Montant alloué'),
-                  keyboardType: TextInputType.number,
-                ),
-                ElevatedButton(
-                  onPressed: _addCategory,
-                  child: const Text('Ajouter la catégorie'),
-                ),
-                const SizedBox(height: 20),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _categories.length,
-                  itemBuilder: (context, index) {
-                    final category = _categories[index];
-                    return ListTile(
-                      title: Text(category.name),
-                      subtitle: Text('Montant alloué: \$${category.allocatedAmount.toStringAsFixed(2)}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit),
-                            onPressed: () => _editCategory(index),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete),
-                            onPressed: () => _removeCategory(index),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _createBudget,
-                  child: const Text('Créer le budget'),
-                ),
-              ],
-            ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Créer un budget mensuel"),
+      ),
+      body: _isLoading
+          ? const Center(
+          child: CircularProgressIndicator()) // Afficher un indicateur de chargement pendant que les revenus se chargent
+          : Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                    labelText: 'Description du budget'),
+              ),
+              const SizedBox(height: 20),
+              DropdownButton<int>(
+                value: _selectedMonth,
+                items: List.generate(12, (index) {
+                  return DropdownMenuItem(
+                    value: index + 1,
+                    child: Text('Mois ${index + 1}'),
+                  );
+                }),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedMonth = value!;
+                  });
+                },
+              ),
+              DropdownButton<int>(
+                value: _selectedYear,
+                items: List.generate(5, (index) {
+                  return DropdownMenuItem(
+                    value: DateTime
+                        .now()
+                        .year - index,
+                    child: Text('${DateTime
+                        .now()
+                        .year - index}'),
+                  );
+                }),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedYear = value!;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Revenu total: \$${_totalIncome.toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 20),
+              ),
+              Text(
+                'Revenu restant: \$${_remainingIncome.toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 18, color: Colors.green),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _categoryNameController,
+                decoration: const InputDecoration(
+                    labelText: 'Nom de la catégorie'),
+              ),
+              TextField(
+                controller: _categoryAmountController,
+                decoration: const InputDecoration(labelText: 'Montant alloué'),
+                keyboardType: TextInputType.number,
+              ),
+              ElevatedButton(
+                onPressed: _addCategory,
+                child: const Text('Ajouter la catégorie'),
+              ),
+              const SizedBox(height: 20),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _categories.length,
+                itemBuilder: (context, index) {
+                  final category = _categories[index];
+                  return ListTile(
+                    title: Text(category.name),
+                    subtitle: Text('Montant alloué: \$${category.allocatedAmount
+                        .toStringAsFixed(2)}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () => _editCategory(index),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () => _removeCategory(index),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _createBudget,
+                child: const Text('Créer le budget'),
+              ),
+            ],
           ),
         ),
       ),

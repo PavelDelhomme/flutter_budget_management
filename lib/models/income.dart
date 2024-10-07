@@ -1,6 +1,5 @@
-
 class IncomeModel {
-  String id;
+  String? id;
   String userId;
   String source;
   double amount;
@@ -9,7 +8,7 @@ class IncomeModel {
   bool isRecurring;
 
   IncomeModel({
-    required this.id,
+    this.id,
     required this.userId,
     required this.source,
     required this.amount,
@@ -20,7 +19,6 @@ class IncomeModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'userId': userId,
       'source': source,
       'amount': amount,
@@ -30,15 +28,16 @@ class IncomeModel {
     };
   }
 
+  // Cette méthode accepte maintenant l'id du document en plus des données.
   static IncomeModel fromMap(Map<String, dynamic> map, String documentId) {
     return IncomeModel(
-      id: documentId,
+      id: documentId, // Assigne l'ID du document Firebase
       userId: map['userId'],
       source: map['source'],
-      amount: map['amount'],
+      amount: (map['amount'] as num).toDouble(), // Convertir en double au cas où
       month: map['month'],
       year: map['year'],
-      isRecurring: map['isReccuring'] ?? false,
+      isRecurring: map['isRecurring'] ?? false, // Corrigez l'orthographe ici
     );
   }
 }

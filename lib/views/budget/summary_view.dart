@@ -31,6 +31,7 @@ class _SummaryViewState extends State<SummaryView> {
         double totalBudget = 0.0;
         double totalExpenses = 0.0;
         double monthlyIncome = 0.0;
+        double totalAllocated = 0.0; // Montants alloués
         List<Map<String, dynamic>> categoriesData = [];
 
         for (var doc in budgetSnapshot.docs) {
@@ -42,17 +43,20 @@ class _SummaryViewState extends State<SummaryView> {
               'spentAmount': (category['spentAmount'] as num?)?.toDouble() ?? 0.0,
             });
             totalExpenses += (category['spentAmount'] as num?)?.toDouble() ?? 0.0;
+            totalAllocated += (category['allocatedAmount'] as num).toDouble();
           }
         }
 
         final incomes = await getUserIncomes(user.uid, DateTime.now().month, DateTime.now().year);
         monthlyIncome = incomes.fold(0.0, (sum, income) => sum + income.amount);
         double remainingBalance = monthlyIncome - totalExpenses;
+        double forecastBalance = monthlyIncome - totalAllocated; // Solde prévisionnel
 
         return {
           'totalBudget': totalBudget,
           'totalExpenses': totalExpenses,
           'remainingBalance': remainingBalance,
+          'forecastBalance': forecastBalance,
           'categoriesData': categoriesData,
           'monthlyIncome': monthlyIncome,
         };
@@ -85,6 +89,7 @@ class _SummaryViewState extends State<SummaryView> {
             final totalBudget = data['totalBudget'] ?? 0.0;
             final totalExpenses = data['totalExpenses'] ?? 0.0;
             final remainingBalance = data['remainingBalance'] ?? 0.0;
+            final forecastBalance = data['forecastBalance'] ?? 0.0;
             final categoriesData = data['categoriesData'] as List<Map<String, dynamic>>;
 
             return Column(
@@ -103,6 +108,13 @@ class _SummaryViewState extends State<SummaryView> {
                   style: TextStyle(
                     fontSize: 20,
                     color: remainingBalance < 0 ? Colors.red : Colors.green,
+                  ),
+                ),
+                Text(
+                  'Solde prévisionnel en fin de mois: \$${forecastBalance.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: forecastBalance < 0 ? Colors.red : Colors.green,
                   ),
                 ),
                 const SizedBox(height: 20),

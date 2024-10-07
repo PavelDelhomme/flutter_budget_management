@@ -115,39 +115,44 @@ class _BudgetViewState extends State<BudgetView> {
           ),
         ],
       ),
-      body: FutureBuilder<QuerySnapshot>(
-        future: _getBudgets(_currentMonth, _currentYear),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final budgets = snapshot.data?.docs ?? [];
-
-          if (budgets.isEmpty) {
-            return const Center(child: Text("Aucun budget disponible pour ce mois."));
-          }
-
-          return Column(
+      body: Column(
+        children: [
+          // Navigation entre les mois
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.arrow_left),
-                    onPressed: () => _changeMonth(-1),
-                  ),
-                  Text("${DateFormat.MMMM('fr_FR').format(DateTime(_currentYear, _currentMonth))} $_currentYear"),
-                  IconButton(
-                    icon: Icon(Icons.arrow_right),
-                    onPressed: () => _changeMonth(1),
-                  ),
-                ],
+              IconButton(
+                icon: const Icon(Icons.arrow_left),
+                onPressed: () => _changeMonth(-1),
               ),
-              budgets.isEmpty
-                  ? const Center(child: Text("Aucun budget disponible pour ce mois."))
-                  : Expanded(
-                child: ListView.builder(
+              Text(
+                "${DateFormat.MMMM('fr_FR').format(DateTime(_currentYear, _currentMonth))} $_currentYear",
+                style: const TextStyle(fontSize: 20),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_right),
+                onPressed: () => _changeMonth(1),
+              ),
+            ],
+          ),
+
+          Expanded(
+            child: FutureBuilder<QuerySnapshot>(
+              future: _getBudgets(_currentMonth, _currentYear),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final budgets = snapshot.data?.docs ?? [];
+
+                if (budgets.isEmpty) {
+                  // Afficher un message indiquant l'absence de budget, mais garder la navigation active
+                  return const Center(child: Text("Aucun budget disponible pour ce mois."));
+                }
+
+                // Afficher les budgets disponibles
+                return ListView.builder(
                   itemCount: budgets.length,
                   itemBuilder: (context, index) {
                     final budget = budgets[index];
@@ -165,11 +170,11 @@ class _BudgetViewState extends State<BudgetView> {
                       },
                     );
                   },
-                ),
-              ),
-            ],
-          );
-        },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

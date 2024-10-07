@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import '../../models/income.dart';
 import '../../services/income_service.dart';
@@ -18,6 +20,7 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
   bool _isRecurring = false;
   bool _isLoading = false;
   List<IncomeModel> incomes = [];
+  IncomeModel? _editingIncome;
 
   @override
   void initState() {
@@ -36,25 +39,51 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
         _isLoading = true;
       });
 
-      await addIncome(
-        userId: widget.userId,
-        source: source,
-        amount: amount,
-        month: currentMonth,
-        year: currentYear,
-        isRecurring: _isRecurring,
-      );
+      if (_editingIncome != null) {
+        // Si un revenu est en cours d'édition, on le met à jour
+        await updateIncome(
+          incomeId: _editingIncome!.id!,
+          userId: widget.userId,
+          source: source,
+          amount: amount,
+          month: currentMonth,
+          year: currentYear,
+          isRecurring: _isRecurring,
+        );
+        log("Revenu modifié : $source, Montant: $amount");
+      } else {
+        // Sinon, on ajoute un nouveau revenu
+        await addIncome(
+          userId: widget.userId,
+          source: source,
+          amount: amount,
+          month: currentMonth,
+          year: currentYear,
+          isRecurring: _isRecurring,
+        );
+        log("Revenu ajouté : $source, Montant: $amount");
+      }
 
       _loadIncomes();
-      _sourceController.clear();
-      _amountController.clear();
-      setState(() {
-        _isRecurring = false; // Réinitialisation de la case à cocher
-      });
+      _clearForm();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Veuillez entrer une source de revenu valide et un montant.')),
       );
+      log("Veuillez entrer une source de revenu valide et un montant.");
+    }
+  }
+
+  Future<void> _deleteIncome(IncomeModel income) async {
+    if (income.id != null) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      await deleteIncome(income.id!);
+      log("Revenu supprimé : ${income.source}");
+
+      _loadIncomes();
     }
   }
 
@@ -64,6 +93,25 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
 
     incomes = await getUserIncomes(widget.userId, currentMonth, currentYear);
     setState(() {
+      _isLoading = false;
+    });
+  }
+
+  void _editIncome(IncomeModel income) {
+    setState(() {
+      _editingIncome = income;
+      _sourceController.text = income.source;
+      _amountController.text = income.amount.toString();
+      _isRecurring = income.isRecurring;
+    });
+  }
+
+  void _clearForm() {
+    setState(() {
+      _editingIncome = null;
+      _sourceController.clear();
+      _amountController.clear();
+      _isRecurring = false;
       _isLoading = false;
     });
   }
@@ -110,13 +158,13 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
                 onPressed: _saveIncome,
-                child: const Text('Ajouter une source'),
+                child: Text(_editingIncome != null ? 'Modifier la source' : 'Ajouter une source'),
               ),
               const SizedBox(height: 20),
               ListView.builder(
-                shrinkWrap: true, // Gestion de l'espace
+                shrinkWrap: true,
                 itemCount: incomes.length,
-                physics: const NeverScrollableScrollPhysics(), // Désactive le scrolling
+                physics: const NeverScrollableScrollPhysics(),
                 itemBuilder: (context, index) {
                   final income = incomes[index];
                   return ListTile(
@@ -124,13 +172,31 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
                     subtitle: Text(
                       'Mois: ${income.month}, Année: ${income.year}, ${income.isRecurring ? 'Récurrent' : 'Ponctuel'}',
                     ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () => _editIncome(income),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () => _deleteIncome(income),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
-                  // Redirection vers la création de budget
+                onPressed: () async {
+                  // Si les champs source et montant ne sont pas vides, on les enregistre avant de continuer
+                  if (_sourceController.text.isNotEmpty && _amountController.text.isNotEmpty) {
+                    await _saveIncome(); // Enregistre les revenus non validés
+                  }
+
+                  // Puis passe à l'étape de création de budget
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (context) => const AddBudgetScreen()),
                   );

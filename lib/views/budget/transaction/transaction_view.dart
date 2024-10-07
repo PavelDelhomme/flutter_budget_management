@@ -15,7 +15,6 @@ class TransactionsView extends StatelessWidget {
     } else {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Récupère le premier budget de l'utilisateur
         final budgetsSnapshot = await FirebaseFirestore.instance
             .collection('budgets')
             .where('userId', isEqualTo: user.uid)
@@ -98,14 +97,30 @@ class TransactionsView extends StatelessWidget {
             transactionsByMonth[monthKey]!.add(transaction);
           }
 
+          if (transactionsByMonth.isEmpty) {
+            // Aucune transaction disponible pour tous les mois
+            return const Center(child: Text("Aucune transaction disponible."));
+          }
+
           return ListView.builder(
             itemCount: transactionsByMonth.keys.length,
             itemBuilder: (context, index) {
               String monthKey = transactionsByMonth.keys.elementAt(index);
               var monthTransactions = transactionsByMonth[monthKey]!;
+
+
               return ExpansionTile(
                 title: Text(monthKey),
-                children: monthTransactions.map((transaction) {
+                children: monthTransactions.isEmpty
+                    ? [
+                  ListTile(
+                    title: Text(
+                      "Aucune transaction pour le mois de $monthKey.",
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                ]
+                    : monthTransactions.map((transaction) {
                   DateTime date = (transaction['date'] as Timestamp).toDate();
                   return ListTile(
                     title: Text(transaction['description']),
