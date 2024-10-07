@@ -73,7 +73,7 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
           content: TextField(
             controller: _amountController,
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: 'Montant alloué'),
+            decoration: const InputDecoration(labelText: 'Montant alloué'),
           ),
           actions: [
             TextButton(
@@ -177,13 +177,21 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
                     itemCount: categories.length,
                     itemBuilder: (context, index) {
                       final category = categories[index] as Map<String, dynamic>;
+                      final allocatedAmount = (category['allocatedAmount'] as num).toDouble();
+                      final spentAmount = (category['spentAmount'] as num).toDouble();
+                      final remainingAmount = allocatedAmount - spentAmount;
+
                       return ListTile(
                         title: Text(category['name']),
-                        subtitle: Text('Montant alloué: \$${category['allocatedAmount']}'),
+                        subtitle: Text(
+                          'Montant alloué: \$${allocatedAmount.toStringAsFixed(2)}\n'
+                              'Montant dépensé: \$${spentAmount.toStringAsFixed(2)}\n'
+                              'Montant restant: \$${remainingAmount.toStringAsFixed(2)}',
+                        ),
                         trailing: IconButton(
                           icon: const Icon(Icons.edit),
                           onPressed: () {
-                            _showEditCategoryDialog(category['name'], (category['allocatedAmount'] as num).toDouble());
+                            _showEditCategoryDialog(category['name'], allocatedAmount);
                           },
                         ),
                       );
