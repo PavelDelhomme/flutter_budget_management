@@ -6,6 +6,7 @@ import '../home/home_view.dart';
 import '../budget/budget_view.dart';
 import '../profile/profile_view.dart';
 import '../settings/settings_view.dart';
+import '../budget/saving/savings_page.dart'; // Import de la page des économies
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
@@ -53,6 +54,16 @@ class CustomDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const BudgetView()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.savings),
+            title: const Text('Économies'),  // Nouvelle entrée pour la page des économies
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SavingsPage()),  // Navigue vers SavingsPage
               );
             },
           ),

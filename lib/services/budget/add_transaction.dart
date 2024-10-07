@@ -2,13 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../models/saving.dart';
-
 Future<void> addTransaction({
   required String description,
   required double amount,
   required String categoryId,
   required String budgetId,
   bool useSavings = false,
+  String? savingCategoryId, required bool isRecurring,  // Ajout d'une catégorie de savings à utiliser
 }) async {
   final user = FirebaseAuth.instance.currentUser;
 
@@ -28,10 +28,15 @@ Future<void> addTransaction({
 
         // Calcul du nouveau montant dépensé
         double newSpentAmount = spentAmount + amount;
-        if (newSpentAmount > allocatedAmount && useSavings) {
-          // Si le nouveau montant dépensé dépasse le budget alloué, on utilise les économies
-          double overBudget = newSpentAmount - allocatedAmount;
-          await deductFromSavings(user.uid, overBudget);
+
+        if (useSavings && savingCategoryId != null) {
+          // Si l'utilisateur choisit d'utiliser une économie, déduire le montant de la catégorie de savings
+          double remainingSavings = await deductFromSavings(user.uid, savingCategoryId, amount);
+
+          if (remainingSavings > 0) {
+            // Mettre à jour le budget avec le montant retiré des économies
+            await _updateMonthlyBudget(remainingSavings, budgetId);
+          }
         }
 
         // Mise à jour du montant dépensé dans la catégorie
@@ -54,31 +59,37 @@ Future<void> addTransaction({
   }
 }
 
+Future<double> deductFromSavings(String userId, String savingId, double amountToDeduct) async {
+  final savingRef = FirebaseFirestore.instance
+      .collection("users")
+      .doc(userId)
+      .collection("savings")
+      .doc(savingId);
 
-Future<void> deductFromSavings(String categoryId, double amountToDeduct) async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    final savingDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('savings')
-        .doc(categoryId)
-        .get();
+  final savingDoc = await savingRef.get();
 
-    if (savingDoc.exists) {
-      final currentAmount = (savingDoc.data()?['amount'] as num?)?.toDouble() ?? 0.0;
-      final newAmount = currentAmount - amountToDeduct;
-
-      if (newAmount >= 0) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('savings')
-            .doc(categoryId)
-            .update({'amount': newAmount});
-      } else {
-        throw Exception("Pas assez de fonds dans cette catégorie d'économies.");
-      }
+  if (savingDoc.exists) {
+    final currentAmount = (savingDoc.data()?['amount'] as num?)?.toDouble() ?? 0.0;
+    if (currentAmount >= amountToDeduct) {
+      // Déduire directement le montant de l'économie
+      await savingRef.update({'amount': currentAmount - amountToDeduct});
+      return amountToDeduct;  // Tout a été déduit de cette économie
+    } else {
+      throw Exception("Pas assez de fonds dans cette catégorie d'économies.");
     }
+  } else {
+    throw Exception("Catégorie d'économies non trouvée.");
+  }
+}
+
+Future<void> _updateMonthlyBudget(double amount, String budgetId) async {
+  final budgetRef = FirebaseFirestore.instance.collection('budgets').doc(budgetId);
+  final budgetDoc = await budgetRef.get();
+
+  if (budgetDoc.exists) {
+    final currentAmount = (budgetDoc.data()?['totalAmount'] as num?)?.toDouble() ?? 0.0;
+    final newAmount = currentAmount + amount;
+
+    await budgetRef.update({'totalAmount': newAmount});
   }
 }

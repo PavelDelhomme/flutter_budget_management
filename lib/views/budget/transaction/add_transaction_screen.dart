@@ -24,6 +24,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   double _spentAmount = 0.0; // Montant déjà dépensé dans la catégorie
   double _remainingAmountForCategory = 0.0;  // Montant restant dans la catégorie
   bool _useSavings = false;
+  bool _isRecurring = false; // Nouveau champ pour définir si la transaction est récurrente
 
   @override
   void initState() {
@@ -83,53 +84,65 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     });
   }
 
-  void _addTransaction() async {
+  Future<void> _addTransaction() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && _descriptionController.text.isNotEmpty && _amountController.text.isNotEmpty && _selectedCategory != null) {
       final amount = double.tryParse(_amountController.text) ?? 0.0;
       final date = DateTime.tryParse(_dateController.text) ?? DateTime.now();
 
-      await FirebaseFirestore.instance.collection('transactions').add({
-        'userId': user.uid,
-        'budgetId': widget.budgetId,
-        'category': _selectedCategory,
-        'description': _descriptionController.text,
-        'amount': amount,
-        'date': Timestamp.fromDate(date),
-      });
+      bool isRecurring = false;  // À ajuster en fonction de la logique utilisateur (par exemple, via un checkbox)
 
-      // Mise à jour du budget et gestion des économies
-      final budgetRef = FirebaseFirestore.instance.collection('budgets').doc(widget.budgetId);
-      final budgetDoc = await budgetRef.get();
-      if (budgetDoc.exists) {
-        final List<dynamic> categories = budgetDoc.data()?['categories'] ?? [];
-        final categoryIndex = categories.indexWhere((category) => category['name'] == _selectedCategory);
+      String? selectedSavingCategory;  // Ajouter une option pour la catégorie d'économies
 
-        if (categoryIndex != -1) {
-          final allocatedAmount = (categories[categoryIndex]['allocatedAmount'] as num?)?.toDouble() ?? 0.0;
-          final spentAmount = (categories[categoryIndex]['spentAmount'] as num?)?.toDouble() ?? 0.0;
-          final remainingAmountForCategory = allocatedAmount - spentAmount;
-
-          if (amount > remainingAmountForCategory) {
-            // Si le montant dépasse le budget, utilise les économies
-            double overBudget = amount - remainingAmountForCategory;
-            await deductFromSavings(user.uid, overBudget);
-          }
-
-          final updatedCategory = {
-            ...categories[categoryIndex],
-            'spentAmount': spentAmount + amount,
-          };
-          categories[categoryIndex] = updatedCategory;
-
-          // Mise à jour des catégories
-          await budgetRef.update({'categories': categories});
-        }
+      if (_useSavings) {
+        // Logique pour sélectionner la catégorie d'économies
+        selectedSavingCategory = await _selectSavingCategory();
       }
 
-      Navigator.pop(context);
+      try {
+        await addTransaction(
+          description: _descriptionController.text,
+          amount: amount,
+          categoryId: _selectedCategory!,
+          budgetId: widget.budgetId!,
+          useSavings: _useSavings,
+          isRecurring: isRecurring,
+          savingCategoryId: selectedSavingCategory,  // Passer la catégorie d'économies sélectionnée
+        );
+
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur: ${e.toString()}")),
+        );
+      }
     }
   }
+
+  Future<String?> _selectSavingCategory() async {
+    // Logique pour afficher une boîte de dialogue permettant à l'utilisateur de choisir la catégorie d'économies
+    final selectedCategory = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Choisissez une catégorie d\'économies'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _categories.map((category) {
+              return ListTile(
+                title: Text(category['name']),
+                onTap: () {
+                  Navigator.pop(context, category['id']);
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+    return selectedCategory;
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -198,6 +211,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ),
               ),
             const SizedBox(height: 20),
+            CheckboxListTile(
+              title: const Text("Transaction récurrente"),
+              value: _isRecurring,
+              onChanged: (bool? value) {
+                setState(() {
+                  _isRecurring = value ?? false;
+                });
+              },
+            ),
             ElevatedButton(
               onPressed: _addTransaction,
               child: const Text('Ajouter la transaction'),
