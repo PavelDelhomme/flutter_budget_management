@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../budget/summary_view.dart';
-import '../budget/transaction_view.dart';
+import '../budget/transaction/transaction_view.dart';
 
 class TabNavigation extends StatefulWidget {
   final String? budgetId; // Ajouter un paramètre budgetId

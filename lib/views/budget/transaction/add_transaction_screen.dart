@@ -1,3 +1,4 @@
+import 'package:budget_management/services/budget/add_transaction.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -22,6 +23,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   double _allocatedAmount = 0.0; // Montant alloué à la catégorie
   double _spentAmount = 0.0; // Montant déjà dépensé dans la catégorie
   double _remainingAmountForCategory = 0.0;  // Montant restant dans la catégorie
+  bool _useSavings = false;
 
   @override
   void initState() {
@@ -96,7 +98,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         'date': Timestamp.fromDate(date),
       });
 
-      // Mettre à jour directement le montant dépensé dans la catégorie
+      // Mise à jour du budget et gestion des économies
       final budgetRef = FirebaseFirestore.instance.collection('budgets').doc(widget.budgetId);
       final budgetDoc = await budgetRef.get();
       if (budgetDoc.exists) {
@@ -104,9 +106,19 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         final categoryIndex = categories.indexWhere((category) => category['name'] == _selectedCategory);
 
         if (categoryIndex != -1) {
+          final allocatedAmount = (categories[categoryIndex]['allocatedAmount'] as num?)?.toDouble() ?? 0.0;
+          final spentAmount = (categories[categoryIndex]['spentAmount'] as num?)?.toDouble() ?? 0.0;
+          final remainingAmountForCategory = allocatedAmount - spentAmount;
+
+          if (amount > remainingAmountForCategory) {
+            // Si le montant dépasse le budget, utilise les économies
+            double overBudget = amount - remainingAmountForCategory;
+            await deductFromSavings(user.uid, overBudget);
+          }
+
           final updatedCategory = {
             ...categories[categoryIndex],
-            'spentAmount': (categories[categoryIndex]['spentAmount'] ?? 0.0) + amount,
+            'spentAmount': spentAmount + amount,
           };
           categories[categoryIndex] = updatedCategory;
 

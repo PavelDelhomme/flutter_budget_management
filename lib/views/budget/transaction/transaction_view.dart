@@ -1,4 +1,4 @@
-import 'package:budget_management/views/budget/add_transaction_screen.dart';
+import 'package:budget_management/views/budget/transaction/add_transaction_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
