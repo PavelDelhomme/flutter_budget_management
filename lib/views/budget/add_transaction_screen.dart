@@ -18,11 +18,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   String? _selectedCategory;
   List<Map<String, dynamic>> _categories = [];
   bool _isLoadingCategories = true;
+  double _allocatedAmount = 0.0; // Montant alloué à la catégorie
+  double _spentAmount = 0.0; // Montant déjà dépensé dans la catégorie
+  double _remainingAmountForCategory = 0.0;  // Montant restant dans la catégorie
 
   @override
   void initState() {
     super.initState();
     _loadCategories();
+    _amountController.addListener(_updateRemainingAmountWithInput);
+  }
+
+  @override
+  void dispose() {
+    _amountController.removeListener(_updateRemainingAmountWithInput);
+    _amountController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCategories() async {
@@ -42,6 +53,31 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         SnackBar(content: Text("Erreur lors du chargement des catégories: $e")),
       );
     }
+  }
+
+  void _calculateRemainingAmount(String categoryName) {
+    final selectedCategoryData = _categories.firstWhere(
+          (category) => category['name'] == categoryName,
+      orElse: () => {},
+    );
+
+    if (selectedCategoryData.isNotEmpty) {
+      setState(() {
+        _allocatedAmount = (selectedCategoryData['allocatedAmount'] as num?)?.toDouble() ?? 0.0;
+        _spentAmount = (selectedCategoryData['spentAmount'] as num?)?.toDouble() ?? 0.0;
+        _remainingAmountForCategory = _allocatedAmount - _spentAmount;
+
+        // Recalculer le montant restant en fonction du montant actuel de la transaction
+        _updateRemainingAmountWithInput();
+      });
+    }
+  }
+
+  void _updateRemainingAmountWithInput() {
+    final inputAmount = double.tryParse(_amountController.text) ?? 0.0;
+    setState(() {
+      _remainingAmountForCategory = _allocatedAmount - _spentAmount - inputAmount;
+    });
   }
 
   void _addTransaction() async {
@@ -113,10 +149,25 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               onChanged: (newValue) {
                 setState(() {
                   _selectedCategory = newValue;
+                  if (_selectedCategory != null) {
+                    _calculateRemainingAmount(_selectedCategory!);
+                  }
                 });
               },
               hint: const Text('Sélectionner une catégorie'),
             ),
+            if (_selectedCategory != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 10.0),
+                child: Text(
+                  'Montant restant dans la catégorie: \$${_remainingAmountForCategory.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: _remainingAmountForCategory < 0 ? Colors.red : Colors.green,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _addTransaction,
               child: const Text('Ajouter la transaction'),
