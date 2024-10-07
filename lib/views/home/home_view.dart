@@ -46,12 +46,9 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Budget du mois de ${DateFormat.MMMM('fr_FR').format(DateTime.now())} ${DateTime.now().year}'),
-      ),
-      drawer: const CustomDrawer(),
-      body: const TabNavigation(budgetId: null),
+    return const Scaffold(
+      drawer: CustomDrawer(),
+      body: TabNavigation(budgetId: null),
     );
   }
 }

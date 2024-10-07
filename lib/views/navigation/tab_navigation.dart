@@ -1,5 +1,6 @@
 import 'package:budget_management/views/navigation/custom_drawer.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../budget/summary_view.dart';
 import '../budget/transaction/transaction_view.dart';
 
@@ -30,6 +31,10 @@ class _TabNavigationState extends State<TabNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text('${DateFormat.MMMM('fr_FR').format(DateTime.now())} ${DateTime.now().year}'),
+      ),
+      drawer: CustomDrawer(),
       body: _pages[_currentIndex],  // Affiche la page active
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,  // Index de l'onglet actif
