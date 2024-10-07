@@ -2,6 +2,7 @@ import 'package:budget_management/views/budget/add_transaction_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 class TransactionsView extends StatelessWidget {
   final String? budgetId;
@@ -77,15 +78,10 @@ class TransactionsView extends StatelessWidget {
         title: const Text('Transactions'),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: budgetId != null
-            ? FirebaseFirestore.instance
-            .collection('transactions')
-            .where('userId', isEqualTo: user?.uid)
-            .where('budgetId', isEqualTo: budgetId)
-            .snapshots()
-            : FirebaseFirestore.instance
-            .collection('transactions')
-            .where('userId', isEqualTo: user?.uid)
+        stream: FirebaseFirestore.instance
+            .collection("transactions")
+            .where("userId", isEqualTo: user?.uid)
+            .orderBy('date', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
@@ -93,38 +89,33 @@ class TransactionsView extends StatelessWidget {
           }
 
           var transactions = snapshot.data!.docs;
+          Map<String, List<DocumentSnapshot>> transactionsByMonth = {};
 
-          if (transactions.isEmpty) {
-            return const Center(child: Text('Aucune transaction disponible.'));
+          for (var transaction in transactions) {
+            DateTime date = (transaction['date'] as Timestamp).toDate();
+            String monthKey = DateFormat.yMMMM('fr_FR').format(date);
+
+            if (!transactionsByMonth.containsKey(monthKey)) {
+              transactionsByMonth[monthKey] = [];
+            }
+            transactionsByMonth[monthKey]!.add(transaction);
           }
 
           return ListView.builder(
-            itemCount: transactions.length,
+            itemCount: transactionsByMonth.keys.length,
             itemBuilder: (context, index) {
-              var transaction = transactions[index];
-              return ListTile(
-                title: Text(transaction['description']),
-                subtitle: Text('Montant: \$${transaction['amount'].toStringAsFixed(2)}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () {
-                        _editTransaction(transaction);
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        _deleteTransaction(context, transaction);
-                      },
-                    ),
-                  ],
-                ),
-                onTap: () {
-                  // Afficher les détails de la transaction
-                },
+              String monthKey = transactionsByMonth.keys.elementAt(index);
+              var monthTransactions = transactionsByMonth[monthKey]!;
+              return ExpansionTile(
+                title: Text(monthKey),
+                children: monthTransactions.map((transaction) {
+                  DateTime date = (transaction['date'] as Timestamp).toDate();
+                  return ListTile(
+                    title: Text(transaction['description']),
+                    subtitle: Text("Montant : \$${transaction['amount'].toStringAsFixed(2)}"),
+                    trailing: Text(DateFormat('dd MMM yyyy').format(date)),
+                  );
+                }).toList(),
               );
             },
           );

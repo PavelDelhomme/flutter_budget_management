@@ -2,8 +2,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import '../../views/budget/add_budget_screen.dart';
-import '../../services/income_service.dart';  // Import du service de gestion des revenus
+import '../../services/income_service.dart';
 
 class SummaryView extends StatefulWidget {
   const SummaryView({Key? key}) : super(key: key);
@@ -21,7 +22,11 @@ class _SummaryViewState extends State<SummaryView> {
         final budgetSnapshot = await FirebaseFirestore.instance
             .collection('budgets')
             .where('userId', isEqualTo: user.uid)
+            .where('month', isEqualTo: DateTime.now().month)
+            .where('year', isEqualTo: DateTime.now().year)
             .get();
+
+        if (budgetSnapshot.docs.isEmpty) return null;
 
         double totalBudget = 0.0;
         double totalExpenses = 0.0;
@@ -40,13 +45,8 @@ class _SummaryViewState extends State<SummaryView> {
           }
         }
 
-        // Récupération des revenus pour le mois courant
-        final currentMonth = DateTime.now().month;
-        final currentYear = DateTime.now().year;
-        final incomes = await getUserIncomes(currentMonth, currentYear);
+        final incomes = await getUserIncomes(user.uid, DateTime.now().month, DateTime.now().year);
         monthlyIncome = incomes.fold(0.0, (sum, income) => sum + income.amount);
-
-        // Calcul du solde restant
         double remainingBalance = monthlyIncome - totalExpenses;
 
         return {
@@ -69,7 +69,7 @@ class _SummaryViewState extends State<SummaryView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Résumé du budget'),
+        title: Text('Budget du mois de ${DateFormat.MMMM('fr_FR').format(DateTime.now())} ${DateTime.now().year}'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -88,17 +88,11 @@ class _SummaryViewState extends State<SummaryView> {
             final totalBudget = data['totalBudget'] ?? 0.0;
             final totalExpenses = data['totalExpenses'] ?? 0.0;
             final remainingBalance = data['remainingBalance'] ?? 0.0;
-            final monthlyIncome = data['monthlyIncome'] ?? 0.0;
             final categoriesData = data['categoriesData'] as List<Map<String, dynamic>>;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Revenu mensuel: \$${monthlyIncome.toStringAsFixed(2)}',
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
                 Text(
                   'Total Budget (Prévu): \$${totalBudget.toStringAsFixed(2)}',
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -131,19 +125,6 @@ class _SummaryViewState extends State<SummaryView> {
                       }).toList(),
                     ),
                   ),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AddBudgetScreen()),
-                    );
-
-                    if (result == true) {
-                      setState(() {});  // Rafraîchir la vue pour actualiser les données
-                    }
-                  },
-                  child: const Text('Créer un nouveau budget'),
                 ),
               ],
             );
