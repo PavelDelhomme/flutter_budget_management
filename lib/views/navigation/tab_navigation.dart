@@ -24,13 +24,16 @@ class _TabNavigationState extends State<TabNavigation> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: TabBar(
+      appBar: AppBar(
+        bottom: TabBar(
           controller: _tabController,
           tabs: const [
             Tab(text: 'Résumé'),
             Tab(text: 'Transactions'),
           ],
         ),
+      ),
+      drawer: const CustomDrawer(),
       body: TabBarView(
         controller: _tabController,
         children: [
