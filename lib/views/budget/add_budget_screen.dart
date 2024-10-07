@@ -20,6 +20,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   List<CategoryModel> _categories = [];
   double _totalIncome = 0.0;
   double _remainingIncome = 0.0;
+  bool _isLoading = true; // Indicateur de chargement des revenus
 
   // Variables pour le mois et l'année
   int _selectedMonth = DateTime.now().month;
@@ -38,6 +39,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       setState(() {
         _totalIncome = incomes.fold(0.0, (sum, income) => sum + income.amount);
         _remainingIncome = _totalIncome;
+        _isLoading = false;
       });
     }
   }
@@ -159,7 +161,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
             ),
           ],
         ),
-      );
+      ) ?? false; // Gère le cas où le showDialog retourne null
     } else {
       shouldLeave = true;
     }
@@ -178,6 +180,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
           padding: const EdgeInsets.all(16.0),
           child: SingleChildScrollView(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
                   controller: _descriptionController,

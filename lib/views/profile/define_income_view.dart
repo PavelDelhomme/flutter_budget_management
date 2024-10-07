@@ -68,74 +68,77 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Définir vos revenus')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Veuillez entrer vos sources de revenus pour ce mois.',
-              style: TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _sourceController,
-              decoration: const InputDecoration(labelText: 'Source de revenu'),
-            ),
-            TextField(
-              controller: _amountController,
-              decoration: const InputDecoration(labelText: 'Montant'),
-              keyboardType: TextInputType.number,
-            ),
-            Row(
-              children: [
-                Checkbox(
-                  value: _isRecurring,
-                  onChanged: (value) {
-                    setState(() {
-                      _isRecurring = value!;
-                    });
-                  },
-                ),
-                const Text("Récurrent"),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _isLoading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-              onPressed: _saveIncome,
-              child: const Text('Ajouter une source'),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Veuillez entrer vos sources de revenus pour ce mois.',
+                style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _sourceController,
+                decoration: const InputDecoration(labelText: 'Source de revenu'),
+              ),
+              TextField(
+                controller: _amountController,
+                decoration: const InputDecoration(labelText: 'Montant'),
+                keyboardType: TextInputType.number,
+              ),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _isRecurring,
+                    onChanged: (value) {
+                      setState(() {
+                        _isRecurring = value!;
+                      });
+                    },
+                  ),
+                  const Text("Récurrent"),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _isLoading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                onPressed: _saveIncome,
+                child: const Text('Ajouter une source'),
+              ),
+              const SizedBox(height: 20),
+              ListView.builder(
+                shrinkWrap: true, // Gestion de l'espace
                 itemCount: incomes.length,
+                physics: const NeverScrollableScrollPhysics(), // Désactive le scrolling
                 itemBuilder: (context, index) {
                   final income = incomes[index];
                   return ListTile(
                     title: Text('${income.source}: \$${income.amount.toStringAsFixed(2)}'),
-                    subtitle: Text('Mois: ${income.month}, Année: ${income.year}, ${income.isRecurring ? 'Récurrent' : 'Ponctuel'}'),
+                    subtitle: Text(
+                      'Mois: ${income.month}, Année: ${income.year}, ${income.isRecurring ? 'Récurrent' : 'Ponctuel'}',
+                    ),
                   );
                 },
               ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // Redirection vers la création de budget
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const AddBudgetScreen()),
-                );
-              },
-              child: const Text('Continuer à la création de budget'),
-            ),
-          ],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  // Redirection vers la création de budget
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (context) => const AddBudgetScreen()),
+                  );
+                },
+                child: const Text('Continuer à la création de budget'),
+              ),
+            ],
+          ),
         ),
       ),
     );

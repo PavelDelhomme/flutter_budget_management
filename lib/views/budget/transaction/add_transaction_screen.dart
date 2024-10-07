@@ -42,13 +42,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
   Future<void> _loadCategories() async {
     try {
-      final budgetDoc = await FirebaseFirestore.instance.collection('budgets').doc(widget.budgetId).get();
-      final List<dynamic> categories = budgetDoc.data()?['categories'] ?? [];
+      if (widget.budgetId != null) {
+        final budgetDoc = await FirebaseFirestore.instance.collection('budgets').doc(widget.budgetId).get();
+        final List<dynamic> categories = budgetDoc.data()?['categories'] ?? [];
 
-      setState(() {
-        _categories = categories.map((category) => category as Map<String, dynamic>).toList();
-        _isLoadingCategories = false;
-      });
+        setState(() {
+          _categories = categories.map((category) => category as Map<String, dynamic>).toList();
+          _isLoadingCategories = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingCategories = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Budget non trouvé.")),
+        );
+      }
     } catch (e) {
       setState(() {
         _isLoadingCategories = false;
