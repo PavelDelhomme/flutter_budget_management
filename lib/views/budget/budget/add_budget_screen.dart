@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../models/budget.dart';
-import '../../models/category.dart';
-import '../../services/income_service.dart';
-import '../../utils.dart';
-import '../navigation/tab_navigation.dart';
+import '../../../models/budget.dart';
+import '../../../models/category.dart';
+import '../../../services/income_service.dart';
+import '../../../utils.dart';
+import '../../navigation/tab_navigation.dart';
 
 class AddBudgetScreen extends StatefulWidget {
   const AddBudgetScreen({Key? key}) : super(key: key);

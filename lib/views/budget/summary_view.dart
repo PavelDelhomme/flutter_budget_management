@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import '../../views/budget/add_budget_screen.dart';
+import 'budget/add_budget_screen.dart';
 import '../../services/income_service.dart';
 
 class SummaryView extends StatefulWidget {

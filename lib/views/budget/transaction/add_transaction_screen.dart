@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:budget_management/services/budget/add_transaction.dart';
+import 'package:budget_management/services/image_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';  // Pour formater les dates
 
 class AddTransactionScreen extends StatefulWidget {
@@ -24,13 +28,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   double _spentAmount = 0.0; // Montant déjà dépensé dans la catégorie
   double _remainingAmountForCategory = 0.0;  // Montant restant dans la catégorie
   bool _useSavings = false;
-  bool _isRecurring = false; // Nouveau champ pour définir si la transaction est récurrente
+  bool _isRecurring = false;
+  File? _receiptImage;
+
 
   @override
   void initState() {
     super.initState();
     _loadCategories();
     _amountController.addListener(_updateRemainingAmountWithInput);
+    _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
   }
 
   @override
@@ -99,7 +106,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       final amount = double.tryParse(_amountController.text) ?? 0.0;
       final date = DateTime.tryParse(_dateController.text) ?? DateTime.now();
 
-      bool isRecurring = false;  // À ajuster en fonction de la logique utilisateur (par exemple, via un checkbox)
+      String? receiptUrl;
+      if (_receiptImage != null) {
+        // Upload de l'image dans Firebase Storage
+        receiptUrl = await uploadImage(_receiptImage!, user.uid);
+      }
+
+      //bool isRecurring = false;  // À ajuster en fonction de la logique utilisateur (par exemple, via un checkbox)
 
       String? selectedSavingCategory;  // Ajouter une option pour la catégorie d'économies
 
@@ -115,8 +128,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           categoryId: _selectedCategory!,
           budgetId: widget.budgetId!,
           useSavings: _useSavings,
-          isRecurring: isRecurring,
+          isRecurring: _isRecurring,
           savingCategoryId: selectedSavingCategory,  // Passer la catégorie d'économies sélectionnée
+          receiptUrl: receiptUrl,
         );
 
         Navigator.pop(context);
@@ -126,6 +140,48 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         );
       }
     }
+  }
+
+  void _openAddPhotoModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text("Prendre une photo"),
+                onTap: () async {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text("Choisir depuis la galerie"),
+                onTap: () async {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+
+    setState(() {
+      if (pickedFile != null) {
+        _receiptImage = File(pickedFile.path);
+      }
+    });
   }
 
   Future<String?> _selectSavingCategory() async {
@@ -176,7 +232,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             ),
             TextField(
               controller: _dateController,
-              decoration: const InputDecoration(labelText: 'Date'),
+              decoration: const InputDecoration(labelText: 'Date'), // Todo Ajouter automatiquement le jour actuel comme date
               keyboardType: TextInputType.datetime,
               onTap: () async {
                 DateTime? selectedDate = await showDatePicker(
@@ -229,6 +285,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 });
               },
             ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+                onPressed: () => _openAddPhotoModal(context),
+                child: const Text("Ajouter une photo de reçu"),
+            ),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _addTransaction,
               child: const Text('Ajouter la transaction'),

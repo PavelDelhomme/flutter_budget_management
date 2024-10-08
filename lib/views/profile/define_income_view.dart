@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import '../../models/income.dart';
 import '../../services/income_service.dart';
-import '../budget/add_budget_screen.dart';
+import '../budget/budget/add_budget_screen.dart';
 
 class DefineIncomeView extends StatefulWidget {
   final String userId;

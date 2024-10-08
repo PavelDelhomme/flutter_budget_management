@@ -120,11 +120,32 @@ class TransactionsView extends StatelessWidget {
                     ),
                   ),
                 ]
-                    : monthTransactions.map((transaction) {
+              : monthTransactions.map((transaction) {
                   DateTime date = (transaction['date'] as Timestamp).toDate();
                   return ListTile(
                     title: Text(transaction['description']),
-                    subtitle: Text("Montant : \$${transaction['amount'].toStringAsFixed(2)}"),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Montant : \$${transaction['amount'].toStringAsFixed(2)}"),
+                        if (transaction['receiptUrl'] != null)
+                          GestureDetector(
+                            onTap: () {
+                              // Ouverture de l'image
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => Image.network(transaction['receiptUrl']),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              "Voir le reçu",
+                              style: TextStyle(color: Colors.blue),
+                            ),
+                          ),
+                      ],
+                    ),
                     trailing: Text(DateFormat('dd MMM yyyy').format(date)),
                   );
                 }).toList(),
