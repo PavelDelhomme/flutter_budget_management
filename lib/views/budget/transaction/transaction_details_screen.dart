@@ -6,7 +6,6 @@ class TransactionDetailsModal extends StatelessWidget {
   final DocumentSnapshot transaction;
 
   const TransactionDetailsModal({Key? key, required this.transaction}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     final description = transaction['description'] ?? '';
@@ -27,7 +26,7 @@ class TransactionDetailsModal extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                  "Détails de la transaction",
+                "Transaction du ${DateFormat.yMMMMd().format(date)}",
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -45,8 +44,6 @@ class TransactionDetailsModal extends StatelessWidget {
           Text('Description : $description', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),
           Text('Montant : \$${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18)),
-          const SizedBox(height: 10),
-          Text('Date : ${DateFormat.yMMMd().format(date)}', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),
           Text('Transaction récurrente : ${isRecurring ? 'Oui' : 'Non'}', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 20),

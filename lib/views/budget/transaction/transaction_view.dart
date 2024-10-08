@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class TransactionsView extends StatelessWidget {
   final String? budgetId;
@@ -35,7 +36,6 @@ class TransactionsView extends StatelessWidget {
   }
 
   void _deleteTransaction(BuildContext context, DocumentSnapshot transaction) async {
-    // Suppression de la transaction
     await FirebaseFirestore.instance.collection('transactions').doc(transaction.id).delete();
 
     // Mise à jour du montant dépensé dans la catégorie associée
@@ -63,7 +63,6 @@ class TransactionsView extends StatelessWidget {
       }
     }
 
-    // Afficher une notification
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Transaction supprimée avec succès.")),
     );
@@ -99,7 +98,6 @@ class TransactionsView extends StatelessWidget {
           }
 
           if (transactionsByMonth.isEmpty) {
-            // Aucune transaction disponible pour tous les mois
             return const Center(child: Text("Aucune transaction disponible."));
           }
 
@@ -108,7 +106,6 @@ class TransactionsView extends StatelessWidget {
             itemBuilder: (context, index) {
               String monthKey = transactionsByMonth.keys.elementAt(index);
               var monthTransactions = transactionsByMonth[monthKey]!;
-
 
               return ExpansionTile(
                 title: Text(monthKey),
@@ -121,50 +118,80 @@ class TransactionsView extends StatelessWidget {
                     ),
                   ),
                 ]
-              : monthTransactions.map((transaction) {
+                    : monthTransactions.map((transaction) {
                   DateTime date = (transaction['date'] as Timestamp).toDate();
-                  return ListTile(
-                    title: Text(transaction['description']),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  return Slidable(
+                    key: Key(transaction.id),
+                    startActionPane: ActionPane(
+                      motion: const StretchMotion(),
                       children: [
-                        Text("Montant : \$${transaction['amount'].toStringAsFixed(2)}"),
-                        if (transaction['receiptUrl'] != null)
-                          GestureDetector(
-                            onTap: () {
-                              // Ouverture de l'image
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => Image.network(transaction['receiptUrl']),
-                                ),
-                              );
-                            },
-                            child: const Text(
-                              "Voir le reçu",
-                              style: TextStyle(color: Colors.blue),
-                            ),
-                          ),
+                        SlidableAction(
+                          onPressed: (context) {
+                            _editTransaction(transaction);
+                          },
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          icon: Icons.edit,
+                          label: "Modifier",
+                        ),
                       ],
                     ),
-                    trailing: Text(DateFormat('dd MMM yyyy').format(date)),
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+                    endActionPane: ActionPane(
+                      motion: const StretchMotion(),
+                      children: [
+                        SlidableAction(
+                          onPressed: (context) async {
+                            bool confirm = await _showDeleteConfirmation(context);
+                            if (confirm) {
+                              _deleteTransaction(context, transaction);
+                            }
+                          },
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          icon: Icons.delete,
+                          label: 'Supprimer',
                         ),
-                        builder: (context) {
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              bottom: MediaQuery.of(context).viewInsets.bottom,
+                      ],
+                    ),
+                    child: ListTile(
+                      title: Text(transaction['description']),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Montant : \$${transaction['amount'].toStringAsFixed(2)}"),
+                          if (transaction['receiptUrl'] != null)
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => Image.network(transaction['receiptUrl']),
+                                  ),
+                                );
+                              },
+                              child: const Text("Voir le reçu"),
                             ),
-                            child: TransactionDetailsModal(transaction: transaction),
-                          );
-                        },
-                      );
-                    },
+                        ],
+                      ),
+                      trailing: Text(DateFormat('dd MMM yyyy').format(date)),
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+                          ),
+                          builder: (context) {
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                bottom: MediaQuery.of(context).viewInsets.bottom,
+                              ),
+                              child: TransactionDetailsModal(transaction: transaction),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   );
                 }).toList(),
               );
@@ -180,11 +207,10 @@ class TransactionsView extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => AddTransactionScreen(budgetId: selectedBudgetId)
+                builder: (context) => AddTransactionScreen(budgetId: selectedBudgetId),
               ),
             );
           } else {
-            // Aucun budget disponible
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Aucun budget disponible pour ajouter une transaction.")),
             );
@@ -193,5 +219,27 @@ class TransactionsView extends StatelessWidget {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Future<bool> _showDeleteConfirmation(BuildContext context) async {
+    return await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirmer la suppression"),
+          content: const Text("Êtes-vous sûr de vouloir supprimer cette transaction ?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text("Annuler"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text("Supprimer"),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
   }
 }
