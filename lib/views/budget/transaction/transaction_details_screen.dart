@@ -6,6 +6,7 @@ class TransactionDetailsModal extends StatelessWidget {
   final DocumentSnapshot transaction;
 
   const TransactionDetailsModal({Key? key, required this.transaction}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     final description = transaction['description'] ?? '';
@@ -25,11 +26,14 @@ class TransactionDetailsModal extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Transaction du ${DateFormat.yMMMMd().format(date)}",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  "Transaction du ${DateFormat.yMMMMd().format(date)}",
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               IconButton(
@@ -76,7 +80,6 @@ class TransactionDetailsModal extends StatelessWidget {
     );
   }
 }
-
 
 class ImageScreen extends StatelessWidget {
   final String imageUrl;

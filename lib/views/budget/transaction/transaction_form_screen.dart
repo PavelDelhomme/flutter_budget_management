@@ -8,16 +8,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';  // Pour formater les dates
 
-class AddTransactionScreen extends StatefulWidget {
+class TransactionFormScreen extends StatefulWidget {
   final String? budgetId;
+  final DocumentSnapshot? transaction;
 
-  const AddTransactionScreen({Key? key, this.budgetId}) : super(key: key);
+  const TransactionFormScreen({Key? key, this.budgetId, this.transaction}) : super(key: key);
 
   @override
-  _AddTransactionScreenState createState() => _AddTransactionScreenState();
+  _TransactionFormScreenState createState() => _TransactionFormScreenState();
 }
 
-class _AddTransactionScreenState extends State<AddTransactionScreen> {
+class _TransactionFormScreenState extends State<TransactionFormScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
@@ -36,8 +37,21 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   void initState() {
     super.initState();
     _loadCategories();
-    _amountController.addListener(_updateRemainingAmountWithInput);
-    _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
+
+    if (widget.transaction != null) {
+      final transaction = widget.transaction!;
+      _descriptionController.text = transaction['description'];
+      _amountController.text = transaction['amount'].toString();
+      _selectedCategory = transaction['category'];
+      _isRecurring = transaction['isRecurring'] ?? false;
+      _dateController.text = DateFormat('yMd').format((transaction['date'] as Timestamp).toDate());
+      if (transaction['receiptUrl'] != null) {
+        _receiptImages = [File(transaction['receiptUrl'])];
+      }
+    } else {
+      _amountController.addListener(_updateRemainingAmountWithInput);
+      _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
+    }
   }
 
   @override
@@ -100,9 +114,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     });
   }
 
-  Future<void> _addTransaction() async {
+  Future<void> _saveTransaction() async {
     final user = FirebaseAuth.instance.currentUser;
+
     if (user != null && _descriptionController.text.isNotEmpty && _amountController.text.isNotEmpty && _selectedCategory != null) {
+      final amount = double.tryParse(_amountController.text) ?? 0.0;
+      final description = _descriptionController.text;
+      final date = DateTime.tryParse(_dateController.text) ?? DateTime.now();
+      String? receiptUrl;
+
+  }
+
+  Future<void> _addTransaction() async {
       final amount = double.tryParse(_amountController.text) ?? 0.0;
       final date = DateTime.tryParse(_dateController.text) ?? DateTime.now();
 

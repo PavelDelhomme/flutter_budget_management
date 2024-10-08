@@ -1,4 +1,4 @@
-import 'package:budget_management/views/budget/transaction/add_transaction_screen.dart';
+import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:budget_management/views/budget/transaction/transaction_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -30,11 +30,14 @@ class TransactionsView extends StatelessWidget {
     }
   }
 
-  void _editTransaction(DocumentSnapshot transaction) {
-    // Logique pour éditer une transaction
-    // Par exemple, ouvrir une page d'édition similaire à AddTransactionScreen
+  void _editTransaction(BuildContext context, DocumentSnapshot transaction) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransactionFormScreen(budgetId: budgetId, transaction: transaction),
+      ),
+    );
   }
-
   void _deleteTransaction(BuildContext context, DocumentSnapshot transaction) async {
     await FirebaseFirestore.instance.collection('transactions').doc(transaction.id).delete();
 
@@ -207,7 +210,7 @@ class TransactionsView extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => AddTransactionScreen(budgetId: selectedBudgetId),
+                builder: (context) => TransactionFormScreen(budgetId: selectedBudgetId),
               ),
             );
           } else {
