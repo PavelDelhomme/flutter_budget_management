@@ -1,12 +1,14 @@
+import 'dart:developer';
 import 'dart:io';
-
 import 'package:budget_management/services/budget/add_transaction.dart';
 import 'package:budget_management/services/image_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';  // Pour formater les dates
+import 'package:intl/intl.dart';
 
 class TransactionFormScreen extends StatefulWidget {
   final String? budgetId;
@@ -25,33 +27,34 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   String? _selectedCategory;
   List<Map<String, dynamic>> _categories = [];
   bool _isLoadingCategories = true;
-  double _allocatedAmount = 0.0; // Montant alloué à la catégorie
-  double _spentAmount = 0.0; // Montant déjà dépensé dans la catégorie
-  double _remainingAmountForCategory = 0.0;  // Montant restant dans la catégorie
+  double _allocatedAmount = 0.0;
+  double _spentAmount = 0.0;
+  double _remainingAmountForCategory = 0.0;
   bool _useSavings = false;
   bool _isRecurring = false;
   List<File> _receiptImages = [];
 
-
   @override
   void initState() {
     super.initState();
-    _loadCategories();
-
     if (widget.transaction != null) {
       final transaction = widget.transaction!;
       _descriptionController.text = transaction['description'];
       _amountController.text = transaction['amount'].toString();
-      _selectedCategory = transaction['category'];
+      _selectedCategory = transaction['category']?.toString().trim();
       _isRecurring = transaction['isRecurring'] ?? false;
       _dateController.text = DateFormat('yMd').format((transaction['date'] as Timestamp).toDate());
-      if (transaction['receiptUrl'] != null) {
-        _receiptImages = [File(transaction['receiptUrl'])];
-      }
     } else {
       _amountController.addListener(_updateRemainingAmountWithInput);
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Charger les catégories après que le context est complètement initialisé
+    _loadCategories();
   }
 
   @override
@@ -68,24 +71,35 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         final List<dynamic> categories = budgetDoc.data()?['categories'] ?? [];
 
         setState(() {
-          _categories = categories.map((category) => category as Map<String, dynamic>).toList();
+          _categories = categories.map((category) {
+            return {
+              'name': (category['name'] as String).trim(),
+              'allocatedAmount': category['allocatedAmount'],
+              'spentAmount': category['spentAmount'],
+            };
+          }).toSet().toList();
           _isLoadingCategories = false;
         });
       } else {
-        setState(() {
-          _isLoadingCategories = false;
+        _isLoadingCategories = false;
+
+        // Utiliser SchedulerBinding pour exécuter après le build
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Budget non trouvé.")),
+          );
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Budget non trouvé.")),
-        );
       }
     } catch (e) {
-      setState(() {
-        _isLoadingCategories = false;
+      _isLoadingCategories = false;
+
+
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur lors du chargement des catégories: $e")),
+        );
+        log("Erreur lors du chargement des catégories : $e");
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur lors du chargement des catégories: $e")),
-      );
     }
   }
 
@@ -101,7 +115,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         _spentAmount = (selectedCategoryData['spentAmount'] as num?)?.toDouble() ?? 0.0;
         _remainingAmountForCategory = _allocatedAmount - _spentAmount;
 
-        // Recalculer le montant restant en fonction du montant actuel de la transaction
         _updateRemainingAmountWithInput();
       });
     }
@@ -118,142 +131,133 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user != null && _descriptionController.text.isNotEmpty && _amountController.text.isNotEmpty && _selectedCategory != null) {
-      final amount = double.tryParse(_amountController.text) ?? 0.0;
+      // Convertir les virgules en points avant la sauvegarde
+      String amountText = _amountController.text.replaceAll(",", ".");
+      final amount = double.tryParse(amountText) ?? 0.0;
+
       final description = _descriptionController.text;
-      final date = DateTime.tryParse(_dateController.text) ?? DateTime.now();
-      String? receiptUrl;
+      final date = _dateController.text.isNotEmpty
+          ? DateFormat('yMd').parse(_dateController.text)
+          : DateTime.now();
 
-  }
-
-  Future<void> _addTransaction() async {
-      final amount = double.tryParse(_amountController.text) ?? 0.0;
-      final date = DateTime.tryParse(_dateController.text) ?? DateTime.now();
-
-      // Affichage d'un indicateur de progression pendant l'ajout
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return const Center(child: CircularProgressIndicator());
-        },
-      );
-
-      // Uploader chaque image et récupérer les URLs
       List<String> receiptUrls = [];
       for (File image in _receiptImages) {
-        String? receiptUrl = await uploadImage(image, user.uid);
-        if (receiptUrl != null) {
-          receiptUrls.add(receiptUrl);
+        String? url = await uploadImage(image, user.uid);
+        if (url != null) {
+          receiptUrls.add(url);
         }
       }
 
-      //bool isRecurring = false;  // À ajuster en fonction de la logique utilisateur (par exemple, via un checkbox)
-
-      String? selectedSavingCategory;  // Ajouter une option pour la catégorie d'économies
-
-      if (_useSavings) {
-        // Logique pour sélectionner la catégorie d'économies
-        selectedSavingCategory = await _selectSavingCategory();
-      }
-
       try {
-        await addTransaction(
-          description: _descriptionController.text,
-          amount: amount,
-          categoryId: _selectedCategory!,
-          budgetId: widget.budgetId!,
-          useSavings: _useSavings,
-          isRecurring: _isRecurring,
-          savingCategoryId: selectedSavingCategory,  // Passer la catégorie d'économies sélectionnée
-          receiptUrl: receiptUrls.isNotEmpty ? receiptUrls.join(',') : null,
-        );
-
-        Navigator.pop(context); // Fermeture du loader
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Transaction ajoutée avec succès.")),
-        );
-        Navigator.pop(context); // Retourne à l'écran précèdent
+        if (widget.transaction == null) {
+          await addTransaction(
+            description: description,
+            amount: amount,
+            categoryId: _selectedCategory!,
+            budgetId: widget.budgetId!,
+            useSavings: _useSavings,
+            isRecurring: _isRecurring,
+            //receiptUrls: receiptUrls.isNotEmpty ? receiptUrls.join(',') : null,
+            receiptUrls: receiptUrls.isNotEmpty ? receiptUrls : null,
+          );
+        } else {
+          await FirebaseFirestore.instance.collection('transactions').doc(widget.transaction!.id).update({
+            'description': description,
+            'amount': amount,
+            'category': _selectedCategory!,
+            'isRecurring': _isRecurring,
+            'receiptUrls': receiptUrls.isNotEmpty ? receiptUrls.join(',') : null,
+            'date': Timestamp.fromDate(date),
+          });
+        }
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(widget.transaction == null ? "Transaction ajoutée" : "Transaction mise à jour")),
+          );
+        }
       } catch (e) {
-        Navigator.pop(context); // Fermeture du loader
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Erreur: ${e.toString()}")),
+          SnackBar(content: Text("Erreur: $e")),
         );
       }
     }
   }
 
-  void _openAddPhotoModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text("Prendre une photo"),
-                onTap: () async {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
+  void _createNewCategory() async {
+    final newCategoryNameController = TextEditingController();
+    final allocatedAmountController = TextEditingController();
+
+    await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Nouvelle catégorie"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: newCategoryNameController,
+                  decoration: const InputDecoration(labelText: "Nom de la catégorie"),
+                ),
+                TextField(
+                  controller: allocatedAmountController,
+                  decoration: const InputDecoration(labelText: "Montant alloué"),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
                 },
+                child: const Text("Annuler"),
               ),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text("Choisir depuis la galerie"),
-                onTap: () async {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
+              TextButton(
+                onPressed: () {
+                  final newCategory = {
+                    'name': newCategoryNameController.text.trim(),
+                    'allocatedAmount': double.tryParse(allocatedAmountController.text) ?? 0.0,
+                    'spentAmount': 0.0,
+                  };
+
+                  setState(() {
+                    _categories.add(newCategory); // Ajoute la nouvelle catégorie à la liste
+                    _selectedCategory = newCategory['name'] as String?; // Sélectionne automatiquement la nouvelle catégorie
+                  });
+
+                  Navigator.of(context).pop();
                 },
+                child: const Text("Ajouter"),
               ),
             ],
-          ),
-        );
-      },
+          );
+        }
     );
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
+  Future<void> _pickImages() async {
+    final ImagePicker _picker = ImagePicker();
+    final List<XFile>? pickedFiles = await _picker.pickMultiImage();
 
-    if (pickedFile != null) {
+    if (pickedFiles != null) {
       setState(() {
-        _receiptImages.add(File(pickedFile.path));
+        _receiptImages = pickedFiles.map((file) => File(file.path)).toList();
       });
     }
   }
 
-  Future<String?> _selectSavingCategory() async {
-    // Logique pour afficher une boîte de dialogue permettant à l'utilisateur de choisir la catégorie d'économies
-    final selectedCategory = await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Choisissez une catégorie d\'économies'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: _categories.map((category) {
-              return ListTile(
-                title: Text(category['name']),
-                onTap: () {
-                  Navigator.pop(context, category['id']);
-                },
-              );
-            }).toList(),
-          ),
-        );
-      },
-    );
-    return selectedCategory;
+  void _convertCommaToDotInAmount() {
+    String currentText = _amountController.text;
+    _amountController.text = currentText.replaceAll(",", ".");
   }
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ajouter une transaction'),
+        title: Text(widget.transaction == null ? 'Ajouter une transaction' : 'Modifier la transaction'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -267,12 +271,15 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             ),
             TextField(
               controller: _amountController,
-              decoration: const InputDecoration(labelText: 'Montant'),
-              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Montant', hintText: 'Entrez le montant'),
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
             ),
             TextField(
               controller: _dateController,
-              decoration: const InputDecoration(labelText: 'Date'), // Todo Ajouter automatiquement le jour actuel comme date
+              decoration: const InputDecoration(labelText: 'Date'),
               keyboardType: TextInputType.datetime,
               onTap: () async {
                 DateTime? selectedDate = await showDatePicker(
@@ -287,85 +294,70 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               },
             ),
             DropdownButton<String>(
-              value: _selectedCategory,
-              items: _categories.map((category) {
+              value: _categories.any((category) => category['name'] == _selectedCategory) ? _selectedCategory : null,
+              items: _categories
+                  .map((category) => category['name'])
+                  .toSet() // Remove duplicates
+                  .map((categoryName) {
                 return DropdownMenuItem<String>(
-                  value: category['name'],
-                  child: Text(category['name']),
+                  value: categoryName,
+                  child: Text(categoryName),
                 );
-              }).toList(),
-              onChanged: (newValue) {
-                setState(() {
-                  _selectedCategory = newValue;
-                  if (_selectedCategory != null) {
-                    _calculateRemainingAmount(_selectedCategory!);
-                  }
-                });
-              },
-              hint: const Text('Sélectionner une catégorie'),
-            ),
-            if (_selectedCategory != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 10.0),
-                child: Text(
-                  'Montant restant dans la catégorie: \$${_remainingAmountForCategory.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: _remainingAmountForCategory < 0 ? Colors.red : Colors.green,
+              }).toList()
+                ..add(
+                  DropdownMenuItem<String>(
+                    value: 'New',
+                    child: const Text("Créer une nouvelle catégorie"),
                   ),
                 ),
-              ),
+              onChanged: (newValue) {
+                if (newValue == 'New') {
+                  _createNewCategory();
+                } else {
+                  setState(() {
+                    _selectedCategory = newValue;
+                    if (_selectedCategory != null) {
+                      _calculateRemainingAmount(_selectedCategory!);
+                    }
+                  });
+                }
+              },
+              hint: const Text("Sélectionner une catégorie"),
+            ),
             const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _pickImages,
+              child: const Text("Ajouter des reçus"),
+            ),
+            const SizedBox(height: 20),
+            if (_receiptImages.isNotEmpty)
+              Wrap(
+                spacing: 8,
+                children: _receiptImages.map((image) {
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Image.file(
+                      image,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  );
+                }).toList(),
+              ),
+
             CheckboxListTile(
               title: const Text("Transaction récurrente"),
               value: _isRecurring,
-              onChanged: (bool? value) {
+              onChanged: (newValue) {
                 setState(() {
-                  _isRecurring = value ?? false;
+                  _isRecurring = newValue ?? false;
                 });
               },
             ),
-            const SizedBox(height: 10),
-            
-            // Affichage des apercus des images
-            if (_receiptImages.isNotEmpty)
-              GridView.builder(
-                shrinkWrap: true,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 1.0,
-                  crossAxisSpacing: 4.0,
-                  mainAxisSpacing: 4.0,
-                ),
-                itemCount: _receiptImages.length,
-                itemBuilder: (context, index) {
-                  return Stack(
-                    children: [
-                      Image.file(_receiptImages[index], fit: BoxFit.cover),
-                      Positioned(
-                        right: -10,
-                        top: -10,
-                        child: IconButton(
-                          icon: const Icon(Icons.cancel, color: Colors.red),
-                          onPressed: () {
-                            setState(() {
-                              _receiptImages.removeAt(index);
-                            });
-                          },
-                        ),
-                      )
-                    ],
-                  );
-                },
-              ),
             ElevatedButton(
-                onPressed: () => _openAddPhotoModal(context),
-                child: const Text("Ajouter une photo de reçu"),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _addTransaction,
-              child: const Text('Ajouter la transaction'),
+              onPressed: _saveTransaction,
+              child: Text(widget.transaction == null ? 'Ajouter la transaction' : 'Mettre à jour la transaction'),
             ),
           ],
         ),

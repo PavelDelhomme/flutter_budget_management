@@ -1,19 +1,27 @@
+import 'dart:developer';
+
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
-import 'package:budget_management/views/budget/transaction/transaction_details_screen.dart';
+import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
-class TransactionsView extends StatelessWidget {
+class TransactionsView extends StatefulWidget {
   final String? budgetId;
 
   const TransactionsView({Key? key, this.budgetId}) : super(key: key);
 
+  @override
+  _TransactionsViewState createState() => _TransactionsViewState();
+}
+
+class _TransactionsViewState extends State<TransactionsView> {
+
   Future<String?> _getDefaultBudgetId(BuildContext context) async {
-    if (budgetId != null && budgetId!.isNotEmpty) {
-      return budgetId;  // Utilise le budget actuel s'il est défini
+    if (widget.budgetId != null && widget.budgetId!.isNotEmpty) {
+      return widget.budgetId;
     } else {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -30,18 +38,44 @@ class TransactionsView extends StatelessWidget {
     }
   }
 
-  void _editTransaction(BuildContext context, DocumentSnapshot transaction) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TransactionFormScreen(budgetId: budgetId, transaction: transaction),
-      ),
-    );
+  void _editTransaction(BuildContext context, DocumentSnapshot transaction) async {
+    final budgetId = await _getDefaultBudgetId(context);
+
+    if (budgetId != null) {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TransactionFormScreen(budgetId: budgetId, transaction: transaction),
+        ),
+      );
+
+      if (result == true) {
+        setState(() {
+          _getBudgetSummary();
+        });
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Impossible de récupérer l'ID du budget.")),
+      );
+      log("impossible de récupérer l'id du budget");
+    }
   }
+  void _getBudgetSummary() {
+    // Force simplement le rafraîchissement de l'état du widget,
+    // les transactions seront rechargées dans le StreamBuilder
+    setState(() {});
+  }
+
   void _deleteTransaction(BuildContext context, DocumentSnapshot transaction) async {
+    // Confirmation avant suppression
+    bool confirm = await _showDeleteConfirmation(context);
+    if (!confirm) return;  // Si l'utilisateur annule
+
+    // Supprimer la transaction de la collection Firestore
     await FirebaseFirestore.instance.collection('transactions').doc(transaction.id).delete();
 
-    // Mise à jour du montant dépensé dans la catégorie associée
+    // Mettre à jour le montant dépensé dans la catégorie associée
     final budgetDoc = await FirebaseFirestore.instance.collection('budgets').doc(transaction['budgetId']).get();
     if (budgetDoc.exists) {
       final List<dynamic> categories = budgetDoc.data()?['categories'] ?? [];
@@ -66,9 +100,13 @@ class TransactionsView extends StatelessWidget {
       }
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Transaction supprimée avec succès.")),
-    );
+    // Afficher un message de succès après suppression et rafraichir la liste
+    if (mounted) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Transaction supprimée avec succès.")),
+      );
+    }
   }
 
   @override
@@ -130,7 +168,7 @@ class TransactionsView extends StatelessWidget {
                       children: [
                         SlidableAction(
                           onPressed: (context) {
-                            _editTransaction(transaction);
+                            _editTransaction(context, transaction);
                           },
                           backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
@@ -143,10 +181,10 @@ class TransactionsView extends StatelessWidget {
                       motion: const StretchMotion(),
                       children: [
                         SlidableAction(
-                          onPressed: (context) async {
+                          onPressed: (BuildContext ctx) async {
                             bool confirm = await _showDeleteConfirmation(context);
                             if (confirm) {
-                              _deleteTransaction(context, transaction);
+                              _deleteTransaction(ctx, transaction);
                             }
                           },
                           backgroundColor: Colors.red,
@@ -161,18 +199,25 @@ class TransactionsView extends StatelessWidget {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Text("Description : ${transaction['description']}"),
                           Text("Montant : \$${transaction['amount'].toStringAsFixed(2)}"),
-                          if (transaction['receiptUrl'] != null)
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => Image.network(transaction['receiptUrl']),
+                          if (transaction['receiptUrls'] != null && transaction['receiptUrls'].isNotEmpty)
+                            Wrap(
+                              spacing: 8,
+                              children: List<Widget>.generate(
+                                transaction['receiptUrls'].length,
+                                  (index) => ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ImageScreen(imageUrl: transaction['receiptUrls'][index]),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text("Voir le réçu"),
                                   ),
-                                );
-                              },
-                              child: const Text("Voir le reçu"),
+                              ),
                             ),
                         ],
                       ),

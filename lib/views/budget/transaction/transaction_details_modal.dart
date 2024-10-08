@@ -13,7 +13,7 @@ class TransactionDetailsModal extends StatelessWidget {
     final amount = transaction['amount'] ?? 0.0;
     final date = (transaction['date'] as Timestamp).toDate();
     final isRecurring = transaction['isRecurring'] ?? false;
-    final receiptUrl = transaction['receiptUrl'];
+    final receiptUrls = List<String>.from(transaction['receiptUrls'] ?? []);
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -51,28 +51,42 @@ class TransactionDetailsModal extends StatelessWidget {
           const SizedBox(height: 10),
           Text('Transaction récurrente : ${isRecurring ? 'Oui' : 'Non'}', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 20),
-          if (receiptUrl != null)
+          if (receiptUrls.isNotEmpty)
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Reçu :', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text("Reçus :", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ImageScreen(imageUrl: receiptUrl),
+                Wrap(
+                  spacing: 8,
+                  children: receiptUrls.map((url) {
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ImageScreen(imageUrl: url),
+                          ),
+                        );
+                      },
+                      child: SizedBox(
+                        height: 100,
+                        width: 100,
+                        child: Image.network(
+                          url,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(child: CircularProgressIndicator());
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(child: Icon(Icons.error, color: Colors.red, size: 50));
+                          },
+                        ),
                       ),
                     );
-                  },
-                  child: Image.network(
-                    receiptUrl,
-                    height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
+                  }).toList(),
+                )
               ],
             ),
         ],
@@ -93,7 +107,23 @@ class ImageScreen extends StatelessWidget {
         title: const Text("Reçu"),
       ),
       body: Center(
-        child: Image.network(imageUrl),
+        child: Image.network(
+          imageUrl,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) {
+              return child;
+            } else {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return const Center(
+              child: Icon(Icons.error, color: Colors.red, size: 50),
+            );
+          },
+        ),
       ),
     );
   }

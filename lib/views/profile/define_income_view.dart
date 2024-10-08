@@ -30,7 +30,11 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
 
   Future<void> _saveIncome() async {
     final source = _sourceController.text;
-    final amount = double.tryParse(_amountController.text) ?? 0.0;
+
+    // Conversion des virgules en points pour le montant
+    String amountText = _amountController.text.replaceAll(",", ".");
+    final amount = double.tryParse(amountText) ?? 0.0;
+
     final currentMonth = DateTime.now().month;
     final currentYear = DateTime.now().year;
 

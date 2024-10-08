@@ -8,7 +8,7 @@ class TransactionModel {
   Timestamp date;
   String description;
   bool isRecurring;
-  String? receiptUrl;
+  List<String>? receiptUrls;
 
   TransactionModel({
     required this.id,
@@ -18,7 +18,7 @@ class TransactionModel {
     required this.date,
     required this.description,
     this.isRecurring = false,
-    this.receiptUrl,
+    this.receiptUrls,
   });
 
   Map<String, dynamic> toMap() {
@@ -30,7 +30,7 @@ class TransactionModel {
       'date': date,
       'description': description,
       'isRecurring': isRecurring,
-      'receiptUrl': receiptUrl,
+      'receiptUrls': receiptUrls,
     };
   }
 
@@ -43,7 +43,7 @@ class TransactionModel {
       date: map['date'],
       description: map['description'],
       isRecurring: map['isRecurring'] ?? false,
-      receiptUrl: map['receiptUrl'],
+      receiptUrls: List<String>.from(map['receiptsUrls'] ?? []),
     );
   }
 }
