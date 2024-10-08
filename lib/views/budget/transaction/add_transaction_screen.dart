@@ -29,7 +29,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   double _remainingAmountForCategory = 0.0;  // Montant restant dans la catégorie
   bool _useSavings = false;
   bool _isRecurring = false;
-  File? _receiptImage;
+  List<File> _receiptImages = [];
 
 
   @override
@@ -106,10 +106,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       final amount = double.tryParse(_amountController.text) ?? 0.0;
       final date = DateTime.tryParse(_dateController.text) ?? DateTime.now();
 
-      String? receiptUrl;
-      if (_receiptImage != null) {
-        // Upload de l'image dans Firebase Storage
-        receiptUrl = await uploadImage(_receiptImage!, user.uid);
+      // Affichage d'un indicateur de progression pendant l'ajout
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(child: CircularProgressIndicator());
+        },
+      );
+
+      // Uploader chaque image et récupérer les URLs
+      List<String> receiptUrls = [];
+      for (File image in _receiptImages) {
+        String? receiptUrl = await uploadImage(image, user.uid);
+        if (receiptUrl != null) {
+          receiptUrls.add(receiptUrl);
+        }
       }
 
       //bool isRecurring = false;  // À ajuster en fonction de la logique utilisateur (par exemple, via un checkbox)
@@ -130,11 +142,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           useSavings: _useSavings,
           isRecurring: _isRecurring,
           savingCategoryId: selectedSavingCategory,  // Passer la catégorie d'économies sélectionnée
-          receiptUrl: receiptUrl,
+          receiptUrl: receiptUrls.isNotEmpty ? receiptUrls.join(',') : null,
         );
 
-        Navigator.pop(context);
+        Navigator.pop(context); // Fermeture du loader
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Transaction ajoutée avec succès.")),
+        );
+        Navigator.pop(context); // Retourne à l'écran précèdent
       } catch (e) {
+        Navigator.pop(context); // Fermeture du loader
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Erreur: ${e.toString()}")),
         );
@@ -177,11 +194,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
 
-    setState(() {
-      if (pickedFile != null) {
-        _receiptImage = File(pickedFile.path);
-      }
-    });
+    if (pickedFile != null) {
+      setState(() {
+        _receiptImages.add(File(pickedFile.path));
+      });
+    }
   }
 
   Future<String?> _selectSavingCategory() async {
@@ -286,6 +303,38 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               },
             ),
             const SizedBox(height: 10),
+            
+            // Affichage des apercus des images
+            if (_receiptImages.isNotEmpty)
+              GridView.builder(
+                shrinkWrap: true,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 1.0,
+                  crossAxisSpacing: 4.0,
+                  mainAxisSpacing: 4.0,
+                ),
+                itemCount: _receiptImages.length,
+                itemBuilder: (context, index) {
+                  return Stack(
+                    children: [
+                      Image.file(_receiptImages[index], fit: BoxFit.cover),
+                      Positioned(
+                        right: -10,
+                        top: -10,
+                        child: IconButton(
+                          icon: const Icon(Icons.cancel, color: Colors.red),
+                          onPressed: () {
+                            setState(() {
+                              _receiptImages.removeAt(index);
+                            });
+                          },
+                        ),
+                      )
+                    ],
+                  );
+                },
+              ),
             ElevatedButton(
                 onPressed: () => _openAddPhotoModal(context),
                 child: const Text("Ajouter une photo de reçu"),
