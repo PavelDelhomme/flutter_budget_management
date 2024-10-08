@@ -1,4 +1,5 @@
 import 'package:budget_management/views/budget/transaction/add_transaction_screen.dart';
+import 'package:budget_management/views/budget/transaction/transaction_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -147,6 +148,23 @@ class TransactionsView extends StatelessWidget {
                       ],
                     ),
                     trailing: Text(DateFormat('dd MMM yyyy').format(date)),
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+                        ),
+                        builder: (context) {
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom: MediaQuery.of(context).viewInsets.bottom,
+                            ),
+                            child: TransactionDetailsModal(transaction: transaction),
+                          );
+                        },
+                      );
+                    },
                   );
                 }).toList(),
               );
