@@ -32,7 +32,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   double _remainingAmountForCategory = 0.0;
   bool _useSavings = false;
   bool _isRecurring = false;
+
   List<File> _receiptImages = [];
+  List<String> _existingReceiptUrls = [];
 
   @override
   void initState() {
@@ -44,6 +46,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       _selectedCategory = transaction['category']?.toString().trim();
       _isRecurring = transaction['isRecurring'] ?? false;
       _dateController.text = DateFormat('yMd').format((transaction['date'] as Timestamp).toDate());
+
+      _existingReceiptUrls = List<String>.from(transaction['receiptUrls'] ?? []);
     } else {
       _amountController.addListener(_updateRemainingAmountWithInput);
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
@@ -140,13 +144,17 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           ? DateFormat('yMd').parse(_dateController.text)
           : DateTime.now();
 
-      List<String> receiptUrls = [];
+      List<String> newReceiptUrls = [];
       for (File image in _receiptImages) {
         String? url = await uploadImage(image, user.uid);
         if (url != null) {
-          receiptUrls.add(url);
+          newReceiptUrls.add(url);
         }
       }
+
+      // Fusionner les images existantes et nouvelles
+      List<String> updatedReceiptUrls = [..._existingReceiptUrls, ...newReceiptUrls];
+
 
       try {
         if (widget.transaction == null) {
@@ -158,7 +166,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             useSavings: _useSavings,
             isRecurring: _isRecurring,
             //receiptUrls: receiptUrls.isNotEmpty ? receiptUrls.join(',') : null,
-            receiptUrls: receiptUrls.isNotEmpty ? receiptUrls : null,
+            receiptUrls: updatedReceiptUrls.isNotEmpty ? updatedReceiptUrls : null,
           );
         } else {
           await FirebaseFirestore.instance.collection('transactions').doc(widget.transaction!.id).update({
@@ -166,7 +174,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             'amount': amount,
             'category': _selectedCategory!,
             'isRecurring': _isRecurring,
-            'receiptUrls': receiptUrls.isNotEmpty ? receiptUrls.join(',') : null,
+            'receiptUrls': updatedReceiptUrls.isNotEmpty ? updatedReceiptUrls : null,
             'date': Timestamp.fromDate(date),
           });
         }
@@ -253,6 +261,13 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     _amountController.text = currentText.replaceAll(",", ".");
   }
 
+  // Méthode pour supprimer une image existante
+  void _removeExistingImage(String url) {
+    setState(() {
+      _existingReceiptUrls.remove(url);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -329,7 +344,43 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               onPressed: _pickImages,
               child: const Text("Ajouter des reçus"),
             ),
+            // Affichage des images existantes
+            if (_existingReceiptUrls.isNotEmpty)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Reçus existants :", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Wrap(
+                    spacing: 8,
+                    children: _existingReceiptUrls.map((url) {
+                      return Stack(
+                        children: [
+                          Image.network(
+                            url,
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: IconButton(
+                              icon: Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                _removeExistingImage(url);
+                              },
+                            ),
+                          )
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+
             const SizedBox(height: 20),
+
+            // Affichage des nouvelles images ajoutées
             if (_receiptImages.isNotEmpty)
               Wrap(
                 spacing: 8,
@@ -345,6 +396,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   );
                 }).toList(),
               ),
+
 
             CheckboxListTile(
               title: const Text("Transaction récurrente"),
