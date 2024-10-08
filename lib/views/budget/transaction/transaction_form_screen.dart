@@ -267,7 +267,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       _existingReceiptUrls.remove(url);
     });
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -278,142 +277,146 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         padding: const EdgeInsets.all(16.0),
         child: _isLoadingCategories
             ? const Center(child: CircularProgressIndicator())
-            : Column(
-          children: [
-            TextField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
-            ),
-            TextField(
-              controller: _amountController,
-              decoration: const InputDecoration(labelText: 'Montant', hintText: 'Entrez le montant'),
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-            ),
-            TextField(
-              controller: _dateController,
-              decoration: const InputDecoration(labelText: 'Date'),
-              keyboardType: TextInputType.datetime,
-              onTap: () async {
-                DateTime? selectedDate = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2101),
-                );
-                if (selectedDate != null) {
-                  _dateController.text = DateFormat.yMd().format(selectedDate);
-                }
-              },
-            ),
-            DropdownButton<String>(
-              value: _categories.any((category) => category['name'] == _selectedCategory) ? _selectedCategory : null,
-              items: _categories
-                  .map((category) => category['name'])
-                  .toSet() // Remove duplicates
-                  .map((categoryName) {
-                return DropdownMenuItem<String>(
-                  value: categoryName,
-                  child: Text(categoryName),
-                );
-              }).toList()
-                ..add(
-                  DropdownMenuItem<String>(
-                    value: 'New',
-                    child: const Text("Créer une nouvelle catégorie"),
-                  ),
-                ),
-              onChanged: (newValue) {
-                if (newValue == 'New') {
-                  _createNewCategory();
-                } else {
-                  setState(() {
-                    _selectedCategory = newValue;
-                    if (_selectedCategory != null) {
-                      _calculateRemainingAmount(_selectedCategory!);
-                    }
-                  });
-                }
-              },
-              hint: const Text("Sélectionner une catégorie"),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _pickImages,
-              child: const Text("Ajouter des reçus"),
-            ),
-            // Affichage des images existantes
-            if (_existingReceiptUrls.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Reçus existants :", style: TextStyle(fontWeight: FontWeight.bold)),
-                  Wrap(
-                    spacing: 8,
-                    children: _existingReceiptUrls.map((url) {
-                      return Stack(
-                        children: [
-                          Image.network(
-                            url,
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
-                              onPressed: () {
-                                _removeExistingImage(url);
-                              },
-                            ),
-                          )
-                        ],
-                      );
-                    }).toList(),
-                  ),
+            : SingleChildScrollView( // Ajout du scroll
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
+              TextField(
+                controller: _amountController,
+                decoration: const InputDecoration(labelText: 'Montant', hintText: 'Entrez le montant'),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                 ],
               ),
-
-            const SizedBox(height: 20),
-
-            // Affichage des nouvelles images ajoutées
-            if (_receiptImages.isNotEmpty)
-              Wrap(
-                spacing: 8,
-                children: _receiptImages.map((image) {
-                  return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Image.file(
-                      image,
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                    ),
+              TextField(
+                controller: _dateController,
+                decoration: const InputDecoration(labelText: 'Date'),
+                keyboardType: TextInputType.datetime,
+                onTap: () async {
+                  DateTime? selectedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2101),
                   );
-                }).toList(),
+                  if (selectedDate != null) {
+                    _dateController.text = DateFormat.yMd().format(selectedDate);
+                  }
+                },
               ),
+              DropdownButton<String>(
+                value: _categories.any((category) => category['name'] == _selectedCategory) ? _selectedCategory : null,
+                items: _categories
+                    .map((category) => category['name'])
+                    .toSet() // Remove duplicates
+                    .map((categoryName) {
+                  return DropdownMenuItem<String>(
+                    value: categoryName,
+                    child: Text(categoryName),
+                  );
+                }).toList()
+                  ..add(
+                    DropdownMenuItem<String>(
+                      value: 'New',
+                      child: const Text("Créer une nouvelle catégorie"),
+                    ),
+                  ),
+                onChanged: (newValue) {
+                  if (newValue == 'New') {
+                    _createNewCategory();
+                  } else {
+                    setState(() {
+                      _selectedCategory = newValue;
+                      if (_selectedCategory != null) {
+                        _calculateRemainingAmount(_selectedCategory!);
+                      }
+                    });
+                  }
+                },
+                hint: const Text("Sélectionner une catégorie"),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _pickImages,
+                child: const Text("Ajouter des reçus"),
+              ),
+              const SizedBox(height: 20),
 
+              // Affichage des images existantes
+              if (_existingReceiptUrls.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Reçus existants :", style: TextStyle(fontWeight: FontWeight.bold)),
+                    Wrap(
+                      spacing: 8,
+                      children: _existingReceiptUrls.map((url) {
+                        return Stack(
+                          children: [
+                            Image.network(
+                              url,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            ),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: IconButton(
+                                icon: Icon(Icons.delete, color: Colors.red),
+                                onPressed: () {
+                                  _removeExistingImage(url);
+                                },
+                              ),
+                            )
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 20),
 
-            CheckboxListTile(
-              title: const Text("Transaction récurrente"),
-              value: _isRecurring,
-              onChanged: (newValue) {
-                setState(() {
-                  _isRecurring = newValue ?? false;
-                });
-              },
-            ),
-            ElevatedButton(
-              onPressed: _saveTransaction,
-              child: Text(widget.transaction == null ? 'Ajouter la transaction' : 'Mettre à jour la transaction'),
-            ),
-          ],
+              // Affichage des nouvelles images ajoutées
+              if (_receiptImages.isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  children: _receiptImages.map((image) {
+                    return Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Image.file(
+                        image,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+              CheckboxListTile(
+                title: const Text("Transaction récurrente"),
+                value: _isRecurring,
+                onChanged: (newValue) {
+                  setState(() {
+                    _isRecurring = newValue ?? false;
+                  });
+                },
+              ),
+              ElevatedButton(
+                onPressed: _saveTransaction,
+                child: Text(widget.transaction == null ? 'Ajouter la transaction' : 'Mettre à jour la transaction'),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+
 }

@@ -201,24 +201,7 @@ class _TransactionsViewState extends State<TransactionsView> {
                         children: [
                           Text("Description : ${transaction['description']}"),
                           Text("Montant : \$${transaction['amount'].toStringAsFixed(2)}"),
-                          if (transaction['receiptUrls'] != null && transaction['receiptUrls'].isNotEmpty)
-                            Wrap(
-                              spacing: 8,
-                              children: List<Widget>.generate(
-                                transaction['receiptUrls'].length,
-                                  (index) => ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ImageScreen(imageUrl: transaction['receiptUrls'][index]),
-                                        ),
-                                      );
-                                    },
-                                    child: const Text("Voir le réçu"),
-                                  ),
-                              ),
-                            ),
+                          // Les boutons "Voir le reçu" ont été supprimés ici
                         ],
                       ),
                       trailing: Text(DateFormat('dd MMM yyyy').format(date)),
