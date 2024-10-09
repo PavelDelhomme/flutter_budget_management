@@ -100,6 +100,8 @@ class _SummaryViewState extends State<SummaryView> {
             }
 
             final transactionsData = snapshot.data!;
+
+
             return FutureBuilder<Map<String, dynamic>?>(
               future: _getBudgetSummary(),
               builder: (context, budgetSnapshot) {
@@ -124,33 +126,33 @@ class _SummaryViewState extends State<SummaryView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Total Budget (Prévu): \$${totalBudget.toStringAsFixed(2)}',
+                      'Total Budget : \$${totalBudget.toStringAsFixed(2)}',
                       style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      'Dépenses Réelles (Totales): \$${totalExpenses.toStringAsFixed(2)}',
+                      'Dépenses Réelles : \$${totalExpenses.toStringAsFixed(2)}',
                       style: const TextStyle(fontSize: 20),
                     ),
                     Text(
-                      'Revenu Mensuel Total: \$${monthlyIncome.toStringAsFixed(2)}',
+                      'Revenu Mensuel Total : \$${monthlyIncome.toStringAsFixed(2)}',
                       style: const TextStyle(fontSize: 20),
                     ),
                     Text(
-                      'Solde Restant (Budget - Dépenses): \$${remainingBalance.toStringAsFixed(2)}',
+                      'Solde Restant : \$${remainingBalance.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: 20,
                         color: remainingBalance < 0 ? Colors.red : Colors.green,
                       ),
                     ),
                     Text(
-                      'Solde Prévisionnel en Fin de Mois (Revenu - Alloué): \$${forecastBalance.toStringAsFixed(2)}',
+                      'Solde Prévisionnel : \$${forecastBalance.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: 20,
                         color: forecastBalance < 0 ? Colors.red : Colors.green,
                       ),
                     ),
                     Text(
-                      'Dépenses Restantes (Alloué - Dépenses): \$${(totalAllocated - totalExpenses).toStringAsFixed(2)}',
+                      'Dépenses Restantes : \$${(totalAllocated - totalExpenses).toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: 20,
                         color: (totalAllocated - totalExpenses) < 0 ? Colors.red : Colors.green,

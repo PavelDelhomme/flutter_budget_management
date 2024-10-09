@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:latlong2/latlong.dart';
 
 class TransactionDetailsModal extends StatelessWidget {
   final DocumentSnapshot transaction;
@@ -14,6 +16,9 @@ class TransactionDetailsModal extends StatelessWidget {
     final date = (transaction['date'] as Timestamp).toDate();
     final isRecurring = transaction['isRecurring'] ?? false;
     final receiptUrls = List<String>.from(transaction['receiptUrls'] ?? []);
+    final LatLng? location = transaction['location'] != null
+        ? LatLng((transaction['location'] as GeoPoint).latitude, (transaction['location'] as GeoPoint).longitude)
+        : null;
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -50,6 +55,37 @@ class TransactionDetailsModal extends StatelessWidget {
           Text('Montant : \$${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),
           Text('Transaction récurrente : ${isRecurring ? 'Oui' : 'Non'}', style: const TextStyle(fontSize: 18)),
+          const SizedBox(height: 20),
+          if (location != null)
+            SizedBox(
+              height: 200,
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: location,
+                  initialZoom: 16,
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.budget.budget_management',
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: location,
+                        width: 80,
+                        height: 80,
+                        child: const Icon(
+                          Icons.location_on,
+                          size: 40,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 20),
           if (receiptUrls.isNotEmpty)
             Column(

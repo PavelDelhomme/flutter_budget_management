@@ -38,10 +38,54 @@ class _HomeViewState extends State<HomeView> {
     }
   }
 
+  Future<void> _recalculateBudgetExpenses() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final budgetSnapshot = await FirebaseFirestore.instance
+          .collection('budgets')
+          .where('userId', isEqualTo: user.uid)
+          .get();
+
+      for (var budgetDoc in budgetSnapshot.docs) {
+        final budgetId = budgetDoc.id;
+        final List<dynamic> categories = budgetDoc.data()['categories'] ?? [];
+
+        final transactionSnapshot = await FirebaseFirestore.instance
+            .collection("transactions")
+            .where('budgetId', isEqualTo: budgetId)
+            .get();
+
+        // Initialiser les nouvelles sommes dépensée pour chaque catégorie
+        final updatedCategories = categories.map((category) {
+          final categoryName = category['name'];
+          double spentAmount = 0.0;
+
+          for (var transaction in transactionSnapshot.docs) {
+            if (transaction['category'] == categoryName) {
+              spentAmount += (transaction['amount'] as num).toDouble();
+            }
+          }
+
+          return {
+            'name': categoryName,
+            'allocatedAmount': category['allocatedAmount'],
+            'spentAmount': spentAmount,
+          };
+        }).toList();
+
+        // Mise a jour du budget avec les nouvelles dépenses
+        await FirebaseFirestore.instance.collection('budgets').doc(budgetId).update({
+          'categories': updatedCategories,
+        });
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _checkExistingBudget();
+    _recalculateBudgetExpenses();
   }
 
   @override

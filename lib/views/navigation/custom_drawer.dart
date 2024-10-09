@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../authentication/connexion_view.dart';
 import '../home/home_view.dart';
 import '../budget/budget/budget_view.dart';
+import '../map_exemple/map.dart';
 import '../profile/profile_view.dart';
 import '../settings/settings_view.dart';
 import '../budget/saving/savings_page.dart';
@@ -84,6 +85,16 @@ class CustomDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const SettingsView()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.map),
+            title: const Text("Test de carte"),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MapPage())
               );
             },
           ),

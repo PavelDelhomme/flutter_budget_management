@@ -1,14 +1,23 @@
 import 'dart:developer';
 import 'dart:io';
-import 'package:budget_management/services/budget/add_transaction.dart';
-import 'package:budget_management/services/image_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// Flutter
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+// Others
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+// Firebase
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+// Map
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
+// Personnal dependencies
+import 'package:budget_management/services/budget/add_transaction.dart';
+import 'package:budget_management/services/image_service.dart';
+
 
 class TransactionFormScreen extends StatefulWidget {
   final String? budgetId;
@@ -33,6 +42,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   bool _useSavings = false;
   bool _isRecurring = false;
 
+  LatLng? _userLocation;
   List<File> _receiptImages = [];
   List<String> _existingReceiptUrls = [];
 
@@ -48,9 +58,14 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       _dateController.text = DateFormat('yMd').format((transaction['date'] as Timestamp).toDate());
 
       _existingReceiptUrls = List<String>.from(transaction['receiptUrls'] ?? []);
+      if (transaction['location'] != null) {
+        GeoPoint location = transaction['location'];
+        _userLocation = LatLng(location.latitude, location.longitude);
+      }
     } else {
       _amountController.addListener(_updateRemainingAmountWithInput);
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
+      _getCurrentLocation(); // Récupération de la localisation actuel à l'initialisation
     }
   }
 
@@ -66,6 +81,33 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     _amountController.removeListener(_updateRemainingAmountWithInput);
     _amountController.dispose();
     super.dispose();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return;
+    }
+
+    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    setState(() {
+      _userLocation = LatLng(position.latitude, position.longitude);
+    });
   }
 
   Future<void> _loadCategories() async {
@@ -96,8 +138,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       }
     } catch (e) {
       _isLoadingCategories = false;
-
-
       SchedulerBinding.instance.addPostFrameCallback((_) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Erreur lors du chargement des catégories: $e")),
@@ -167,6 +207,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             isRecurring: _isRecurring,
             //receiptUrls: receiptUrls.isNotEmpty ? receiptUrls.join(',') : null,
             receiptUrls: updatedReceiptUrls.isNotEmpty ? updatedReceiptUrls : null,
+            location: _userLocation != null ? GeoPoint(_userLocation!.latitude, _userLocation!.longitude) : null,
           );
         } else {
           await FirebaseFirestore.instance.collection('transactions').doc(widget.transaction!.id).update({
@@ -176,6 +217,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             'isRecurring': _isRecurring,
             'receiptUrls': updatedReceiptUrls.isNotEmpty ? updatedReceiptUrls : null,
             'date': Timestamp.fromDate(date),
+            'location': _userLocation != null ? GeoPoint(_userLocation!.latitude, _userLocation!.longitude) : null,
           });
         }
         if (mounted) {

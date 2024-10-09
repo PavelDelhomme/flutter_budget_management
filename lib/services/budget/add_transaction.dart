@@ -10,6 +10,7 @@ Future<void> addTransaction({
   bool useSavings = false,
   String? savingCategoryId, required bool isRecurring,  // Ajout d'une catégorie de savings à utiliser
   List<String>? receiptUrls,
+  GeoPoint? location,
 }) async {
   final user = FirebaseAuth.instance.currentUser;
 
@@ -56,6 +57,7 @@ Future<void> addTransaction({
           'date': Timestamp.now(),
           'isRecurring': isRecurring,
           'receiptUrls': receiptUrls,
+          'location': location,
         });
       }
     }
