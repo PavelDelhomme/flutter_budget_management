@@ -80,6 +80,27 @@ class _SummaryViewState extends State<SummaryView> {
     return null;
   }
 
+  Widget _buildBudgetCard(String title, String amount, Color color) {
+    return Card(
+      elevation: 3.0,
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8.0),
+            Text(
+              "\$$amount",
+              style: TextStyle(fontSize: 20, color: color, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,56 +143,41 @@ class _SummaryViewState extends State<SummaryView> {
                 final remainingBalance = data['remainingBalance'] ?? 0.0;
                 final categoriesData = data['categoriesData'] as List<Map<String, dynamic>>;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                return ListView(
                   children: [
-                    Text(
-                      'Total Budget : \$${totalBudget.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    _buildBudgetCard('Total Budget', totalBudget.toStringAsFixed(2), Colors.blue),
+                    _buildBudgetCard('Revenu Mensuel Total', monthlyIncome.toStringAsFixed(2), Colors.purple),
+                    _buildBudgetCard('Dépenses Réelles', totalExpenses.toStringAsFixed(2), Colors.orange),
+                    _buildBudgetCard(
+                      'Solde Restant',
+                      remainingBalance.toStringAsFixed(2),
+                      remainingBalance < 0 ? Colors.red : Colors.green,
                     ),
-                    Text(
-                      'Dépenses Réelles : \$${totalExpenses.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 20),
+                    _buildBudgetCard(
+                      'Reste Prévisionnel',
+                      forecastBalance.toStringAsFixed(2),
+                      remainingBalance < 0 ? Colors.red : Colors.green,
                     ),
-                    Text(
-                      'Revenu Mensuel Total : \$${monthlyIncome.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                    Text(
-                      'Solde Restant : \$${remainingBalance.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: remainingBalance < 0 ? Colors.red : Colors.green,
-                      ),
-                    ),
-                    Text(
-                      'Solde Prévisionnel : \$${forecastBalance.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: forecastBalance < 0 ? Colors.red : Colors.green,
-                      ),
-                    ),
-                    Text(
-                      'Dépenses Restantes : \$${(totalAllocated - totalExpenses).toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: (totalAllocated - totalExpenses) < 0 ? Colors.red : Colors.green,
-                      ),
+                    _buildBudgetCard(
+                      'Dépenses Restantes',
+                      (totalAllocated - totalExpenses).toStringAsFixed(2),
+                      (totalAllocated - totalExpenses) < 0 ? Colors.red : Colors.green,
                     ),
                     const SizedBox(height: 20),
                     const Text(
-                      'Répartition des Catégories',
+                      "Répartition des Catégories",
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 10),
-                    Expanded(
+                    SizedBox(
+                      height: 300,
                       child: PieChart(
                         PieChartData(
                           sections: categoriesData.map((category) {
                             return PieChartSectionData(
                               value: category['allocatedAmount'],
                               title: category['name'],
-                              color: _randomColor.randomColor(),  // Génération de couleurs uniques
+                              color: _randomColor.randomColor(),
                             );
                           }).toList(),
                         ),

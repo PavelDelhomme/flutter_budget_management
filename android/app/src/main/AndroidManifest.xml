@@ -2,8 +2,8 @@
     <!-- permission pour la localisation -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- permission qui requière au minimum Android 10 ou API 29-->
-    <!--uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /-->
+    <!-- permission qui requière au minimum Android 10 ou API 29 -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <application
         android:label="budget_management"
         android:name="${applicationName}"

@@ -13,7 +13,7 @@ class AddBudgetScreen extends StatefulWidget {
   @override
   _AddBudgetScreenState createState() => _AddBudgetScreenState();
 }
-
+// TODO lorsque on indique des catégorie, verifier si une catégorie que ont tente d'enregistrer n'existe pas et remplir les champs avec le montant de la catégorie en question et au lieu de l'ajoute cela permet de le mettre a jour si ont reclique sur ajouter la catégorie qui doit alors afficher mettre a jour al catégorie du coup si le champs ne matche plus avec la catégorie existant alors ont refait pour ajouter la categorie
 class _AddBudgetScreenState extends State<AddBudgetScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _categoryNameController = TextEditingController();

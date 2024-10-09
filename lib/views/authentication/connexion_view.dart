@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart';
 import '../home/home_view.dart';
 import 'inscription_view.dart';
 
@@ -21,6 +22,29 @@ class ConnexionViewState extends State<ConnexionView> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final _auth = FirebaseAuth.instance;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestLocationPermission();
+  }
+
+  Future<void> _requestLocationPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("L'accès à la localisation est nécessaire pour cette application.")),
+        );
+      }
+    } else if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("L'accès à la localisation est définitivement refusé.")),
+      );
+    }
+  }
+
 
   Future<void> _signIn() async {
     if (_formKey.currentState?.validate() ?? false) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../models/user.dart';
 import '../profile/define_income_view.dart'; // On crée un nouvel écran pour définir les revenus
 
@@ -18,6 +19,28 @@ class InscriptionViewState extends State<InscriptionView> {
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestLocationPermission();
+  }
+
+  Future<void> _requestLocationPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("L'accès à la localisation est nécessaire pour cette application.")),
+        );
+      }
+    } else if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("L'accès à la localisation est définitivement refusé.")),
+      );
+    }
+  }
 
   Future<void> _signUp() async {
     if (_formKey.currentState?.validate() ?? false) {

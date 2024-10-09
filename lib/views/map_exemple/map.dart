@@ -54,7 +54,8 @@ class _MapPageState extends State<MapPage> {
     });
   }
 
-  @override Widget build(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: _currentUserLocation == null
           ? const Center(child: CircularProgressIndicator())

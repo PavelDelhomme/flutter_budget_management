@@ -39,9 +39,11 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
     final currentYear = DateTime.now().year;
 
     if (source.isNotEmpty && amount > 0) {
-      setState(() {
-        _isLoading = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+        });
+      }
 
       if (_editingIncome != null) {
         // Met à jour un revenu existant
@@ -80,9 +82,11 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
 
   Future<void> _deleteIncome(IncomeModel income) async {
     if (income.id != null) {
-      setState(() {
-        _isLoading = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+        });
+      }
 
       await deleteIncome(widget.userId, income.id!);
       log("Revenu supprimé : ${income.source}");
@@ -96,28 +100,34 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
     final currentYear = DateTime.now().year;
 
     incomes = await getUserIncomes(widget.userId, currentMonth, currentYear);
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _editIncome(IncomeModel income) {
-    setState(() {
-      _editingIncome = income;
-      _sourceController.text = income.source;
-      _amountController.text = income.amount.toString();
-      _isRecurring = income.isRecurring;
-    });
+    if (mounted) {
+      setState(() {
+        _editingIncome = income;
+        _sourceController.text = income.source;
+        _amountController.text = income.amount.toString();
+        _isRecurring = income.isRecurring;
+      });
+    }
   }
 
   void _clearForm() {
-    setState(() {
-      _editingIncome = null;
-      _sourceController.clear();
-      _amountController.clear();
-      _isRecurring = false;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _editingIncome = null;
+        _sourceController.clear();
+        _amountController.clear();
+        _isRecurring = false;
+        _isLoading = false;
+      });
+    }
   }
 
   @override

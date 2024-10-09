@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -13,27 +12,36 @@ class ProfileView extends StatefulWidget {
 }
 
 class _ProfileViewState extends State<ProfileView> {
-  final TextEditingController _sourceController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _sourceController = TextEditingController();
+  final _amountController = TextEditingController();
   User? user = FirebaseAuth.instance.currentUser;
   List<IncomeModel> incomes = [];
   bool _isRecurring = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserIncomes();
+    if (user != null) {
+      _emailController.text = user!.email ?? "";
+    }
   }
 
   Future<void> _loadUserIncomes() async {
     if (user != null) {
-      incomes = await getUserIncomes(user!.uid, DateTime.now().month, DateTime.now().year);
+      incomes = await getUserIncomes(
+          user!.uid, DateTime.now().month, DateTime.now().year);
       setState(() {});
     }
   }
 
   Future<void> _saveIncome() async {
-    if (user != null && _sourceController.text.isNotEmpty && _amountController.text.isNotEmpty) {
+    if (user != null &&
+        _sourceController.text.isNotEmpty &&
+        _amountController.text.isNotEmpty) {
       double amount = double.tryParse(_amountController.text) ?? 0.0;
       String source = _sourceController.text;
 
@@ -60,6 +68,32 @@ class _ProfileViewState extends State<ProfileView> {
     }
   }
 
+  Future<void> _updateEmail() async {
+    if (user != null && _emailController.text.isNotEmpty) {
+      try {
+        await user!.updateEmail(_emailController.text);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Email mis à jour.")));
+      } catch (e) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Erreur : $e")));
+      }
+    }
+  }
+
+  Future<void> _updatePassword() async {
+    if (user != null && _passwordController.text.isNotEmpty) {
+      try {
+        await user!.updatePassword(_passwordController.text);
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Mot de passe mis à jour.')));
+      } catch (e) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      }
+    }
+  }
+
   void _clearForm() {
     _sourceController.clear();
     _amountController.clear();
@@ -76,62 +110,107 @@ class _ProfileViewState extends State<ProfileView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Mon Profil"),
-      ),
+      appBar: AppBar(title: const Text("Mon Profil")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Ajouter une nouvelle source de revenu",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            TextField(
-              controller: _sourceController,
-              decoration: const InputDecoration(labelText: 'Source de revenu'),
-            ),
-            TextField(
-              controller: _amountController,
-              decoration: const InputDecoration(labelText: 'Montant'),
-              keyboardType: TextInputType.number,
-            ),
-            Row(
-              children: [
-                Checkbox(
-                  value: _isRecurring,
-                  onChanged: (value) {
-                    setState(() {
-                      _isRecurring = value!;
-                    });
-                  },
-                ),
-                const Text("Récurrent"),
-              ],
-            ),
-            ElevatedButton(
-              onPressed: _saveIncome,
-              child: const Text('Ajouter la source de revenu'),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: incomes.length,
-                itemBuilder: (context, index) {
-                  final income = incomes[index];
-                  return ListTile(
-                    title: Text('${income.source}: \$${income.amount.toStringAsFixed(2)}'),
-                    subtitle: Text('Mois: ${income.month}, Année: ${income.year}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () => _deleteIncome(income),
-                    ),
-                  );
-                },
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ExpansionTile(
+                title: const Text("Modifier l'adresse email"),
+                children: [
+                  TextField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(
+                        labelText: "Nouvelle adresse email"),
+                  ),
+                  ElevatedButton(
+                    onPressed: _updateEmail,
+                    child: const Text("Mettre à jour l'e-mail"),
+                  ),
+                ],
               ),
-            ),
-          ],
+              ExpansionTile(
+                title: const Text("Modifier le mot de passe"),
+                children: [
+                  TextField(
+                    controller: _passwordController,
+                    decoration: const InputDecoration(
+                        labelText: "Nouveau mot de passe"),
+                    obscureText: true,
+                  ),
+                  ElevatedButton(
+                    onPressed: _updatePassword,
+                    child: const Text("Mettre à jour le mot de passe"),
+                  ),
+                ],
+              ),
+              ExpansionTile(
+                title: const Text("Gérer les sources de revenu"),
+                children: [
+                  TextField(
+                    controller: _sourceController,
+                    decoration:
+                        const InputDecoration(labelText: "Source de revenu"),
+                  ),
+                  TextField(
+                    controller: _amountController,
+                    decoration: const InputDecoration(labelText: 'Montant'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _isRecurring,
+                        onChanged: (value) {
+                          setState(() {
+                            _isRecurring = value!;
+                          });
+                        },
+                      ),
+                      const Text("Récurrent"),
+                    ],
+                  ),
+                  ElevatedButton(
+                    onPressed: _saveIncome,
+                    child: const Text("Ajouter ou Modifier la source"),
+                  ),
+                  const SizedBox(height: 20),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: incomes.length,
+                    itemBuilder: (context, index) {
+                      final income = incomes[index];
+                      return ListTile(
+                        title: Text("${income.source}: \$${income.amount.toStringAsFixed(2)}"),
+                        subtitle: Text('Mois: ${income.month}, Année: ${income.year}'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () {
+                                setState(() {
+                                  _sourceController.text = income.source;
+                                  _amountController.text = income.amount.toString();
+                                  _isRecurring = income.isRecurring;
+                                });
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () => _deleteIncome(income),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  )
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );
