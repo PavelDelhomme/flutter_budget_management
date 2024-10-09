@@ -14,6 +14,7 @@ class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
   LatLng _defaultLocation = LatLng(48.8566, 2.3522); // Paris par défaut
   LatLng? _currentUserLocation;
+  String _selectedTileLayer = 'OpenStreetMap';  // Choix du layer par défaut
 
   @override
   void initState() {
@@ -29,10 +30,42 @@ class _MapPageState extends State<MapPage> {
         _mapController.move(_currentUserLocation!, 16.0);
       });
     } catch (e) {
-      // En cas d'échec de récupération de la localisation, on garde la position par défaut
       setState(() {
         _currentUserLocation = _defaultLocation;
       });
+    }
+  }
+
+  Widget _buildTileLayer() {
+    // Choix de la source de tuiles en fonction de l'option sélectionnée
+    switch (_selectedTileLayer) {
+      case 'OpenStreetMap':
+        return TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.budget.budget_management',
+        );
+      case 'OpenLayers':
+        return TileLayer(
+          urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          subdomains: ['a', 'b', 'c'],
+          userAgentPackageName: 'com.budget.budget_management',
+        );
+      case 'CartoDB Positron':
+        return TileLayer(
+          urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+          subdomains: ['a', 'b', 'c', 'd'],
+          userAgentPackageName: 'com.budget.budget_management',
+        );
+      case 'Stamen Terrain':
+        return TileLayer(
+          urlTemplate: 'https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg',
+          userAgentPackageName: 'com.budget.budget_management',
+        );
+      default:
+        return TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.budget.budget_management',
+        );
     }
   }
 
@@ -41,22 +74,33 @@ class _MapPageState extends State<MapPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Carte"),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              setState(() {
+                _selectedTileLayer = value;
+              });
+            },
+            itemBuilder: (BuildContext context) {
+              return {'OpenStreetMap', 'OpenLayers', 'CartoDB Positron', 'Stamen Terrain'}
+                  .map((String choice) {
+                return PopupMenuItem<String>(
+                  value: choice,
+                  child: Text(choice),
+                );
+              }).toList();
+            },
+          ),
+        ],
       ),
       body: FlutterMap(
         mapController: _mapController,
         options: MapOptions(
-          initialCenter: _currentUserLocation ?? _defaultLocation,  // Utilisation de la position récupérée ou de Paris
+          initialCenter: _currentUserLocation ?? _defaultLocation,
           initialZoom: 16.0,
-          onMapReady: () {
-            // Action une fois la carte prête
-            debugPrint("Carte prête !");
-          },
         ),
         children: [
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.budget.budget_management',
-          ),
+          _buildTileLayer(), // Sélection des tuiles selon le choix de l'utilisateur
           MarkerLayer(
             markers: [
               Marker(
