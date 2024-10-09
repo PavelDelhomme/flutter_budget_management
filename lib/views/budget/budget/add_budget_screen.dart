@@ -13,11 +13,15 @@ class AddBudgetScreen extends StatefulWidget {
   @override
   _AddBudgetScreenState createState() => _AddBudgetScreenState();
 }
-// TODO lorsque on indique des catégorie, verifier si une catégorie que ont tente d'enregistrer n'existe pas et remplir les champs avec le montant de la catégorie en question et au lieu de l'ajoute cela permet de le mettre a jour si ont reclique sur ajouter la catégorie qui doit alors afficher mettre a jour al catégorie du coup si le champs ne matche plus avec la catégorie existant alors ont refait pour ajouter la categorie
+
+
 class _AddBudgetScreenState extends State<AddBudgetScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _categoryNameController = TextEditingController();
   final TextEditingController _categoryAmountController = TextEditingController();
+  final FocusNode _descriptionFocusNode = FocusNode();
+  final FocusNode _categoryNameFocusNode = FocusNode();
+  final FocusNode _categoryAmountFocusNode = FocusNode();
   List<CategoryModel> _categories = [];
   double _totalIncome = 0.0;
   double _remainingIncome = 0.0;
@@ -31,6 +35,17 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   void initState() {
     super.initState();
     _loadUserIncome();
+  }
+
+  @override
+  void dispose() {
+    _descriptionFocusNode.dispose();
+    _categoryNameFocusNode.dispose();
+    _categoryAmountFocusNode.dispose();
+    _descriptionController.dispose();
+    _categoryNameController.dispose();
+    _categoryAmountController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserIncome() async {
@@ -281,6 +296,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         _remainingIncome -= categoryAmount;
         _categoryNameController.clear();
         _categoryAmountController.clear();
+        FocusScope.of(context).requestFocus(_categoryNameFocusNode);
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -426,8 +442,12 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
             children: [
               TextField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
-                    labelText: 'Description du budget'),
+                focusNode: _descriptionFocusNode,
+                decoration: const InputDecoration(labelText: 'Description du budget'),
+                onEditingComplete: () {
+                  // Passer le focus au champ "Nom de la catégorie"
+                  FocusScope.of(context).requestFocus(_categoryNameFocusNode);
+                },
               ),
               const SizedBox(height: 20),
               DropdownButton<int>(
@@ -470,18 +490,28 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
               const SizedBox(height: 20),
               TextField(
                 controller: _categoryNameController,
-                decoration: const InputDecoration(
-                    labelText: 'Nom de la catégorie'),
+                focusNode: _categoryNameFocusNode,
+                decoration: const InputDecoration(labelText: 'Nom de la catégorie'),
+                textInputAction: TextInputAction.next,
+                onEditingComplete: () {
+                  FocusScope.of(context).requestFocus(_categoryAmountFocusNode);
+                },
               ),
               TextField(
                 controller: _categoryAmountController,
+                focusNode: _categoryAmountFocusNode,
                 decoration: const InputDecoration(labelText: 'Montant alloué'),
                 keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                onEditingComplete: () {
+                  FocusScope.of(context).unfocus();
+                  _addCategory();
+                },
               ),
-              ElevatedButton(
+              /*ElevatedButton(
                 onPressed: _addCategory,
                 child: const Text('Ajouter la catégorie'),
-              ),
+              ),*/
               const SizedBox(height: 20),
               ListView.builder(
                 shrinkWrap: true,

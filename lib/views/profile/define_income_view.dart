@@ -17,6 +17,7 @@ class DefineIncomeView extends StatefulWidget {
 class _DefineIncomeViewState extends State<DefineIncomeView> {
   final TextEditingController _sourceController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+  final FocusNode _sourceFocusNode = FocusNode();
   bool _isRecurring = false;
   bool _isLoading = false;
   List<IncomeModel> incomes = [];
@@ -26,6 +27,14 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
   void initState() {
     super.initState();
     _loadIncomes();
+  }
+
+  @override
+  void dispose() {
+    _sourceController.dispose();
+    _amountController.dispose();
+    _sourceFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _saveIncome() async {
@@ -119,6 +128,7 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
   }
 
   void _clearForm() {
+    /*
     if (mounted) {
       setState(() {
         _editingIncome = null;
@@ -127,7 +137,10 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
         _isRecurring = false;
         _isLoading = false;
       });
-    }
+    }*/
+    _sourceController.clear();
+    _amountController.clear();
+    FocusScope.of(context).requestFocus(_sourceFocusNode);
   }
 
   @override
@@ -147,12 +160,21 @@ class _DefineIncomeViewState extends State<DefineIncomeView> {
               const SizedBox(height: 20),
               TextField(
                 controller: _sourceController,
+                focusNode: _sourceFocusNode,
                 decoration: const InputDecoration(labelText: 'Source de revenu'),
+                textInputAction: TextInputAction.next,
+                onEditingComplete: () {
+                  FocusScope.of(context).nextFocus();
+                },
               ),
               TextField(
                 controller: _amountController,
                 decoration: const InputDecoration(labelText: 'Montant'),
                 keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                onEditingComplete: () {
+                  _saveIncome();
+                },
               ),
               Row(
                 children: [

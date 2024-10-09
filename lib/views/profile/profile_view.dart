@@ -16,10 +16,13 @@ class _ProfileViewState extends State<ProfileView> {
   final _passwordController = TextEditingController();
   final _sourceController = TextEditingController();
   final _amountController = TextEditingController();
+  final FocusNode _sourceFocusNode = FocusNode();
+  final FocusNode _amountFocusNode = FocusNode();
   User? user = FirebaseAuth.instance.currentUser;
   List<IncomeModel> incomes = [];
   bool _isRecurring = false;
   bool _isLoading = false;
+  String? _editingIncomeId; // Stocker l'id en cour de modification
 
   @override
   void initState() {
@@ -28,6 +31,17 @@ class _ProfileViewState extends State<ProfileView> {
     if (user != null) {
       _emailController.text = user!.email ?? "";
     }
+  }
+
+  @override
+  void dispose() {
+    _sourceFocusNode.dispose();
+    _amountFocusNode.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _sourceController.dispose();
+    _amountController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserIncomes() async {
@@ -53,6 +67,11 @@ class _ProfileViewState extends State<ProfileView> {
         year: DateTime.now().year,
         isRecurring: _isRecurring,
       );
+
+      // Si une source est en cours de modification, supprime l'ancienne avant d'ajouter la nouvelle version
+      if (_editingIncomeId != null) {
+        await deleteIncome(user!.uid, _editingIncomeId!);
+      }
 
       await addIncome(
         userId: user!.uid,
@@ -98,6 +117,9 @@ class _ProfileViewState extends State<ProfileView> {
     _sourceController.clear();
     _amountController.clear();
     _isRecurring = false;
+    _editingIncomeId = null;
+    // Re-focus sur la source de revenu après ajout ou modification
+    FocusScope.of(context).requestFocus(_sourceFocusNode);
   }
 
   Future<void> _deleteIncome(IncomeModel income) async {
@@ -151,13 +173,26 @@ class _ProfileViewState extends State<ProfileView> {
                 children: [
                   TextField(
                     controller: _sourceController,
+                    focusNode: _sourceFocusNode,
                     decoration:
                         const InputDecoration(labelText: "Source de revenu"),
+                    textInputAction: TextInputAction.next,
+                    onEditingComplete: () {
+                      // Focus vers le champs "Montant"
+                      FocusScope.of(context).requestFocus(_amountFocusNode);
+                    },
                   ),
                   TextField(
                     controller: _amountController,
+                    focusNode: _amountFocusNode,
                     decoration: const InputDecoration(labelText: 'Montant'),
                     keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.done,
+                    onEditingComplete: () {
+                      // Validation via clavier
+                      _saveIncome();
+                      FocusScope.of(context).unfocus();
+                    },
                   ),
                   Row(
                     children: [
@@ -195,6 +230,8 @@ class _ProfileViewState extends State<ProfileView> {
                                   _sourceController.text = income.source;
                                   _amountController.text = income.amount.toString();
                                   _isRecurring = income.isRecurring;
+                                  _editingIncomeId = income.id;
+                                  FocusScope.of(context).requestFocus(_sourceFocusNode); // Remise du focus sur le champ source
                                 });
                               },
                             ),

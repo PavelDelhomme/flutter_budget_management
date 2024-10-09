@@ -33,6 +33,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
+  final FocusNode _categoryFocusNode = FocusNode();
   String? _selectedCategory;
   List<Map<String, dynamic>> _categories = [];
   bool _isLoadingCategories = true;
@@ -80,6 +81,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   void dispose() {
     _amountController.removeListener(_updateRemainingAmountWithInput);
     _amountController.dispose();
+    _categoryFocusNode.dispose();
     super.dispose();
   }
 
@@ -326,11 +328,19 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               TextField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Description'),
+                textInputAction: TextInputAction.next,
+                onEditingComplete: () {
+                  FocusScope.of(context).nextFocus();
+                },
               ),
               TextField(
                 controller: _amountController,
                 decoration: const InputDecoration(labelText: 'Montant', hintText: 'Entrez le montant'),
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
+                textInputAction: TextInputAction.done,
+                onEditingComplete: () {
+                  FocusScope.of(context).requestFocus(_categoryFocusNode);
+                },
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                 ],
@@ -339,6 +349,10 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 controller: _dateController,
                 decoration: const InputDecoration(labelText: 'Date'),
                 keyboardType: TextInputType.datetime,
+                textInputAction: TextInputAction.done,
+                onEditingComplete: () {
+                  FocusScope.of(context).unfocus();
+                },
                 onTap: () async {
                   DateTime? selectedDate = await showDatePicker(
                     context: context,
@@ -352,6 +366,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 },
               ),
               DropdownButton<String>(
+                focusNode: _categoryFocusNode,
                 value: _categories.any((category) => category['name'] == _selectedCategory) ? _selectedCategory : null,
                 items: _categories
                     .map((category) => category['name'])

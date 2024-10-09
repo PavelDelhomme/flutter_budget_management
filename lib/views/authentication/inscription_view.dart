@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../models/user.dart';
-import '../profile/define_income_view.dart'; // On crée un nouvel écran pour définir les revenus
+import '../profile/define_income_view.dart';
 
 class InscriptionView extends StatefulWidget {
   const InscriptionView({super.key});
@@ -15,6 +15,8 @@ class InscriptionView extends StatefulWidget {
 class InscriptionViewState extends State<InscriptionView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _emailFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
   final _formKey = GlobalKey<FormState>();
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
@@ -23,23 +25,14 @@ class InscriptionViewState extends State<InscriptionView> {
   @override
   void initState() {
     super.initState();
-    _requestLocationPermission();
+    _emailFocusNode.requestFocus();
   }
 
-  Future<void> _requestLocationPermission() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("L'accès à la localisation est nécessaire pour cette application.")),
-        );
-      }
-    } else if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("L'accès à la localisation est définitivement refusé.")),
-      );
-    }
+  @override
+  void dispose() {
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _signUp() async {
@@ -101,7 +94,13 @@ class InscriptionViewState extends State<InscriptionView> {
             children: [
               TextFormField(
                 controller: _emailController,
+                focusNode: _emailFocusNode,
                 decoration: const InputDecoration(labelText: 'Email'),
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                onFieldSubmitted: (_) {
+                  FocusScope.of(context).requestFocus(_passwordFocusNode);
+                },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Veuillez entrer votre email.';
@@ -112,8 +111,11 @@ class InscriptionViewState extends State<InscriptionView> {
               const SizedBox(height: 16.0),
               TextFormField(
                 controller: _passwordController,
+                focusNode: _passwordFocusNode,
                 decoration: const InputDecoration(labelText: 'Mot de passe'),
                 obscureText: true,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _signUp,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Veuillez entrer un mot de passe.';

@@ -14,37 +14,27 @@ class ConnexionView extends StatefulWidget {
   ConnexionViewState createState() => ConnexionViewState();
 }
 
-//TODO: La connexion ne se fait a la première entrée des identifiants de l'utilisateur il faut qu'il les entre 2 fois ?
-
 class ConnexionViewState extends State<ConnexionView> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final _emailFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
   final _auth = FirebaseAuth.instance;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _requestLocationPermission();
+    _emailFocusNode.requestFocus();
   }
 
-  Future<void> _requestLocationPermission() async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("L'accès à la localisation est nécessaire pour cette application.")),
-        );
-      }
-    } else if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("L'accès à la localisation est définitivement refusé.")),
-      );
-    }
+  @override
+  void dispose() {
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    super.dispose();
   }
-
 
   Future<void> _signIn() async {
     if (_formKey.currentState?.validate() ?? false) {
@@ -108,8 +98,13 @@ class ConnexionViewState extends State<ConnexionView> {
             children: [
               TextFormField(
                 controller: _emailController,
+                focusNode: _emailFocusNode,
                 decoration: const InputDecoration(labelText: 'Email'),
                 keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                onFieldSubmitted: (_) {
+                  FocusScope.of(context).requestFocus(_passwordFocusNode);
+                },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Veuillez indiquer votre email.';
@@ -120,8 +115,11 @@ class ConnexionViewState extends State<ConnexionView> {
               const SizedBox(height: 16.0),
               TextFormField(
                 controller: _passwordController,
+                focusNode: _passwordFocusNode,
                 decoration: const InputDecoration(labelText: 'Mot de passe'),
                 obscureText: true,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _signIn,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Veuillez indiquer un mot de passe.';
