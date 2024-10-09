@@ -3,15 +3,16 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 
-
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
 
-  @override _MapPageState createState() => _MapPageState();
+  @override
+  _MapPageState createState() => _MapPageState();
 }
 
 class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
+  LatLng _defaultLocation = LatLng(48.8566, 2.3522); // Paris par défaut
   LatLng? _currentUserLocation;
 
   @override
@@ -21,49 +22,35 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // Vérification des services de localisation activé ou non
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      // les service pas activer on ne fait rien on termine
-      return;
+    try {
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      setState(() {
+        _currentUserLocation = LatLng(position.latitude, position.longitude);
+        _mapController.move(_currentUserLocation!, 16.0);
+      });
+    } catch (e) {
+      // En cas d'échec de récupération de la localisation, on garde la position par défaut
+      setState(() {
+        _currentUserLocation = _defaultLocation;
+      });
     }
-
-    // Demande des permission si ce n'est pas actuellement granted
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        // Les permissions n'ont pas été accorder on termine
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      // Les permission on été renié de façon permanente
-      return;
-    }
-
-    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-
-    setState(() {
-      _currentUserLocation = LatLng(position.latitude, position.longitude);
-      _mapController.move(_currentUserLocation!, 16.0);
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _currentUserLocation == null
-          ? const Center(child: CircularProgressIndicator())
-          : FlutterMap(
+      appBar: AppBar(
+        title: const Text("Carte"),
+      ),
+      body: FlutterMap(
         mapController: _mapController,
         options: MapOptions(
-          initialCenter: _currentUserLocation!,
-          initialZoom: 16,
+          initialCenter: _currentUserLocation ?? _defaultLocation,  // Utilisation de la position récupérée ou de Paris
+          initialZoom: 16.0,
+          onMapReady: () {
+            // Action une fois la carte prête
+            debugPrint("Carte prête !");
+          },
         ),
         children: [
           TileLayer(
@@ -73,19 +60,19 @@ class _MapPageState extends State<MapPage> {
           MarkerLayer(
             markers: [
               Marker(
-                point: _currentUserLocation!,
+                point: _currentUserLocation ?? _defaultLocation,
                 width: 80,
                 height: 80,
                 child: const Icon(
                   Icons.location_on,
                   size: 50,
                   color: Colors.blue,
-                )
+                ),
               ),
             ],
-          )
+          ),
         ],
-      )
+      ),
     );
   }
 }
