@@ -3,12 +3,21 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:geocoding/geocoding.dart'; // Pour la conversion des coordonnées en adresse
 
 class TransactionDetailsModal extends StatelessWidget {
   final DocumentSnapshot transaction;
 
   const TransactionDetailsModal({Key? key, required this.transaction}) : super(key: key);
+
+  Future<String> _getAddressFromLatLng(LatLng location) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
+      return placemarks.isNotEmpty ? placemarks.first.street ?? 'Adresse inconnue' : 'Adresse inconnue';
+    } catch (e) {
+      return 'Adresse inconnue';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +32,7 @@ class TransactionDetailsModal extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
       ),
@@ -47,7 +56,7 @@ class TransactionDetailsModal extends StatelessWidget {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-              )
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -57,13 +66,28 @@ class TransactionDetailsModal extends StatelessWidget {
           const SizedBox(height: 10),
           Text('Transaction récurrente : ${isRecurring ? 'Oui' : 'Non'}', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 20),
+
+          // Utilisation de FutureBuilder pour afficher l'adresse
+          if (location != null)
+            FutureBuilder<String>(
+              future: _getAddressFromLatLng(location),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Text('Chargement de l\'adresse...', style: TextStyle(fontSize: 18));
+                } else if (snapshot.hasError || !snapshot.hasData) {
+                  return const Text('Adresse inconnue', style: TextStyle(fontSize: 18));
+                }
+                return Text('Adresse : ${snapshot.data}', style: const TextStyle(fontSize: 18));
+              },
+            ),
+
           if (location != null)
             SizedBox(
               height: 200,
               child: FlutterMap(
                 options: MapOptions(
-                  initialCenter: location,
-                  initialZoom: 16,
+                  center: location,
+                  zoom: 16,
                 ),
                 children: [
                   TileLayer(
@@ -76,7 +100,7 @@ class TransactionDetailsModal extends StatelessWidget {
                         point: location,
                         width: 80,
                         height: 80,
-                        child: const Icon(
+                        builder: (ctx) => const Icon(
                           Icons.location_on,
                           size: 40,
                           color: Colors.red,
@@ -123,7 +147,7 @@ class TransactionDetailsModal extends StatelessWidget {
                       ),
                     );
                   }).toList(),
-                )
+                ),
               ],
             ),
         ],
