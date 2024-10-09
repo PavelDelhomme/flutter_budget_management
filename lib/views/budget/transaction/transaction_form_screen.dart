@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:geocoding/geocoding.dart';
 // Others
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -47,6 +48,13 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   List<File> _receiptImages = [];
   List<String> _existingReceiptUrls = [];
 
+  // Pour la carte
+  final MapController _mapController = MapController();
+  LatLng _defaultLocation = LatLng(48.8566, 2.3522); // Paris par défaut
+  String _selectedTileLayer = 'OpenStreetMap';
+  double _zoom = 16.0;
+  String? _currentAdress;
+
   @override
   void initState() {
     super.initState();
@@ -86,31 +94,79 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   Future<void> _getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+    try {
+      //Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      setState(() {
+        _userLocation = LatLng(position.latitude, position.longitude);
+        _mapController.move(_userLocation!, _zoom);
+      });
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return;
+      // Obtenir l'adresse à partir des coordonnées
+      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      setState(() {
+        _currentAdress = placemarks.first.street;
+      });
+    } catch (e) {
+      setState(() {
+        _userLocation = _defaultLocation;
+        _currentAdress = "Dresse inconnue";
+      });
     }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      return;
-    }
-
-    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+  }
+  void _zoomIn() {
     setState(() {
-      _userLocation = LatLng(position.latitude, position.longitude);
+      _zoom = (_zoom + 1).clamp(1.0, 18.0);
+      _mapController.move(_userLocation ?? _defaultLocation, _zoom);
     });
   }
+
+  void _zoomOut() {
+    setState(() {
+      _zoom = (_zoom - 1).clamp(1.0, 18.0);
+      _mapController.move(_userLocation ?? _defaultLocation, _zoom);
+    });
+  }
+
+  Widget _buildTileLayer() {
+    return TileLayer(
+      urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      subdomains: ['a', 'b', 'c'],
+      userAgentPackageName: 'com.budget.budget_management',
+    );
+  }
+
+  Widget _buildMap() {
+    return SizedBox(
+      height: 250,
+      child: FlutterMap(
+        mapController: _mapController,
+        options: MapOptions(
+          initialCenter: _userLocation ?? _defaultLocation,
+          initialZoom: _zoom,
+        ),
+        children: [
+          _buildTileLayer(),
+          if (_userLocation != null)
+            MarkerLayer(
+              markers: [
+                Marker(
+                  point: _userLocation!,
+                  width: 80,
+                  height: 80,
+                  child: const Icon(
+                    Icons.location_on,
+                    size: 50,
+                    color: Colors.blue,
+                  ),
+                )
+              ],
+            )
+        ],
+      ),
+    );
+  }
+
 
   Future<void> _loadCategories() async {
     try {
@@ -140,12 +196,14 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       }
     } catch (e) {
       _isLoadingCategories = false;
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Erreur lors du chargement des catégories: $e")),
-        );
-        log("Erreur lors du chargement des catégories : $e");
-      });
+      if (mounted) {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Erreur lors du chargement des catégories: $e")),
+          );
+          log("Erreur lors du chargement des catégories : $e");
+        });
+      }
     }
   }
 
@@ -311,6 +369,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       _existingReceiptUrls.remove(url);
     });
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -456,6 +515,17 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   }).toList(),
                 ),
 
+              const SizedBox(height: 20),
+
+              // Intégration de la carte dans le formulaire
+              _buildMap(),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: _getCurrentLocation,
+                child: const Text("Récupérer ma position actuelle"),
+              ),
+
+              const SizedBox(height: 20),
               CheckboxListTile(
                 title: const Text("Transaction récurrente"),
                 value: _isRecurring,
@@ -465,9 +535,11 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   });
                 },
               ),
-              ElevatedButton(
-                onPressed: _saveTransaction,
-                child: Text(widget.transaction == null ? 'Ajouter la transaction' : 'Mettre à jour la transaction'),
+              Center(
+                child: ElevatedButton(
+                  onPressed: _saveTransaction,
+                  child: Text(widget.transaction == null ? 'Ajouter la transaction' : 'Mettre à jour la transaction'),
+                )
               ),
             ],
           ),
