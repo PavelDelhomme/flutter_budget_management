@@ -51,6 +51,8 @@ dependencies:
   flutter_map_cancellable_tile_provider: ^3.0.0
   geocoding: ^2.0.4
   nominatim_geocoding: ^0.0.6
+  get: ^4.6.5
+
 
   # Image
   image_picker: ^1.1.2

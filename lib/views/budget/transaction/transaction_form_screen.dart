@@ -15,6 +15,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:get/get.dart';
 // Personnal dependencies
 import 'package:budget_management/services/budget/add_transaction.dart';
 import 'package:budget_management/services/image_service.dart';
@@ -59,6 +60,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   @override
   void initState() {
     super.initState();
+    Get.put(NominatimGeocoding());
+
     if (widget.transaction != null) {
       // Assurez-vous que la transaction est bien reçue
       final transaction = widget.transaction!;
@@ -147,7 +150,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
       // Utilisation de Nominatim pour obtenir l'adresse via un Coordinate
       try {
-        final Coordinate coordinate = Coordinate(
+        /*final Coordinate coordinate = Coordinate(
           latitude: position.latitude as num,
           longitude: position.longitude as num,
         );
@@ -157,6 +160,12 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           Address address = geocoding.address;
           // Affiche les informations importantes de l'adresse
           _currentAdress = "${address.houseNumber} ${address.road}, ${address.city}, ${address.state}, ${address.country}";
+        });*/
+        List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+        Placemark place = placemarks.first;
+
+        setState(() {
+          _currentAdress = "${place.street}, ${place.locality}, ${place.administrativeArea}";
         });
       } catch (e) {
         log("Erreur lors de la récupération de l'adresse avec Nominatim : $e");
