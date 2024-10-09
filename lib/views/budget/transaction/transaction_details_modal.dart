@@ -85,9 +85,10 @@ class TransactionDetailsModal extends StatelessWidget {
             SizedBox(
               height: 200,
               child: FlutterMap(
+                mapController: MapController(),
                 options: MapOptions(
-                  center: location,
-                  zoom: 16,
+                  initialCenter: location, // Utiliser initialCenter au lieu de center
+                  initialZoom: 16,
                 ),
                 children: [
                   TileLayer(
@@ -100,7 +101,7 @@ class TransactionDetailsModal extends StatelessWidget {
                         point: location,
                         width: 80,
                         height: 80,
-                        builder: (ctx) => const Icon(
+                        child: const Icon( // Utiliser child au lieu de builder
                           Icons.location_on,
                           size: 40,
                           color: Colors.red,

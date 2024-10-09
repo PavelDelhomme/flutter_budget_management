@@ -18,6 +18,7 @@ import 'package:geolocator/geolocator.dart';
 // Personnal dependencies
 import 'package:budget_management/services/budget/add_transaction.dart';
 import 'package:budget_management/services/image_service.dart';
+import 'package:nominatim_geocoding/nominatim_geocoding.dart';
 
 
 class TransactionFormScreen extends StatefulWidget {
@@ -59,22 +60,39 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   void initState() {
     super.initState();
     if (widget.transaction != null) {
+      // Assurez-vous que la transaction est bien reçue
       final transaction = widget.transaction!;
-      _descriptionController.text = transaction['description'];
-      _amountController.text = transaction['amount'].toString();
+      log("Transaction reçue : ${transaction.data()}");
+
+      _descriptionController.text = transaction['description'] ?? '';
+      _amountController.text = transaction['amount']?.toString() ?? '';
       _selectedCategory = transaction['category']?.toString().trim();
       _isRecurring = transaction['isRecurring'] ?? false;
-      _dateController.text = DateFormat('yMd').format((transaction['date'] as Timestamp).toDate());
 
+      // Vérification de la date
+      final Timestamp? date = transaction['date'] as Timestamp?;
+      if (date != null) {
+        _dateController.text = DateFormat('yMd').format(date.toDate());
+      } else {
+        _dateController.text = DateFormat('yMd').format(DateTime.now());
+      }
+
+      // Initialisation des reçus existants
       _existingReceiptUrls = List<String>.from(transaction['receiptUrls'] ?? []);
-      if (transaction['location'] != null) {
-        GeoPoint location = transaction['location'];
+
+      // Localisation
+      final GeoPoint? location = transaction['location'] as GeoPoint?;
+      if (location != null) {
         _userLocation = LatLng(location.latitude, location.longitude);
+      } else {
+        // Valeur par défaut si la localisation est absente
+        _userLocation = _defaultLocation;
       }
     } else {
+      // Nouvelle transaction : initialisez avec les valeurs par défaut
       _amountController.addListener(_updateRemainingAmountWithInput);
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
-      _getCurrentLocation(); // Récupération de la localisation actuel à l'initialisation
+      _getCurrentLocation(); // Récupérer la localisation actuelle
     }
   }
 
@@ -94,26 +112,79 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   Future<void> _getCurrentLocation() async {
+    await _checkLocationServices();
+
+    LocationPermission permission;
+
+    // Vérifiez si la permission est déjà accordée
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        log("Erreur: Permission de localisation refusée.");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Vous devez accorder la permission de localisation pour utiliser cette fonctionnalité.")),
+        );
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      log("Erreur: Permission de localisation refusée en permanence.");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Permission de localisation refusée de manière permanente. Veuillez activer la permission dans les paramètres.")),
+      );
+      return;
+    }
+
+    // Si la permission est accordée, récupérez la position actuelle
     try {
-      //Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       setState(() {
         _userLocation = LatLng(position.latitude, position.longitude);
         _mapController.move(_userLocation!, _zoom);
       });
 
-      // Obtenir l'adresse à partir des coordonnées
-      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
-      setState(() {
-        _currentAdress = placemarks.first.street;
-      });
+      // Utilisation de Nominatim pour obtenir l'adresse via un Coordinate
+      try {
+        final Coordinate coordinate = Coordinate(
+          latitude: position.latitude as num,
+          longitude: position.longitude as num,
+        );
+        final Geocoding geocoding = await NominatimGeocoding.to.reverseGeoCoding(coordinate);
+
+        setState(() {
+          Address address = geocoding.address;
+          // Affiche les informations importantes de l'adresse
+          _currentAdress = "${address.houseNumber} ${address.road}, ${address.city}, ${address.state}, ${address.country}";
+        });
+      } catch (e) {
+        log("Erreur lors de la récupération de l'adresse avec Nominatim : $e");
+        setState(() {
+          _currentAdress = "Adresse inconnue";
+        });
+      }
     } catch (e) {
+      log("Erreur lors de la récupération de la localisation : $e");
       setState(() {
         _userLocation = _defaultLocation;
-        _currentAdress = "Dresse inconnue";
+        _currentAdress = "Adresse inconnue";
       });
     }
   }
+
+
+
+  Future<void> _checkLocationServices() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Les services de localisation sont désactivés. Veuillez les activer pour utiliser cette fonctionnalité.")),
+      );
+      return;
+    }
+  }
+
   void _zoomIn() {
     setState(() {
       _zoom = (_zoom + 1).clamp(1.0, 18.0);
@@ -369,7 +440,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       _existingReceiptUrls.remove(url);
     });
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -517,6 +587,13 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
               const SizedBox(height: 20),
 
+              // Affichage de l'adresse
+              if (_currentAdress != null)
+                Text(
+                  "Adresse : $_currentAdress",
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+
               // Intégration de la carte dans le formulaire
               _buildMap(),
               const SizedBox(height: 10),
@@ -536,10 +613,10 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 },
               ),
               Center(
-                child: ElevatedButton(
-                  onPressed: _saveTransaction,
-                  child: Text(widget.transaction == null ? 'Ajouter la transaction' : 'Mettre à jour la transaction'),
-                )
+                  child: ElevatedButton(
+                    onPressed: _saveTransaction,
+                    child: Text(widget.transaction == null ? 'Ajouter la transaction' : 'Mettre à jour la transaction'),
+                  )
               ),
             ],
           ),
@@ -547,5 +624,4 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       ),
     );
   }
-
 }
