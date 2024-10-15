@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../models/user.dart';
+import '../../deadcodes/last_model/user.dart';
 import '../profile/define_income_view.dart';
 
 class InscriptionView extends StatefulWidget {
