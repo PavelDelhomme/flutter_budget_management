@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dead_category.dart';
 
 class DeadBudgetModel {
-  String id; //todo Id auto_incrementer
+  String id;
   String userId;
   String description;
   double totalAmount;

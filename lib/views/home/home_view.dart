@@ -1,8 +1,6 @@
-import 'package:budget_management/utils.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../budget/budget/add_budget_screen.dart';
 import '../navigation/custom_drawer.dart';
 import '../navigation/tab_navigation.dart';
@@ -68,7 +66,6 @@ class _HomeViewState extends State<HomeView> {
 
           return {
             'name': categoryName,
-            'allocatedAmount': category['allocatedAmount'],
             'spentAmount': spentAmount,
           };
         }).toList();

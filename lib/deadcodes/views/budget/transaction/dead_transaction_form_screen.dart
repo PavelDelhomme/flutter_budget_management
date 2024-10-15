@@ -48,16 +48,6 @@ class _DeadTransactionFormScreenState extends State<DeadTransactionFormScreen> {
   bool _useSavings = false;
   bool _isRecurring = false;
 
-  //tood ajouter plusieur 3 max
-  // todo ajouter bouton crois pour supprimer photo
-  //todo possibilité de rentreer l'adresse manuellement
-
-  //todo api pour rechercher les adresses :
-  //todo si il recupérer une liste d'adrese la mettres en cache pour qu'il evitent de redemander continuellement les donnéees
-  //todo masquer la carte pour le moment car non nécessaire
-  //todo champs de recherche pour entrée son adresse manuellement
-  //todo icone position localisation
-
   LatLng? _userLocation;
   List<File> _receiptImages = [];
   List<String> _existingReceiptUrls = [];
@@ -590,8 +580,8 @@ class _DeadTransactionFormScreenState extends State<DeadTransactionFormScreen> {
               const SizedBox(height: 20),
 
               // Affichage des nouvelles images ajoutées
-              if (_receiptImages.isNotEmpty) //todo ajouter la petites croix pour supprimer le recu l'image
-              //todo limite de 3 image
+              if (_receiptImages.isNotEmpty)
+
                 Wrap(
                   spacing: 8,
                   children: _receiptImages.map((image) {
@@ -615,9 +605,6 @@ class _DeadTransactionFormScreenState extends State<DeadTransactionFormScreen> {
                   "Adresse : $_currentAdress",
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-              // todo affichage saisie de l'adrese avec proposition automatique via API
-              // todo Liste des propositions
-              //todo Icon(Icons.my_location); pour récuéprer localisationn utilisateur
 
               // Intégration de la carte dans le formulaire
               _buildMap(),

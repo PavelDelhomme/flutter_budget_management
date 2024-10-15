@@ -21,9 +21,11 @@ class TransactionDetailsModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final description = transaction['description'] ?? '';
+    final typeTransaction = transaction['type_transaction'] ?? false;
     final amount = transaction['amount'] ?? 0.0;
-    final date = (transaction['date'] as Timestamp).toDate();
+    final categoryId = transaction['categoryId'];
+    final date = DateFormat.yMMMMd().format((transaction['date'] as Timestamp).toDate());
+    final notes = transaction['notes'] ?? '';
     final isRecurring = transaction['isRecurring'] ?? false;
     final receiptUrls = List<String>.from(transaction['receiptUrls'] ?? []);
     final LatLng? location = transaction['location'] != null
@@ -43,7 +45,7 @@ class TransactionDetailsModal extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  "Transaction du ${DateFormat.yMMMMd().format(date)}",
+                  "Transaction du $date}",
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -60,13 +62,12 @@ class TransactionDetailsModal extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text('Description : $description', style: const TextStyle(fontSize: 18)),
+          Text('Notes : $notes', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),
           Text('Montant : \$${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),
           Text('Transaction récurrente : ${isRecurring ? 'Oui' : 'Non'}', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 20),
-          //todo afficher les photos ajouté également
 
           // Utilisation de FutureBuilder pour afficher l'adresse
           if (location != null)

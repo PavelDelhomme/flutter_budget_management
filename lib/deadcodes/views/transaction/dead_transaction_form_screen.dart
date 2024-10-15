@@ -21,8 +21,6 @@ import 'package:budget_management/services/budget/add_transaction.dart';
 import 'package:budget_management/services/image_service.dart';
 import 'package:nominatim_geocoding/nominatim_geocoding.dart';
 
-import '../../../services/permissions_service.dart';
-
 
 class TransactionFormScreen extends StatefulWidget {
   final String? budgetId;
@@ -35,24 +33,18 @@ class TransactionFormScreen extends StatefulWidget {
 }
 
 class _TransactionFormScreenState extends State<TransactionFormScreen> {
-  final String? _userId = FirebaseAuth.instance.currentUser?.uid;
-  late bool _typeTransactionController = false; // true = début, false = crédit
+  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
-  // Categories
+  final TextEditingController _dateController = TextEditingController();
+  final FocusNode _categoryFocusNode = FocusNode();
   String? _selectedCategory;
   List<Map<String, dynamic>> _categories = [];
   bool _isLoadingCategories = true;
-
-  final TextEditingController _dateController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
-
-  bool _isRecurring = false;
-
-  LatLng? _userLocation;
-
-  final FocusNode _categoryFocusNode = FocusNode();
   double _allocatedAmount = 0.0;
   double _spentAmount = 0.0;
+  double _remainingAmountForCategory = 0.0;
+  bool _useSavings = false;
+  bool _isRecurring = false;
 
   //tood ajouter plusieur 3 max
   // todo ajouter bouton crois pour supprimer photo
@@ -64,6 +56,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   //todo champs de recherche pour entrée son adresse manuellement
   //todo icone position localisation
 
+  LatLng? _userLocation;
   List<File> _receiptImages = [];
   List<String> _existingReceiptUrls = [];
 
@@ -84,8 +77,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       final transaction = widget.transaction!;
       log("Transaction reçue : ${transaction.data()}");
 
-      _typeTransactionController = transaction['type_transaction'] ?? false;
-      _notesController.text = transaction['notes'] ?? '';
+      _descriptionController.text = transaction['description'] ?? '';
       _amountController.text = transaction['amount']?.toString() ?? '';
       _selectedCategory = transaction['category']?.toString().trim();
       _isRecurring = transaction['isRecurring'] ?? false;
@@ -111,7 +103,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       }
     } else {
       // Nouvelle transaction : initialisez avec les valeurs par défaut
-      //_amountController.addListener(_updateRemainingAmountWithInput);
+      _amountController.addListener(_updateRemainingAmountWithInput);
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
       _getCurrentLocation(); // Récupérer la localisation actuelle
     }
@@ -126,16 +118,37 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   @override
   void dispose() {
-    //_amountController.removeListener(_updateRemainingAmountWithInput);
+    _amountController.removeListener(_updateRemainingAmountWithInput);
     _amountController.dispose();
     _categoryFocusNode.dispose();
     super.dispose();
   }
 
   Future<void> _getCurrentLocation() async {
-    await checkLocationServices(context);
+    await _checkLocationServices();
 
-    await checkLocationPermission(context);
+    LocationPermission permission;
+
+    // Vérifiez si la permission est déjà accordée
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        log("Erreur: Permission de localisation refusée.");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Vous devez accorder la permission de localisation pour utiliser cette fonctionnalité.")),
+        );
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      log("Erreur: Permission de localisation refusée en permanence.");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Permission de localisation refusée de manière permanente. Veuillez activer la permission dans les paramètres.")),
+      );
+      return;
+    }
 
     // Si la permission est accordée, récupérez la position actuelle
     try {
@@ -147,6 +160,17 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
       // Utilisation de Nominatim pour obtenir l'adresse via un Coordinate
       try {
+        /*final Coordinate coordinate = Coordinate(
+          latitude: position.latitude as num,
+          longitude: position.longitude as num,
+        );
+        final Geocoding geocoding = await NominatimGeocoding.to.reverseGeoCoding(coordinate);
+
+        setState(() {
+          Address address = geocoding.address;
+          // Affiche les informations importantes de l'adresse
+          _currentAdress = "${address.houseNumber} ${address.road}, ${address.city}, ${address.state}, ${address.country}";
+        });*/
         List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
         Placemark place = placemarks.first;
 
@@ -166,6 +190,32 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         _currentAdress = "Adresse inconnue";
       });
     }
+  }
+
+
+
+  Future<void> _checkLocationServices() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Les services de localisation sont désactivés. Veuillez les activer pour utiliser cette fonctionnalité.")),
+      );
+      return;
+    }
+  }
+
+  void _zoomIn() {
+    setState(() {
+      _zoom = (_zoom + 1).clamp(1.0, 18.0);
+      _mapController.move(_userLocation ?? _defaultLocation, _zoom);
+    });
+  }
+
+  void _zoomOut() {
+    setState(() {
+      _zoom = (_zoom - 1).clamp(1.0, 18.0);
+      _mapController.move(_userLocation ?? _defaultLocation, _zoom);
+    });
   }
 
   Widget _buildTileLayer() {
@@ -218,6 +268,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           _categories = categories.map((category) {
             return {
               'name': (category['name'] as String).trim(),
+              'allocatedAmount': category['allocatedAmount'],
               'spentAmount': category['spentAmount'],
             };
           }).toSet().toList();
@@ -254,25 +305,32 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
     if (selectedCategoryData.isNotEmpty) {
       setState(() {
+        _allocatedAmount = (selectedCategoryData['allocatedAmount'] as num?)?.toDouble() ?? 0.0;
         _spentAmount = (selectedCategoryData['spentAmount'] as num?)?.toDouble() ?? 0.0;
-        
+        _remainingAmountForCategory = _allocatedAmount - _spentAmount;
+
+        _updateRemainingAmountWithInput();
       });
     }
   }
 
+  void _updateRemainingAmountWithInput() {
+    final inputAmount = double.tryParse(_amountController.text) ?? 0.0;
+    setState(() {
+      _remainingAmountForCategory = _allocatedAmount - _spentAmount - inputAmount;
+    });
+  }
 
   Future<void> _saveTransaction() async {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user != null && _notesController.text.isNotEmpty && _amountController.text.isNotEmpty && _selectedCategory != null) {
-      final typeTransaction = _typeTransactionController;
-
+    if (user != null && _descriptionController.text.isNotEmpty && _amountController.text.isNotEmpty && _selectedCategory != null) {
       // Convertir les virgules en points avant la sauvegarde
       String amountText = _amountController.text.replaceAll(",", ".");
       final amount = double.tryParse(amountText) ?? 0.0;
 
-      final notes = _notesController.text;
-      final dateTransaction = _dateController.text.isNotEmpty
+      final description = _descriptionController.text;
+      final date = _dateController.text.isNotEmpty
           ? DateFormat('yMd').parse(_dateController.text)
           : DateTime.now();
 
@@ -291,28 +349,25 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       try {
         if (widget.transaction == null) {
           await addTransaction(
-            type_transaction: typeTransaction,
+            description: description,
             amount: amount,
             categoryId: _selectedCategory!,
-            date: dateTransaction,
-            notes: notes,
+            budgetId: widget.budgetId!,
+            useSavings: _useSavings,
             isRecurring: _isRecurring,
+            //receiptUrls: receiptUrls.isNotEmpty ? receiptUrls.join(',') : null,
             receiptUrls: updatedReceiptUrls.isNotEmpty ? updatedReceiptUrls : null,
             location: _userLocation != null ? GeoPoint(_userLocation!.latitude, _userLocation!.longitude) : null,
-            //receiptUrls: receiptUrls.isNotEmpty ? receiptUrls.join(',') : null,
-            budgetId: widget.budgetId!,
           );
         } else {
           await FirebaseFirestore.instance.collection('transactions').doc(widget.transaction!.id).update({
-            'type_transaction': typeTransaction,
+            'description': description,
             'amount': amount,
             'category': _selectedCategory!,
-            'date': Timestamp.fromDate(dateTransaction),
-            'notes': notes,
             'isRecurring': _isRecurring,
             'receiptUrls': updatedReceiptUrls.isNotEmpty ? updatedReceiptUrls : null,
+            'date': Timestamp.fromDate(date),
             'location': _userLocation != null ? GeoPoint(_userLocation!.latitude, _userLocation!.longitude) : null,
-            'budgetId': widget.budgetId!,
           });
         }
         if (mounted) {
@@ -345,6 +400,11 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   controller: newCategoryNameController,
                   decoration: const InputDecoration(labelText: "Nom de la catégorie"),
                 ),
+                TextField(
+                  controller: allocatedAmountController,
+                  decoration: const InputDecoration(labelText: "Montant alloué"),
+                  keyboardType: TextInputType.number,
+                ),
               ],
             ),
             actions: [
@@ -358,6 +418,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 onPressed: () {
                   final newCategory = {
                     'name': newCategoryNameController.text.trim(),
+                    'allocatedAmount': double.tryParse(allocatedAmountController.text) ?? 0.0,
                     'spentAmount': 0.0,
                   };
 
@@ -398,7 +459,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       _existingReceiptUrls.remove(url);
     });
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -414,7 +474,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextField(
-                controller: _notesController,
+                controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Description'),
                 textInputAction: TextInputAction.next,
                 onEditingComplete: () {
@@ -529,7 +589,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
               // Affichage des nouvelles images ajoutées
               if (_receiptImages.isNotEmpty) //todo ajouter la petites croix pour supprimer le recu l'image
-                //todo limite de 3 image
+              //todo limite de 3 image
                 Wrap(
                   spacing: 8,
                   children: _receiptImages.map((image) {

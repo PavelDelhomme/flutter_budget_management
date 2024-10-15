@@ -18,10 +18,6 @@ void main() async {
 
   runApp(const MyApp());
 }
-//todo plutot que source de revenu, transaction débit / crédit, les entrée et sorite, il peux définir entrée et définir des sortie.
-// todo liste des source de revenus possible (salaire cadeauxx autre)
-// todo définition revenu dans le drawer
-// définition des revenu de dois pas bloquer le reste de l'expérience
 
 
 class MyApp extends StatelessWidget {

@@ -37,40 +37,7 @@ class _SummaryViewState extends State<SummaryView> {
 
         if (budgetSnapshot.docs.isEmpty) return null;
 
-        double totalBudget = 0.0;
-        double totalExpenses = 0.0;
-        double monthlyIncome = 0.0;
-        double totalAllocated = 0.0;
-        double remainingBalance = 0.0;
-        double forecastBalance = 0.0;
-        List<Map<String, dynamic>> categoriesData = [];
-
-        for (var doc in budgetSnapshot.docs) {
-          totalBudget += (doc['totalAmount'] as num).toDouble();
-          for (var category in doc['categories']) {
-            categoriesData.add({
-              'name': category['name'],
-              'allocatedAmount': (category['allocatedAmount'] as num).toDouble(),
-              'spentAmount': (category['spentAmount'] as num?)?.toDouble() ?? 0.0,
-            });
-            totalExpenses += (category['spentAmount'] as num?)?.toDouble() ?? 0.0;
-            totalAllocated += (category['allocatedAmount'] as num).toDouble();
-          }
-        }
-
-        final incomes = await getUserIncomes(user.uid, DateTime.now().month, DateTime.now().year);
-        monthlyIncome = incomes.fold(0.0, (sum, income) => sum + income.amount);
-        forecastBalance = monthlyIncome - totalAllocated;
-        remainingBalance = totalAllocated - totalExpenses;
-
         return {
-          'totalBudget': totalBudget,
-          'totalExpenses': totalExpenses,
-          'monthlyIncome': monthlyIncome,
-          'forecastBalance': forecastBalance,
-          'totalAllocated': totalAllocated,
-          'remainingBalance': remainingBalance,
-          'categoriesData': categoriesData,
         };
       } catch (e) {
         print("Erreur lors de la récupération des données du budget : $e");
@@ -135,54 +102,19 @@ class _SummaryViewState extends State<SummaryView> {
                 }
 
                 final data = budgetSnapshot.data!;
-                final totalBudget = data['totalBudget'] ?? 0.0;
-                final totalExpenses = data['totalExpenses'] ?? 0.0;
-                final monthlyIncome = data['monthlyIncome'] ?? 0.0;
-                final forecastBalance = data['forecastBalance'] ?? 0.0;
-                final totalAllocated = data['totalAllocated'] ?? 0.0;
-                final remainingBalance = data['remainingBalance'] ?? 0.0;
-                final categoriesData = data['categoriesData'] as List<Map<String, dynamic>>;
 
                 return ListView(
                   children: [
-                    _buildBudgetCard('Total Budget', totalBudget.toStringAsFixed(2), Colors.blue),
-                    _buildBudgetCard('Revenu Mensuel Total', monthlyIncome.toStringAsFixed(2), Colors.purple),
-                    _buildBudgetCard('Dépenses Réelles', totalExpenses.toStringAsFixed(2), Colors.orange),
-                    _buildBudgetCard(
-                      'Solde Restant',
-                      remainingBalance.toStringAsFixed(2),
-                      remainingBalance < 0 ? Colors.red : Colors.green,
-                    ),
-                    _buildBudgetCard(
-                      'Reste Prévisionnel',
-                      forecastBalance.toStringAsFixed(2),
-                      remainingBalance < 0 ? Colors.red : Colors.green,
-                    ),
-                    _buildBudgetCard(
-                      'Dépenses Restantes',
-                      (totalAllocated - totalExpenses).toStringAsFixed(2),
-                      (totalAllocated - totalExpenses) < 0 ? Colors.red : Colors.green,
-                    ),
+                    _buildBudgetCard('Total Budget', 100.0.toStringAsFixed(2), Colors.blue),
+                    _buildBudgetCard('Revenu Mensuel Total', 100.0.toStringAsFixed(2), Colors.purple),
+                    _buildBudgetCard('Dépenses Réelles', 100.0.toStringAsFixed(2), Colors.orange),
+                    _buildBudgetCard('Solde Restant', 100.0.toStringAsFixed(2), Colors.green),
                     const SizedBox(height: 20),
                     const Text(
                       "Répartition des Catégories",
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 10),
-                    SizedBox(
-                      height: 300,
-                      child: PieChart(
-                        PieChartData(
-                          sections: categoriesData.map((category) {
-                            return PieChartSectionData(
-                              value: category['allocatedAmount'],
-                              title: category['name'],
-                              color: _randomColor.randomColor(),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
                   ],
                 );
               },

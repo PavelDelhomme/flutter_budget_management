@@ -112,7 +112,6 @@ class _DeadBudgetViewState extends State<DeadBudgetView> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              // todo logique pour ajouter un nouveau budget
             },
           ),
         ],

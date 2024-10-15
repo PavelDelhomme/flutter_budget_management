@@ -1,16 +1,18 @@
+import 'package:budget_management/utils.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../models/saving.dart';
 Future<void> addTransaction({
-  required String description,
+  //required userId,
+  required bool type_transaction,
   required double amount,
   required String categoryId,
-  required String budgetId,
-  bool useSavings = false,
-  String? savingCategoryId, required bool isRecurring,  // Ajout d'une catégorie de savings à utiliser
+  required DateTime date,
+  String? notes,
+  required bool isRecurring,
   List<String>? receiptUrls,
   GeoPoint? location,
+  required String budgetId,
 }) async {
   final user = FirebaseAuth.instance.currentUser;
 
@@ -26,20 +28,9 @@ Future<void> addTransaction({
       if (categoryIndex != -1) {
         final category = categories[categoryIndex];
         final double spentAmount = (category['spentAmount'] as num?)?.toDouble() ?? 0.0;
-        final double allocatedAmount = (category['allocatedAmount'] as num?)?.toDouble() ?? 0.0;
 
         // Calcul du nouveau montant dépensé
         double newSpentAmount = spentAmount + amount;
-
-        if (useSavings && savingCategoryId != null) {
-          // Si l'utilisateur choisit d'utiliser une économie, déduire le montant de la catégorie de savings
-          double remainingSavings = await deductFromSavings(user.uid, savingCategoryId, amount);
-
-          if (remainingSavings > 0) {
-            // Mettre à jour le budget avec le montant retiré des économies
-            await _updateMonthlyBudget(remainingSavings, budgetId);
-          }
-        }
 
         // Mise à jour du montant dépensé dans la catégorie
         categories[categoryIndex]['spentAmount'] = newSpentAmount;
@@ -47,17 +38,21 @@ Future<void> addTransaction({
         // Mise à jour du document du budget
         await budgetRef.update({'categories': categories});
 
+        // Créer l'id de transaction
+        String transactionId = generateTransactionId();
+
         // Ajouter la transaction
         await FirebaseFirestore.instance.collection('transactions').add({
+          'id': transactionId,
           'userId': user.uid,
-          'budgetId': budgetId,
-          'category': categoryId,
-          'description': description,
+          'type_transaction': type_transaction,
           'amount': amount,
-          'date': Timestamp.now(),
+          'categoryId': categoryId,
+          'date': date ?? Timestamp.now(),
           'isRecurring': isRecurring,
           'receiptUrls': receiptUrls,
           'location': location,
+          'budgetId': budgetId,
         });
       }
     }

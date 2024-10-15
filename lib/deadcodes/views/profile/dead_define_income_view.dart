@@ -56,16 +56,6 @@ class _DeadDefineIncomeViewState extends State<DeadDefineIncomeView> {
       }
 
       if (_editingIncome != null) {
-        // Met à jour un revenu existant
-        //todo lorsque on modifie un revenu erreur lors de la suppression du revenu
-        //todo avoir unn popup pour la modification de revenu
-
-        //todo définir le budget définir le crud pour le budget
-
-        //todo idée de pouvoir avoir des ligne des dépenses et enregistre,
-        // pas forcement savoir si salaire.
-
-        //todo Séparer en CRUD pour les
         await dead_updateIncome(
           incomeId: _editingIncome!.id!,
           userId: widget.userId,

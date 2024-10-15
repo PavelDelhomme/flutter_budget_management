@@ -14,3 +14,9 @@ Future<void> createBudget({
     });
   }
 }
+
+
+Future<void> createDefaultCategories() async {
+  List<String> categories_list = ["Alimentation", "Vie sociale", "Transport", "Culture", "Produits ménagers", "Vêtements", "Beauté", "Santé", "Education", "Cadeau", "Autres"];
+
+}

@@ -51,7 +51,6 @@ class _TabNavigationState extends State<TabNavigation> {
           BottomNavigationBarItem(
             icon: Icon(Icons.list),
             label: 'Transactions',
-            //todo : déplier liste transaction du mois courrant par défaut.
           ),
         ],
       ),

@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'models/saving.dart';
-import 'models/transaction.dart';
+
+import 'deadcodes/last_model/transaction.dart';
 
 String generateTransactionId() {
   final random = Random();
@@ -39,7 +39,8 @@ Future<void> copyRecurringTransactions(String previousBudgetId, String newBudget
       amount: transactionData['amount'],
       categoryId: transactionData['categoryId'],
       date: Timestamp.now(),
-      description: transactionData['description'],
+      type_transaction: transactionData['type_transaction'],
+      notes: transactionData['notes'],
       isRecurring: transactionData['isRecurring'],
     );
 
@@ -75,34 +76,6 @@ Future<void> _updateCategorySpending(String budgetId, String categoryId, double 
       await FirebaseFirestore.instance.collection('budgets').doc(budgetId).update({
         'categories': FieldValue.arrayUnion([updatedCategory]),
       });
-    }
-  }
-}
-
-Future<void> updateSavingsFromRemainingBudget(String budgetId) async {
-  final budgetSnapshot = await FirebaseFirestore.instance.collection('budgets').doc(budgetId).get();
-
-  if (budgetSnapshot.exists) {
-    final budgetData = budgetSnapshot.data()!;
-    final remainingBalance = budgetData['totalAmount'] - (budgetData['totalExpenses'] ?? 0.0);
-
-    if (remainingBalance > 0) {
-      final userId = budgetData['userId'];
-      final savingsId = generateSavingId();
-
-      final newSaving = SavingsModel(
-        id: savingsId,
-        userId: userId,
-        category: 'Économies mensuelles',
-        amount: remainingBalance,
-      );
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('savings')
-          .doc(savingsId)
-          .set(newSaving.toMap());
     }
   }
 }
