@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'category.dart';
 
 class BudgetModel {
-  String id;
+  String id; //todo Id auto_incrementer
   String userId;
   String description;
   double totalAmount;

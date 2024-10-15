@@ -66,6 +66,7 @@ class TransactionDetailsModal extends StatelessWidget {
           const SizedBox(height: 10),
           Text('Transaction récurrente : ${isRecurring ? 'Oui' : 'Non'}', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 20),
+          //todo afficher les photos ajouté également
 
           // Utilisation de FutureBuilder pour afficher l'adresse
           if (location != null)
