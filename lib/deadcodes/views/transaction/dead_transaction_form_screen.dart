@@ -17,8 +17,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 // Personnal dependencies
-import 'package:budget_management/services/budget/add_transaction.dart';
-import 'package:budget_management/services/image_service.dart';
+import 'package:budget_management/deadcodes/services/budget/dead_add_transaction.dart';
+import 'package:budget_management/deadcodes/services/dead_image_service.dart';
 import 'package:nominatim_geocoding/nominatim_geocoding.dart';
 
 
@@ -336,7 +336,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
       List<String> newReceiptUrls = [];
       for (File image in _receiptImages) {
-        String? url = await uploadImage(image, user.uid);
+        String? url = await dead_uploadImage(image, user.uid);
         if (url != null) {
           newReceiptUrls.add(url);
         }
@@ -348,7 +348,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
       try {
         if (widget.transaction == null) {
-          await addTransaction(
+          await dead_addTransaction(
             description: description,
             amount: amount,
             categoryId: _selectedCategory!,

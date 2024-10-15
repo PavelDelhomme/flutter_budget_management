@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
 
 class UserModel {
@@ -27,6 +28,51 @@ class UserModel {
     );
   }
 }
+
+class Budget {
+  String id;
+  String userId;
+  Timestamp month;
+  Timestamp year;
+  double solde;
+  double total_debit;
+  double total_credit;
+
+  Budget({
+    required this.id,
+    required this.userId,
+    required this.month,
+    required this.year,
+    this.solde = 0.0,
+    this.total_debit = 0.0,
+    this.total_credit = 0.0
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'userId': userId,
+      'month': month,
+      'year': year,
+      'solde': solde,
+      'total_debit': total_debit,
+      'total_credit': total_credit,
+    };
+  }
+
+  static Budget fromMap(Map<String, dynamic> map) {
+    return Budget(
+      id: map['id'],
+      userId: map['userId'],
+      month: map['month'],
+      year: map['year'],
+      solde: map['solde'],
+      total_debit: map['total_debit'],
+      total_credit: map['total_credit'],
+    );
+  }
+}
+
 
 class Categorie {
   String id;
