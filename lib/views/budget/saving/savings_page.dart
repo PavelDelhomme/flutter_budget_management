@@ -2,27 +2,43 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../../../models/saving.dart';
-
 class SavingsPage extends StatefulWidget {
   @override
   _SavingsPageState createState() => _SavingsPageState();
 }
 
 class _SavingsPageState extends State<SavingsPage> {
-  List<SavingsModel> savings = [];
+  double totalCredit = 0.0;
+  double totalDebit = 0.0;
 
-  Future<void> _loadSavings() async {
+  Future<void> _calculateTotals() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final savingsSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('savings')
+      // Récupérer les transactions de l'utilisateur par mois
+      final transactionsSnapshot = await FirebaseFirestore.instance
+          .collection('transactions')
+          .where('user_id', isEqualTo: user.uid)
           .get();
 
+      // Calculer les crédits et débits
+      double totalCredits = 0.0;
+      double totalDebits = 0.0;
+
+      for (var doc in transactionsSnapshot.docs) {
+        final data = doc.data();
+        final amount = (data['amount'] as num).toDouble();
+        final isDebit = data['type'] ?? true;
+
+        if (isDebit) {
+          totalDebits += amount;
+        } else {
+          totalCredits += amount;
+        }
+      }
+
       setState(() {
-        savings = savingsSnapshot.docs.map((doc) => SavingsModel.fromMap(doc.data(), doc.id)).toList();
+        totalCredit = totalCredits;
+        totalDebit = totalDebits;
       });
     }
   }
@@ -30,67 +46,37 @@ class _SavingsPageState extends State<SavingsPage> {
   @override
   void initState() {
     super.initState();
-    _loadSavings();
+    _calculateTotals();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Mes Économies')),
-      body: Column(
-        children: [
-          Text('Économies totales: \$${savings.fold(0.0, (sum, item) => sum + item.amount).toStringAsFixed(2)}'),
-          Expanded(
-            child: ListView.builder(
-              itemCount: savings.length,
-              itemBuilder: (context, index) {
-                final saving = savings[index];
-                return ListTile(
-                  title: Text(saving.category),
-                  subtitle: Text('Montant: \$${saving.amount.toStringAsFixed(2)}'),
-                  trailing: IconButton(
-                    icon: Icon(Icons.remove),
-                    onPressed: () {
-                      // Logique pour retirer des fonds d'une catégorie de savings
-                      _deductFromSavings(saving.id, 50.0); // Exemple : déduire 50
-                    },
-                  ),
-                );
-              },
+      appBar: AppBar(title: Text('Résumé des transactions')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Total des crédits: \$${totalCredit.toStringAsFixed(2)}',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-          ),
-        ],
+            Text(
+              'Total des débits: \$${totalDebit.toStringAsFixed(2)}',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView(
+                children: [
+                  // Vous pouvez ajouter plus de détails ici si vous souhaitez afficher les transactions individuelles.
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
-  }
-
-  Future<void> _deductFromSavings(String savingId, double amountToDeduct) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final savingDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('savings')
-          .doc(savingId)
-          .get();
-
-      if (savingDoc.exists) {
-        final currentAmount = (savingDoc.data()?['amount'] as num?)?.toDouble() ?? 0.0;
-        final newAmount = currentAmount - amountToDeduct;
-
-        if (newAmount >= 0) {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .collection('savings')
-              .doc(savingId)
-              .update({'amount': newAmount});
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Pas assez de fonds dans cette catégorie d'économies.")),
-          );
-        }
-      }
-    }
   }
 }
