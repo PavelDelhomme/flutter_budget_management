@@ -70,10 +70,12 @@ class Budget {
   }
 
   double calculateDebit(List<UserTransaction> transactions) {
+    //todo récupérer toutes les transactions de type débit correspondant au mois actuel
     return 0.0;
   }
 
   double calculateCredit(List<UserTransaction> transactions) {
+    //todo récupérer toutes les transactions de type crédit correspondant au mois actuel
     return 0.0;
   }
 }
@@ -104,7 +106,7 @@ class Categorie {
 
 class UserTransaction {
   String id;
-  String type;
+  bool type; // True : Débit | False : Crédit
   String categorie_id;
   String user_id;
   DateTime date;

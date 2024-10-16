@@ -1,6 +1,8 @@
 import 'dart:developer';
 import 'dart:io';
 // Flutter
+import 'package:budget_management/models/good_models.dart';
+import 'package:budget_management/utils/generate_ids.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -25,54 +27,42 @@ import '../../../services/permissions_service.dart';
 
 
 class TransactionFormScreen extends StatefulWidget {
-  final String? budgetId;
   final DocumentSnapshot? transaction;
 
-  const TransactionFormScreen({Key? key, this.budgetId, this.transaction}) : super(key: key);
+  const TransactionFormScreen({Key? key, this.transaction}) : super(key: key);
 
   @override
   _TransactionFormScreenState createState() => _TransactionFormScreenState();
 }
 
 class _TransactionFormScreenState extends State<TransactionFormScreen> {
-  final String? _userId = FirebaseAuth.instance.currentUser?.uid;
   late bool _typeTransactionController = false; // true = début, false = crédit
   final TextEditingController _amountController = TextEditingController();
   // Categories
   String? _selectedCategory;
-  List<Map<String, dynamic>> _categories = [];
-  bool _isLoadingCategories = true;
-
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
-
   bool _isRecurring = false;
-
   LatLng? _userLocation;
-
-  final FocusNode _categoryFocusNode = FocusNode();
-  double _allocatedAmount = 0.0;
-  double _spentAmount = 0.0;
-
-  //tood ajouter plusieur 3 max
-  // todo ajouter bouton crois pour supprimer photo
-  //todo possibilité de rentreer l'adresse manuellement
-
-  //todo api pour rechercher les adresses :
-  //todo si il recupérer une liste d'adrese la mettres en cache pour qu'il evitent de redemander continuellement les donnéees
-  //todo masquer la carte pour le moment car non nécessaire
-  //todo champs de recherche pour entrée son adresse manuellement
-  //todo icone position localisation
-
   List<File> _receiptImages = [];
   List<String> _existingReceiptUrls = [];
-
-  // Pour la carte
+  // Map
   final MapController _mapController = MapController();
-  LatLng _defaultLocation = LatLng(48.8566, 2.3522); // Paris par défaut
-  String _selectedTileLayer = 'OpenStreetMap';
-  double _zoom = 16.0;
+  LatLng _defaultLocation = LatLng(48.8566, 2.3522); // Defaut paris
   String? _currentAdress;
+  double _zoom = 16.0;
+
+  final FocusNode _categoryFocusNode = FocusNode();
+
+  // TODO ajouter plusieurs 3 max
+  // TODO ajouter bouton croix pour supprimer photo
+  // TODO possibilité de rentrer l'adresse manuellement
+
+  // TODO api pour rechercher les adresses :
+  // TODO si il récupère une liste d'adresse la mettre en cache pour éviter de redemander continuellement les données
+  // TODO masquer la carte pour le moment car non nécessaire
+  // TODO champs de recherche pour entrer son adresse manuellement
+  // TODO icone position localisation
 
   @override
   void initState() {
@@ -80,11 +70,10 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     Get.put(NominatimGeocoding());
 
     if (widget.transaction != null) {
-      // Assurez-vous que la transaction est bien reçue
       final transaction = widget.transaction!;
       log("Transaction reçue : ${transaction.data()}");
 
-      _typeTransactionController = transaction['type_transaction'] ?? false;
+      _typeTransactionController = transaction['type'] ?? false;
       _notesController.text = transaction['notes'] ?? '';
       _amountController.text = transaction['amount']?.toString() ?? '';
       _selectedCategory = transaction['category']?.toString().trim();
@@ -117,16 +106,15 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     }
   }
 
-  @override
+  /*@override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Charger les catégories après que le context est complètement initialisé
     _loadCategories();
-  }
+  }*/
 
   @override
   void dispose() {
-    //_amountController.removeListener(_updateRemainingAmountWithInput);
     _amountController.dispose();
     _categoryFocusNode.dispose();
     super.dispose();
@@ -134,7 +122,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   Future<void> _getCurrentLocation() async {
     await checkLocationServices(context);
-
     await checkLocationPermission(context);
 
     // Si la permission est accordée, récupérez la position actuelle
@@ -208,59 +195,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
 
-  Future<void> _loadCategories() async {
-    try {
-      if (widget.budgetId != null) {
-        final budgetDoc = await FirebaseFirestore.instance.collection('budgets').doc(widget.budgetId).get();
-        final List<dynamic> categories = budgetDoc.data()?['categories'] ?? [];
-
-        setState(() {
-          _categories = categories.map((category) {
-            return {
-              'name': (category['name'] as String).trim(),
-              'spentAmount': category['spentAmount'],
-            };
-          }).toSet().toList();
-          _isLoadingCategories = false;
-        });
-      } else {
-        _isLoadingCategories = false;
-
-        // Utiliser SchedulerBinding pour exécuter après le build
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Budget non trouvé.")),
-          );
-        });
-      }
-    } catch (e) {
-      _isLoadingCategories = false;
-      if (mounted) {
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Erreur lors du chargement des catégories: $e")),
-          );
-          log("Erreur lors du chargement des catégories : $e");
-        });
-      }
-    }
-  }
-
-  void _calculateRemainingAmount(String categoryName) {
-    final selectedCategoryData = _categories.firstWhere(
-          (category) => category['name'] == categoryName,
-      orElse: () => {},
-    );
-
-    if (selectedCategoryData.isNotEmpty) {
-      setState(() {
-        _spentAmount = (selectedCategoryData['spentAmount'] as num?)?.toDouble() ?? 0.0;
-        
-      });
-    }
-  }
-
-
   Future<void> _saveTransaction() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -268,8 +202,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       final typeTransaction = _typeTransactionController;
 
       // Convertir les virgules en points avant la sauvegarde
-      String amountText = _amountController.text.replaceAll(",", ".");
-      final amount = double.tryParse(amountText) ?? 0.0;
+      final amount = double.tryParse(_amountController.text.replaceAll(",", ".")) ?? 0.0;
 
       final notes = _notesController.text;
       final dateTransaction = _dateController.text.isNotEmpty
@@ -289,20 +222,28 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
 
       try {
+        // Création de l'objet UserTransaction
+        UserTransaction userTransaction = UserTransaction(
+          id: generateTransactionId(),
+          type: typeTransaction,
+          categorie_id: _selectedCategory!,
+          user_id: user.uid,
+          date: dateTransaction,
+          notes: notes,
+          isRemaining: _isRecurring,
+        );
+
         if (widget.transaction == null) {
+          // Ajout d'une nouvelle transaction
           await addTransaction(
-            type_transaction: typeTransaction,
+            type: typeTransaction,
+            userTransaction: userTransaction,
             amount: amount,
-            categoryId: _selectedCategory!,
-            date: dateTransaction,
-            notes: notes,
-            isRecurring: _isRecurring,
-            receiptUrls: updatedReceiptUrls.isNotEmpty ? updatedReceiptUrls : null,
-            location: _userLocation != null ? GeoPoint(_userLocation!.latitude, _userLocation!.longitude) : null,
-            //receiptUrls: receiptUrls.isNotEmpty ? receiptUrls.join(',') : null,
-            budgetId: widget.budgetId!,
+            localisation: _userLocation,
+            photos: updatedReceiptUrls.isNotEmpty ? updatedReceiptUrls : null,
           );
         } else {
+          // Mettre à jour la transaction existante
           await FirebaseFirestore.instance.collection('transactions').doc(widget.transaction!.id).update({
             'type_transaction': typeTransaction,
             'amount': amount,
@@ -312,9 +253,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             'isRecurring': _isRecurring,
             'receiptUrls': updatedReceiptUrls.isNotEmpty ? updatedReceiptUrls : null,
             'location': _userLocation != null ? GeoPoint(_userLocation!.latitude, _userLocation!.longitude) : null,
-            'budgetId': widget.budgetId!,
           });
         }
+
         if (mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -331,7 +272,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   void _createNewCategory() async {
     final newCategoryNameController = TextEditingController();
-    final allocatedAmountController = TextEditingController();
 
     await showDialog(
         context: context,
@@ -362,7 +302,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   };
 
                   setState(() {
-                    _categories.add(newCategory); // Ajoute la nouvelle catégorie à la liste
                     _selectedCategory = newCategory['name'] as String?; // Sélectionne automatiquement la nouvelle catégorie
                   });
 
@@ -387,11 +326,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     }
   }
 
-  void _convertCommaToDotInAmount() {
-    String currentText = _amountController.text;
-    _amountController.text = currentText.replaceAll(",", ".");
-  }
-
   // Méthode pour supprimer une image existante
   void _removeExistingImage(String url) {
     setState(() {
@@ -407,9 +341,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: _isLoadingCategories
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView( // Ajout du scroll
+        child: SingleChildScrollView( // Ajout du scroll
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -455,11 +387,16 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               ),
               DropdownButton<String>(
                 focusNode: _categoryFocusNode,
-                value: _categories.any((category) => category['name'] == _selectedCategory) ? _selectedCategory : null,
-                items: _categories
-                    .map((category) => category['name'])
-                    .toSet() // Remove duplicates
-                    .map((categoryName) {
+                value: _selectedCategory,
+                items: [
+                  // Liste par défaut actuellement
+                  'Alimentation',
+                  'Transport',
+                  'Santé',
+                  'Education',
+                  'Loisirs',
+                  'Autres',
+                ].map((categoryName) {
                   return DropdownMenuItem<String>(
                     value: categoryName,
                     child: Text(categoryName),
@@ -477,9 +414,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   } else {
                     setState(() {
                       _selectedCategory = newValue;
-                      if (_selectedCategory != null) {
-                        _calculateRemainingAmount(_selectedCategory!);
-                      }
                     });
                   }
                 },

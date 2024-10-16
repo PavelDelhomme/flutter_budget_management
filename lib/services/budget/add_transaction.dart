@@ -1,10 +1,69 @@
-import 'package:budget_management/utils.dart';
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:latlong2/latlong.dart';
 
+import '../../models/good_models.dart';
+import '../../utils/generate_ids.dart';
+
+
+// Ajouter une transaction, soit débit soit crédit donc tout les champs ne sont pas nécessaire
 Future<void> addTransaction({
-  //required userId,
-  required bool type_transaction,
+  required bool type, // Le type de la transaction (Débit ou crédit)
+  required UserTransaction userTransaction,
+  double? amount,
+  LatLng? localisation,
+  List<String>? photos,
+}) async {
+  final user = FirebaseAuth.instance.currentUser;
+
+  if (user == null) {
+    throw Exception("Utilisateur non connecté");
+  }
+
+  try {
+    // Création d'un identifiant unique pour la transaction
+    String transactionId = generateTransactionId();
+
+    // Ajout de la transaction de base (UserTransaction)
+    await FirebaseFirestore.instance.collection('transactions').add(userTransaction.toMap());
+
+    // Vérification du type de la transaction a ajouté
+    if (type) {
+      // C'est un débit
+      if (amount == null && localisation == null) {
+        throw Exception("Le montant et la localisation sont requis pour un débit");
+      }
+      Debit debit = Debit(
+        id: generateTransactionId(),
+        transaction_id: userTransaction.id,
+        amount: amount!,
+        localisation: localisation!,
+        photos: photos,
+      );
+
+      await FirebaseFirestore.instance.collection("debits").add(debit.toMap());
+    } else {
+      // C'est un crédit
+      if (amount == null) {
+        throw Exception("Le montant est requis pour un crédit");
+      }
+      Credit credit = Credit(
+        id: generateTransactionId(),
+        transaction_id: userTransaction.id,
+        amount: amount,
+      );
+      await FirebaseFirestore.instance.collection("credits").add(credit.toMap());
+    }
+  } catch (e) {
+    log("Une erreur est survenu lors de la tentative d'ajout d'une transaction");
+    throw Exception("Erreur lors de l'ajout de la transaction: $e");
+  }
+}
+/*
+Future<void> bad_addTransaction({
+  required bool type,
   required double amount,
   required String categoryId,
   required DateTime date,
@@ -12,11 +71,21 @@ Future<void> addTransaction({
   required bool isRecurring,
   List<String>? receiptUrls,
   GeoPoint? location,
-  required String budgetId,
 }) async {
   final user = FirebaseAuth.instance.currentUser;
 
   if (user != null) {
+    try {
+      // Création d'un identifiant unique de transaction
+      String transactionId = generateTransactionId();
+
+      // Ajout de la transaction directement dans la collection 'transactions'
+      await FirebaseFirestore.instance.collection('transactions').add({
+        'id': transactionId,
+        'userId': user.uid,
+        'type_transaction':
+      })
+    }
     final budgetRef = FirebaseFirestore.instance.collection('budgets').doc(budgetId);
     final budgetDoc = await budgetRef.get();
 
@@ -58,6 +127,7 @@ Future<void> addTransaction({
     }
   }
 }
+*/
 
 Future<double> deductFromSavings(String userId, String savingId, double amountToDeduct) async {
   final savingRef = FirebaseFirestore.instance
