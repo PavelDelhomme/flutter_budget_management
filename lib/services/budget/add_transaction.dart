@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../models/good_models.dart';
+import '../../utils/categories.dart';
 import '../../utils/generate_ids.dart';
 
 
@@ -23,9 +24,6 @@ Future<void> addTransaction({
   }
 
   try {
-    // Création d'un identifiant unique pour la transaction
-    String transactionId = generateTransactionId();
-
     // Ajout de la transaction de base (UserTransaction)
     await FirebaseFirestore.instance.collection('transactions').add(userTransaction.toMap());
 
@@ -44,6 +42,8 @@ Future<void> addTransaction({
       );
 
       await FirebaseFirestore.instance.collection("debits").add(debit.toMap());
+      // Mettre à jour la catégorie avec le montant dépensé
+      await udpateCategorySpending(userTransaction.categorie_id, amount);
     } else {
       // C'est un crédit
       if (amount == null) {
@@ -61,6 +61,7 @@ Future<void> addTransaction({
     throw Exception("Erreur lors de l'ajout de la transaction: $e");
   }
 }
+
 /*
 Future<void> bad_addTransaction({
   required bool type,

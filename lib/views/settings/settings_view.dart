@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../navigation/custom_drawer.dart';
+
 class SettingsView extends StatefulWidget {
   const SettingsView({Key? key}) : super(key: key);
 
@@ -14,6 +16,7 @@ class _SettingsViewState extends State<SettingsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const CustomDrawer(activeItem: 'settings'),
       appBar: AppBar(
         title: const Text('Paramètres'),
       ),

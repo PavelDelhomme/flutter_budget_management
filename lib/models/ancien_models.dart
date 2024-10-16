@@ -76,16 +76,19 @@ class Budget {
 
 class Categorie {
   String id;
+  String userId;
   String nom;
 
   Categorie({
     required this.id,
+    required this.userId,
     required this.nom,
   });
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'userId': userId,
       'nom': nom,
     };
   }
@@ -93,6 +96,7 @@ class Categorie {
   static Categorie fromMap(Map<String, dynamic> map) {
     return Categorie(
       id: map['id'],
+      userId: map['userId'],
       nom: map['nom'],
     );
   }

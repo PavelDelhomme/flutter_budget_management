@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../navigation/custom_drawer.dart';
+
 class ProfileView extends StatefulWidget {
   const ProfileView({Key? key}) : super(key: key);
 
@@ -58,6 +60,7 @@ class _ProfileViewState extends State<ProfileView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const CustomDrawer(activeItem: 'profile'),
       appBar: AppBar(title: const Text("Mon Profil")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

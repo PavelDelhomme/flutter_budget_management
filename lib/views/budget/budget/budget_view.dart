@@ -1,6 +1,8 @@
 import 'package:budget_management/views/budget/transaction/transaction_view.dart';
 import 'package:flutter/material.dart';
 
+import '../../navigation/custom_drawer.dart';
+
 class BudgetView extends StatefulWidget {
   const BudgetView({Key? key}) : super(key: key);
 
@@ -14,7 +16,8 @@ class _BudgetViewState extends State<BudgetView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+        drawer: const CustomDrawer(activeItem: 'budgets'),
+        appBar: AppBar(
         title: const Text("Transactions"),
         actions: [
           IconButton(

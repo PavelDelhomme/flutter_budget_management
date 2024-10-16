@@ -3,6 +3,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../navigation/custom_drawer.dart';
+
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
 
@@ -82,6 +84,7 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const CustomDrawer(activeItem: 'map'),
       appBar: AppBar(
         title: const Text("Carte"),
         actions: [

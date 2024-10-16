@@ -10,7 +10,9 @@ import '../settings/settings_view.dart';
 import '../budget/saving/savings_page.dart';
 
 class CustomDrawer extends StatelessWidget {
-  const CustomDrawer({super.key});
+  final String activeItem;
+
+  const CustomDrawer({super.key, required this.activeItem});
 
   Future<void> _signOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
@@ -38,65 +40,47 @@ class CustomDrawer extends StatelessWidget {
             ),
             child: Text('Bonjour, ${user?.email ?? 'Utilisateur'}'),
           ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Accueil'),
-            onTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const HomeView()),
-              );
-            },
+          _buildDrawerItem(
+            context,
+            icon: Icons.home,
+            text: 'Accueil',
+            destination: const HomeView(),
+            active: activeItem == 'home',
           ),
-          ListTile(
-            leading: const Icon(Icons.attach_money),
-            title: const Text('Budgets'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const BudgetView()),
-              );
-            },
+          _buildDrawerItem(
+            context,
+            icon: Icons.attach_money,
+            text: 'Budgets',
+            destination: const BudgetView(),
+            active: activeItem == 'budgets',
           ),
-          ListTile(
-            leading: const Icon(Icons.savings),
-            title: const Text('Économies'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => SavingsPage()),
-              );
-            },
+          _buildDrawerItem(
+            context,
+            icon: Icons.savings,
+            text: 'Économies',
+            destination: SavingsPage(),
+            active: activeItem == 'savings',
           ),
-          ListTile(
-            leading: const Icon(Icons.account_circle),
-            title: const Text('Profil'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ProfileView()),
-              );
-            },
+          _buildDrawerItem(
+            context,
+            icon: Icons.account_circle,
+            text: 'Profil',
+            destination: const ProfileView(),
+            active: activeItem == 'profile',
           ),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Paramètres'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SettingsView()),
-              );
-            },
+          _buildDrawerItem(
+            context,
+            icon: Icons.settings,
+            text: 'Paramètres',
+            destination: const SettingsView(),
+            active: activeItem == 'settings',
           ),
-          ListTile(
-            leading: const Icon(Icons.map),
-            title: const Text("Test de carte"),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const MapPage())
-              );
-            },
+          _buildDrawerItem(
+            context,
+            icon: Icons.map,
+            text: "Test de carte",
+            destination: const MapPage(),
+            active: activeItem == 'map',
           ),
           ListTile(
             leading: const Icon(Icons.logout),
@@ -105,6 +89,31 @@ class CustomDrawer extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDrawerItem(BuildContext context, {
+    required IconData icon,
+    required String text,
+    required Widget destination,
+    required bool active,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: active ? Colors.blue : null),
+      title: Text(
+        text,
+        style: TextStyle(
+          fontWeight: active ? FontWeight.bold : FontWeight.normal,
+          color: active ? Colors.blue : null,
+        ),
+      ),
+      tileColor: active ? Colors.blue.shade100 : null,
+      onTap: () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => destination),
+        );
+      },
     );
   }
 }

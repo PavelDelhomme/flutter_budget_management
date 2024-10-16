@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:budget_management/models/good_models.dart';
 import 'package:budget_management/utils/generate_ids.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart';
 // Others
@@ -36,10 +35,13 @@ class TransactionFormScreen extends StatefulWidget {
 }
 
 class _TransactionFormScreenState extends State<TransactionFormScreen> {
-  late bool _typeTransactionController = false; // true = début, false = crédit
-  final TextEditingController _amountController = TextEditingController();
   // Categories
   String? _selectedCategory;
+  List<String> _categories = [];
+  final FocusNode _categoryFocusNode = FocusNode();
+  // Transaction
+  late bool _typeTransactionController = false; // true = début, false = crédit
+  final TextEditingController _amountController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   bool _isRecurring = false;
@@ -52,9 +54,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   String? _currentAdress;
   double _zoom = 16.0;
 
-  final FocusNode _categoryFocusNode = FocusNode();
 
-  // TODO ajouter plusieurs 3 max
   // TODO ajouter bouton croix pour supprimer photo
   // TODO possibilité de rentrer l'adresse manuellement
 
@@ -69,6 +69,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     super.initState();
     Get.put(NominatimGeocoding());
 
+    _loadCategories(); // Charger les catégories existantes
     if (widget.transaction != null) {
       final transaction = widget.transaction!;
       log("Transaction reçue : ${transaction.data()}");
@@ -103,6 +104,19 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       //_amountController.addListener(_updateRemainingAmountWithInput);
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
       _getCurrentLocation(); // Récupérer la localisation actuelle
+    }
+  }
+
+  Future<void> _loadCategories() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final categoriesSnapshot = await FirebaseFirestore.instance
+          .collection('categories')
+          .where("userId", isEqualTo: user.uid)
+          .get();
+      setState(() {
+        _categories = categoriesSnapshot.docs.map((doc) => doc['name'].toString()).toSet().toList();
+      });
     }
   }
 
@@ -220,7 +234,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       // Fusionner les images existantes et nouvelles
       List<String> updatedReceiptUrls = [..._existingReceiptUrls, ...newReceiptUrls];
 
-
       try {
         // Création de l'objet UserTransaction
         UserTransaction userTransaction = UserTransaction(
@@ -257,7 +270,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
         }
 
         if (mounted) {
-          Navigator.pop(context);
+          Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(widget.transaction == null ? "Transaction ajoutée" : "Transaction mise à jour")),
           );
@@ -269,7 +282,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       }
     }
   }
-
   void _createNewCategory() async {
     final newCategoryNameController = TextEditingController();
 
@@ -295,15 +307,22 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 child: const Text("Annuler"),
               ),
               TextButton(
-                onPressed: () {
-                  final newCategory = {
-                    'name': newCategoryNameController.text.trim(),
-                    'spentAmount': 0.0,
-                  };
+                onPressed: () async {
+                  final newCategoryName = newCategoryNameController.text.trim();
 
-                  setState(() {
-                    _selectedCategory = newCategory['name'] as String?; // Sélectionne automatiquement la nouvelle catégorie
-                  });
+                  // Empêcher les doublons
+                  if (newCategoryName.isNotEmpty && !_categories.contains(newCategoryName)) {
+                    // Ajouter dans Firestore et mettre à jour localement
+                    await FirebaseFirestore.instance.collection("categories").add({'name': newCategoryName});
+                    setState(() {
+                      _categories.add(newCategoryName);
+                      _selectedCategory = newCategoryName;
+                    });
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("La catégorie existe déjà ou est invalide.")),
+                    );
+                  }
 
                   Navigator.of(context).pop();
                 },
@@ -388,15 +407,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               DropdownButton<String>(
                 focusNode: _categoryFocusNode,
                 value: _selectedCategory,
-                items: [
-                  // Liste par défaut actuellement
-                  'Alimentation',
-                  'Transport',
-                  'Santé',
-                  'Education',
-                  'Loisirs',
-                  'Autres',
-                ].map((categoryName) {
+                items: _categories.map((categoryName) {
                   return DropdownMenuItem<String>(
                     value: categoryName,
                     child: Text(categoryName),
@@ -515,6 +526,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     child: Text(widget.transaction == null ? 'Ajouter la transaction' : 'Mettre à jour la transaction'),
                   )
               ),
+              //todo après ajout de la transaction il faut mettre a jour la liste des transactions du coup quand même enfaite
             ],
           ),
         ),

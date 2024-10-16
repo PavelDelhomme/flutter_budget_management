@@ -3,43 +3,6 @@ import '../models/good_models.dart';
 
 import 'generate_ids.dart';
 
-Future<void> updateCategorySpending(
-    String budgetId, String categoryId, double amount) async {
-  final budgetDoc = await FirebaseFirestore.instance
-      .collection('budgets')
-      .doc(budgetId)
-      .get();
-
-  if (budgetDoc.exists) {
-    final List<dynamic> categories = budgetDoc.data()?['categories'] ?? [];
-    final selectedCategory = categories.firstWhere(
-      (category) => category['id'] == categoryId,
-      orElse: () => null,
-    );
-
-    if (selectedCategory != null) {
-      final updatedCategory = {
-        ...selectedCategory,
-        'spentAmount': (selectedCategory['spentAmount'] ?? 0.0) + amount,
-      };
-
-      await FirebaseFirestore.instance
-          .collection('budgets')
-          .doc(budgetId)
-          .update({
-        'categories': FieldValue.arrayRemove([selectedCategory]),
-      });
-
-      await FirebaseFirestore.instance
-          .collection('budgets')
-          .doc(budgetId)
-          .update({
-        'categories': FieldValue.arrayUnion([updatedCategory]),
-      });
-    }
-  }
-}
-
 Future<void> createBudget({
   required String userId,
   required DateTime month,
@@ -62,25 +25,6 @@ Future<void> createBudget({
       .collection("budgets")
       .doc(budgetId)
       .set(budget.toMap());
-}
-
-Future<void> addDefaultCategoriesToBudget(String budgetId) async {
-  List<Categorie> defaultCategories = [
-    Categorie(id: generateCategoryId(), name: 'Alimentation'),
-    Categorie(id: generateCategoryId(), name: 'Vie sociale'),
-    Categorie(id: generateCategoryId(), name: 'Transport'),
-    Categorie(id: generateCategoryId(), name: 'Santé'),
-    Categorie(id: generateCategoryId(), name: 'Éducation'),
-    Categorie(id: generateCategoryId(), name: 'Cadeaux'),
-  ];
-
-  for (var category in defaultCategories) {
-    await FirebaseFirestore.instance
-        .collection('budgets')
-        .doc(budgetId)
-        .collection('categories')
-        .add(category.toMap());
-  }
 }
 
 Future<void> updateBudgetAfterTransaction(String budgetId, double amount,

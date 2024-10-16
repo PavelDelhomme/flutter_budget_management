@@ -1,9 +1,9 @@
-import 'package:budget_management/views/navigation/custom_drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../budget/dead_summary_view.dart';
 import '../budget/transaction/dead_transaction_view.dart';
+import 'dead_custom_drawer.dart';
 
 
 class DeadTabNavigation extends StatefulWidget {
@@ -36,7 +36,7 @@ class _DeadTabNavigationState extends State<DeadTabNavigation> {
       appBar: AppBar(
         title: Text('${DateFormat.MMMM('fr_FR').format(DateTime.now())} ${DateTime.now().year}'),
       ),
-      drawer: CustomDrawer(),
+      drawer: DeadCustomDrawer(),
       body: _pages[_currentIndex],  // Affiche la page active
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,  // Index de l'onglet actif

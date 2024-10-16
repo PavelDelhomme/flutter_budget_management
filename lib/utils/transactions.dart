@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../models/good_models.dart';
 import 'budgets.dart';
+import 'categories.dart';
 import 'generate_ids.dart';
 
 Future<void> copyRecurringTransactions(
@@ -31,8 +32,9 @@ Future<void> copyRecurringTransactions(
         .doc(newTransaction.id)
         .set(newTransaction.toMap());
 
-    await updateCategorySpending(
-        newBudgetId, newTransaction.categorie_id, transactionData['amount']);
+    await udpateCategorySpending(
+      newTransaction.categorie_id, transactionData['amount']
+    );
   }
 }
 

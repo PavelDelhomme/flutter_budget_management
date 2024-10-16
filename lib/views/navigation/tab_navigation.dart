@@ -19,14 +19,13 @@ class _TabNavigationState extends State<TabNavigation> {
     const TransactionsView(),  // Vue Transactions
   ];
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('${DateFormat.MMMM('fr_FR').format(DateTime.now())} ${DateTime.now().year}'),
       ),
-      drawer: CustomDrawer(),
+      drawer: const CustomDrawer(activeItem: 'home'),  // Toujours "home" lorsque tu es dans TabNavigation
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,

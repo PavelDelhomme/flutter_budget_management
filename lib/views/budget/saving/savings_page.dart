@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../navigation/custom_drawer.dart';
+
 class SavingsPage extends StatefulWidget {
   @override
   _SavingsPageState createState() => _SavingsPageState();
@@ -52,6 +54,7 @@ class _SavingsPageState extends State<SavingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const CustomDrawer(activeItem: 'savings'),
       appBar: AppBar(title: Text('Résumé des transactions')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

@@ -28,6 +28,19 @@ class _TransactionsViewState extends State<TransactionsView> {
     }
   }
 
+  void _addNewTransaction(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TransactionFormScreen(),
+      ),
+    );
+
+    if (result == true) {
+      setState(() {});
+    }
+  }
+
   void _deleteTransaction(BuildContext context, DocumentSnapshot transaction) async {
     // Confirmation avant suppression
     bool confirm = await _showDeleteConfirmation(context);
@@ -167,12 +180,7 @@ class _TransactionsViewState extends State<TransactionsView> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const TransactionFormScreen(),
-            ),
-          );
+          _addNewTransaction(context);
         },
         child: const Icon(Icons.add),
       ),

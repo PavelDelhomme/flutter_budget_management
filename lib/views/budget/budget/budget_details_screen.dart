@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../navigation/custom_drawer.dart';
+
 class BudgetDetailsScreen extends StatefulWidget {
   final String budgetId;
 
@@ -28,6 +30,7 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const CustomDrawer(activeItem: 'budgets'),
       appBar: AppBar(
         title: const Text('Détails du budget'),
       ),
