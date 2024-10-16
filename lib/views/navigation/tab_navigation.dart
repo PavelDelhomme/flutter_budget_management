@@ -1,13 +1,11 @@
-import 'package:budget_management/views/navigation/custom_drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../budget/summary_view.dart';
 import '../budget/transaction/transaction_view.dart';
+import 'custom_drawer.dart';
 
 class TabNavigation extends StatefulWidget {
-  final String? budgetId;
-
-  const TabNavigation({super.key, this.budgetId});
+  const TabNavigation({super.key});
 
   @override
   _TabNavigationState createState() => _TabNavigationState();
@@ -16,17 +14,11 @@ class TabNavigation extends StatefulWidget {
 class _TabNavigationState extends State<TabNavigation> {
   int _currentIndex = 0;  // Gère l'index de l'onglet actif
 
-  // Listes des vues pour chaque onglet
   final List<Widget> _pages = [
     const SummaryView(),  // Vue Résumé
-    TransactionsView(budgetId: null),  // Vue Transactions
+    const TransactionsView(),  // Vue Transactions
   ];
 
-  // Listes des titres des pages (correspond à chaque vue)
-  final List<String> _titles = [
-    'Résumé',
-    'Transactions',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -35,12 +27,12 @@ class _TabNavigationState extends State<TabNavigation> {
         title: Text('${DateFormat.MMMM('fr_FR').format(DateTime.now())} ${DateTime.now().year}'),
       ),
       drawer: CustomDrawer(),
-      body: _pages[_currentIndex],  // Affiche la page active
+      body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,  // Index de l'onglet actif
+        currentIndex: _currentIndex,
         onTap: (int index) {
           setState(() {
-            _currentIndex = index;  // Met à jour l'onglet actif
+            _currentIndex = index;
           });
         },
         items: const [

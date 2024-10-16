@@ -1,5 +1,4 @@
 import 'dart:developer';
-
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
 import 'package:flutter/material.dart';
@@ -9,62 +8,24 @@ import 'package:intl/intl.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
 class TransactionsView extends StatefulWidget {
-  final String? budgetId;
-
-  const TransactionsView({Key? key, this.budgetId}) : super(key: key);
+  const TransactionsView({Key? key}) : super(key: key);
 
   @override
   _TransactionsViewState createState() => _TransactionsViewState();
 }
 
 class _TransactionsViewState extends State<TransactionsView> {
-
-  Future<String?> _getDefaultBudgetId(BuildContext context) async {
-    if (widget.budgetId != null && widget.budgetId!.isNotEmpty) {
-      return widget.budgetId;
-    } else {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final budgetsSnapshot = await FirebaseFirestore.instance
-            .collection('budgets')
-            .where('userId', isEqualTo: user.uid)
-            .get();
-
-        if (budgetsSnapshot.docs.isNotEmpty) {
-          return budgetsSnapshot.docs.first.id;
-        }
-      }
-      return null;
-    }
-  }
-
   void _editTransaction(BuildContext context, DocumentSnapshot transaction) async {
-    final budgetId = await _getDefaultBudgetId(context);
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransactionFormScreen(transaction: transaction),
+      ),
+    );
 
-    if (budgetId != null) {
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TransactionFormScreen(budgetId: budgetId, transaction: transaction),
-        ),
-      );
-
-      if (result == true) {
-        setState(() {
-          _getBudgetSummary();
-        });
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Impossible de récupérer l'ID du budget.")),
-      );
-      log("impossible de récupérer l'id du budget");
+    if (result == true) {
+      setState(() {});
     }
-  }
-  void _getBudgetSummary() {
-    // Force simplement le rafraîchissement de l'état du widget,
-    // les transactions seront rechargées dans le StreamBuilder
-    setState(() {});
   }
 
   void _deleteTransaction(BuildContext context, DocumentSnapshot transaction) async {
@@ -74,31 +35,6 @@ class _TransactionsViewState extends State<TransactionsView> {
 
     // Supprimer la transaction de la collection Firestore
     await FirebaseFirestore.instance.collection('transactions').doc(transaction.id).delete();
-
-    // Mettre à jour le montant dépensé dans la catégorie associée
-    final budgetDoc = await FirebaseFirestore.instance.collection('budgets').doc(transaction['budgetId']).get();
-    if (budgetDoc.exists) {
-      final List<dynamic> categories = budgetDoc.data()?['categories'] ?? [];
-      final selectedCategoryData = categories.firstWhere(
-            (category) => category['name'] == transaction['category'],
-        orElse: () => {},
-      );
-
-      if (selectedCategoryData.isNotEmpty) {
-        final updatedCategory = {
-          ...selectedCategoryData,
-          'spentAmount': (selectedCategoryData['spentAmount'] ?? 0.0) - transaction['amount'],
-        };
-
-        await FirebaseFirestore.instance.collection('budgets').doc(transaction['budgetId']).update({
-          'categories': FieldValue.arrayRemove([selectedCategoryData]),
-        });
-
-        await FirebaseFirestore.instance.collection('budgets').doc(transaction['budgetId']).update({
-          'categories': FieldValue.arrayUnion([updatedCategory]),
-        });
-      }
-    }
 
     // Afficher un message de succès après suppression et rafraichir la liste
     if (mounted) {
@@ -201,7 +137,6 @@ class _TransactionsViewState extends State<TransactionsView> {
                         children: [
                           Text("Description : ${transaction['description']}"),
                           Text("Montant : \$${transaction['amount'].toStringAsFixed(2)}"),
-                          // Les boutons "Voir le reçu" ont été supprimés ici
                         ],
                       ),
                       trailing: Text(DateFormat('dd MMM yyyy').format(date)),
@@ -231,21 +166,13 @@ class _TransactionsViewState extends State<TransactionsView> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          String? selectedBudgetId = await _getDefaultBudgetId(context);
-
-          if (selectedBudgetId != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => TransactionFormScreen(budgetId: selectedBudgetId),
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Aucun budget disponible pour ajouter une transaction.")),
-            );
-          }
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const TransactionFormScreen(),
+            ),
+          );
         },
         child: const Icon(Icons.add),
       ),

@@ -16,119 +16,13 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
     return budgetSnapshot.data() as Map<String, dynamic>;
   }
 
-  void _updateCategory(String categoryName, double newAllocatedAmount) async {
-    final budgetRef = FirebaseFirestore.instance.collection('budgets').doc(widget.budgetId);
-    final budgetSnapshot = await budgetRef.get();
-    if (budgetSnapshot.exists) {
-      final budgetData = budgetSnapshot.data()!;
-      final categories = List<Map<String, dynamic>>.from(budgetData['categories']);
+  Future<List<Map<String, dynamic>>> _getTransactions() async {
+    final transactionsSnapshot = await FirebaseFirestore.instance
+        .collection('transactions')
+        .where('budgetId', isEqualTo: widget.budgetId)
+        .get();
 
-      // Mise à jour du montant alloué à la catégorie
-      final categoryIndex = categories.indexWhere((category) => category['name'] == categoryName);
-      if (categoryIndex != -1) {
-        categories[categoryIndex]['allocatedAmount'] = newAllocatedAmount;
-        await budgetRef.update({'categories': categories});
-
-        // Mettre à jour le montant total du budget
-        final totalAmount = categories.fold(0.0, (sum, category) => sum + (category['allocatedAmount'] as num).toDouble());
-        await budgetRef.update({'totalAmount': totalAmount});
-
-        setState(() {}); // Rafraîchit l'affichage
-      }
-    }
-  }
-
-  void _addCategory(String categoryName, double allocatedAmount) async {
-    final budgetRef = FirebaseFirestore.instance.collection('budgets').doc(widget.budgetId);
-    final budgetSnapshot = await budgetRef.get();
-    if (budgetSnapshot.exists) {
-      final budgetData = budgetSnapshot.data()!;
-      final categories = List<Map<String, dynamic>>.from(budgetData['categories']);
-
-      // Ajouter une nouvelle catégorie
-      categories.add({
-        'name': categoryName,
-        'allocatedAmount': allocatedAmount,
-        'spentAmount': 0.0,
-      });
-
-      await budgetRef.update({'categories': categories});
-
-      // Mettre à jour le montant total du budget
-      final totalAmount = categories.fold(0.0, (sum, category) => sum + (category['allocatedAmount'] as num).toDouble());
-      await budgetRef.update({'totalAmount': totalAmount});
-
-      setState(() {}); // Rafraîchit l'affichage
-    }
-  }
-
-  void _showEditCategoryDialog(String categoryName, double currentAmount) {
-    final _amountController = TextEditingController(text: currentAmount.toString());
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Modifier la catégorie $categoryName'),
-          content: TextField(
-            controller: _amountController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Montant alloué'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                final newAmount = double.tryParse(_amountController.text) ?? currentAmount;
-                _updateCategory(categoryName, newAmount);
-                Navigator.pop(context);
-              },
-              child: const Text('Enregistrer'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showAddCategoryDialog() {
-    final _nameController = TextEditingController();
-    final _amountController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Ajouter une catégorie'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nom de la catégorie'),
-              ),
-              TextField(
-                controller: _amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Montant alloué'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                final categoryName = _nameController.text.trim();
-                final allocatedAmount = double.tryParse(_amountController.text) ?? 0.0;
-                if (categoryName.isNotEmpty && allocatedAmount > 0.0) {
-                  _addCategory(categoryName, allocatedAmount);
-                }
-                Navigator.pop(context);
-              },
-              child: const Text('Ajouter'),
-            ),
-          ],
-        );
-      },
-    );
+    return transactionsSnapshot.docs.map((doc) => doc.data()).toList();
   }
 
   @override
@@ -136,12 +30,6 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Détails du budget'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _showAddCategoryDialog,
-          ),
-        ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _getBudgetDetails(),
@@ -151,49 +39,64 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
           }
 
           final budgetData = snapshot.data!;
-          final categories = budgetData['categories'] as List<dynamic>;
-
           return Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Description: ${budgetData['description']}',
+                  'Mois: ${budgetData['month'].toDate().month}/${budgetData['year'].toDate().year}',
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Montant total: \$${budgetData['totalAmount']}',
-                  style: const TextStyle(fontSize: 20),
+                  'Total Débit: \$${budgetData['total_debit'].toStringAsFixed(2)}',
+                  style: const TextStyle(fontSize: 20, color: Colors.red),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Total Crédit: \$${budgetData['total_credit'].toStringAsFixed(2)}',
+                  style: const TextStyle(fontSize: 20, color: Colors.green),
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  'Catégories:',
+                  'Transactions:',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: categories.length,
-                    itemBuilder: (context, index) {
-                      final category = categories[index] as Map<String, dynamic>;
-                      final allocatedAmount = (category['allocatedAmount'] as num).toDouble();
-                      final spentAmount = (category['spentAmount'] as num).toDouble();
-                      final remainingAmount = allocatedAmount - spentAmount;
+                  child: FutureBuilder<List<Map<String, dynamic>>>(
+                    future: _getTransactions(),
+                    builder: (context, transactionSnapshot) {
+                      if (!transactionSnapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                      return ListTile(
-                        title: Text(category['name']),
-                        subtitle: Text(
-                          'Montant alloué: \$${allocatedAmount.toStringAsFixed(2)}\n'
-                              'Montant dépensé: \$${spentAmount.toStringAsFixed(2)}\n'
-                              'Montant restant: \$${remainingAmount.toStringAsFixed(2)}',
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () {
-                            _showEditCategoryDialog(category['name'], allocatedAmount);
-                          },
-                        ),
+                      final transactions = transactionSnapshot.data!;
+                      return ListView.builder(
+                        itemCount: transactions.length,
+                        itemBuilder: (context, index) {
+                          final transaction = transactions[index];
+                          final isDebit = transaction['type'];
+                          final transactionType = isDebit ? "Débit" : "Crédit";
+                          final amount = isDebit
+                              ? transaction['amount'].toStringAsFixed(2)
+                              : transaction['amount'].toStringAsFixed(2);
+
+                          return ListTile(
+                            title: Text(
+                              '$transactionType: \$${amount}',
+                              style: TextStyle(
+                                color: isDebit ? Colors.red : Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text('Catégorie: ${transaction['categorie_id']}'),
+                            trailing: Text(
+                              '${transaction['date'].toDate().day}/${transaction['date'].toDate().month}/${transaction['date'].toDate().year}',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),

@@ -1,9 +1,7 @@
+import 'package:budget_management/models/good_models.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:geolocator/geolocator.dart';
-import '../../deadcodes/last_model/user.dart';
-import '../profile/define_income_view.dart';
 
 class InscriptionView extends StatefulWidget {
   const InscriptionView({super.key});
@@ -56,10 +54,8 @@ class InscriptionViewState extends State<InscriptionView> {
         await _db.collection('users').doc(newUser.id).set(newUser.toMap());
 
         if (mounted) {
-          // Après l'inscription, rediriger vers la vue pour définir les revenus
-          Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => DefineIncomeView(userId: newUser.id)),
-          );
+          // Après l'inscription, rediriger vers l'écran principal
+          Navigator.of(context).pushReplacementNamed("/home");
         }
       } on FirebaseAuthException catch (e) {
         String errorMessage;

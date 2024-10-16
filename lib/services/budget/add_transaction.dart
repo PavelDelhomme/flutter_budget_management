@@ -128,7 +128,7 @@ Future<void> bad_addTransaction({
   }
 }
 */
-
+/*
 Future<double> deductFromSavings(String userId, String savingId, double amountToDeduct) async {
   final savingRef = FirebaseFirestore.instance
       .collection("users")
@@ -151,6 +151,7 @@ Future<double> deductFromSavings(String userId, String savingId, double amountTo
     throw Exception("Catégorie d'économies non trouvée.");
   }
 }
+*/
 
 Future<void> _updateMonthlyBudget(double amount, String budgetId) async {
   final budgetRef = FirebaseFirestore.instance.collection('budgets').doc(budgetId);

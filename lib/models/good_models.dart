@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
 
-class User {
+class UserModel {
   String id;
   String email;
   String name;
 
-  User({
+  UserModel({
     required this.id,
     required this.email,
     required this.name,
@@ -20,8 +20,8 @@ class User {
     };
   }
 
-  static User fromMap(Map<String, dynamic> map) {
-    return User(
+  static UserModel fromMap(Map<String, dynamic> map) {
+    return UserModel(
       id: map['id'],
       email: map['email'],
       name: map['name'],
