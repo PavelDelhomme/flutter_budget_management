@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
 
-class User {
+class UserModel {
   String id;
   String email;
   String name;
 
-  User({
+  UserModel({
     required this.id,
     required this.email,
     required this.name,
@@ -20,8 +20,8 @@ class User {
     };
   }
 
-  static User fromMap(Map<String, dynamic> map) {
-    return User(
+  static UserModel fromMap(Map<String, dynamic> map) {
+    return UserModel(
       id: map['id'],
       email: map['email'],
       name: map['name'],
@@ -29,30 +29,32 @@ class User {
   }
 }
 
-
 class Budget {
   String id;
-  String user_id;
+  String userId;
   Timestamp month;
   Timestamp year;
+  double solde;
   double total_debit;
   double total_credit;
 
   Budget({
     required this.id,
-    required this.user_id,
+    required this.userId,
     required this.month,
     required this.year,
-    this.total_debit = 0,
-    this.total_credit = 0,
+    this.solde = 0.0,
+    this.total_debit = 0.0,
+    this.total_credit = 0.0
   });
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'user_id': user_id,
+      'userId': userId,
       'month': month,
       'year': year,
+      'solde': solde,
       'total_debit': total_debit,
       'total_credit': total_credit,
     };
@@ -61,60 +63,54 @@ class Budget {
   static Budget fromMap(Map<String, dynamic> map) {
     return Budget(
       id: map['id'],
-      user_id: map['user_id'],
+      userId: map['userId'],
       month: map['month'],
       year: map['year'],
+      solde: map['solde'],
       total_debit: map['total_debit'],
       total_credit: map['total_credit'],
     );
   }
-
-  double calculateDebit(List<UserTransaction> transactions) {
-    return 0.0;
-  }
-
-  double calculateCredit(List<UserTransaction> transactions) {
-    return 0.0;
-  }
 }
+
 
 class Categorie {
   String id;
-  String name;
+  String nom;
 
   Categorie({
     required this.id,
-    required this.name,
+    required this.nom,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      "id": id,
-      "name": name,
+      'id': id,
+      'nom': nom,
     };
   }
 
   static Categorie fromMap(Map<String, dynamic> map) {
     return Categorie(
       id: map['id'],
-      name: map['name']
+      nom: map['nom'],
     );
   }
 }
 
-class UserTransaction {
+class Transaction {
   String id;
   String type;
-  String categorie_id;
+  String category_id;
   String user_id;
   DateTime date;
   String notes;
   bool isRemaining;
 
-  UserTransaction({
+  Transaction({
     required this.id,
     required this.type,
-    required this.categorie_id,
+    required this.category_id,
     required this.user_id,
     required this.date,
     required this.notes,
@@ -123,21 +119,21 @@ class UserTransaction {
 
   Map<String, dynamic> toMap() {
     return {
-      "id": id,
-      "type": type,
-      "categorie_id": categorie_id,
-      "user_id": user_id,
-      "date": date,
-      "notes": notes,
-      "isRemaining": isRemaining,
+      'id': id,
+      'type': type,
+      'category_id': category_id,
+      'user_id': user_id,
+      'date': date,
+      'notes': notes,
+      'isRemaining': isRemaining,
     };
   }
 
-  static UserTransaction fromMap(Map<String, dynamic> map) {
-    return UserTransaction(
+  static Transaction fromMap(Map<String, dynamic> map) {
+    return Transaction(
       id: map['id'],
       type: map['type'],
-      categorie_id: map['categorie_id'],
+      category_id: map['category_id'],
       user_id: map['user_id'],
       date: map['date'],
       notes: map['notes'],
@@ -146,66 +142,48 @@ class UserTransaction {
   }
 }
 
-class Debit {
-  String id;
-  double amount;
-  List<String>? photos;
-  LatLng localisation;
-  String transaction_id;
+class Debit extends Transaction {
+  late String transaction_id;
+  late double amount;
+  List<String>? receiptUrls;
+  LatLng? location;
 
   Debit({
-    required this.id,
-    required this.amount,
-    required this.localisation,
-    required this.transaction_id,
-    this.photos,
+    required super.id,
+    required super.type,
+    required super.category_id,
+    required super.user_id,
+    required super.date,
+    required super.notes,
+    required super.isRemaining,
+    required transaction_id,
+    required amount,
+    receiptUrls,
+    location,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      "id": id,
-      "amount": amount,
-      "photos": photos ?? [],
-      "localisation": localisation,
-      "transactionId": transaction_id,
+      'transaction_id': transaction_id,
+      'amount': amount,
+      'receiptUrls': receiptUrls,
+      'location': location,
     };
   }
 
   static Debit fromMap(Map<String, dynamic> map) {
     return Debit(
       id: map['id'],
-      amount: map['amount'],
-      localisation: map['localisation'],
-      transaction_id: map['transaction_id'],
-      photos: List<String>.from(map['photos'] ?? []),
-    );
-  }
-}
-
-class Credit {
-  String id;
-  String transaction_id;
-  double amount;
-
-  Credit({
-    required this.id,
-    required this.transaction_id,
-    required this.amount,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      "id": id,
-      "transaction_id": transaction_id,
-      "amount": amount,
-    };
-  }
-
-  static Credit fromMap(Map<String, dynamic> map) {
-    return Credit(
-      id: map['id'],
+      type: map['type'],
+      category_id: map['category_id'],
+      user_id: map['user_id'],
+      date: map['date'],
+      notes: map['notes'],
+      isRemaining: map['isRemaining'],
       transaction_id: map['transaction_id'],
       amount: map['amount'],
+      receiptUrls: map['receiptUrls'],
+      location: map['location'],
     );
   }
 }
