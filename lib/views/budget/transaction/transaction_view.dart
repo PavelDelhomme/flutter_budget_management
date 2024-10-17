@@ -15,6 +15,21 @@ class TransactionsView extends StatefulWidget {
 }
 
 class _TransactionsViewState extends State<TransactionsView> {
+
+  Stream<QuerySnapshot> _getTransactionsForCurrentMonth() {
+    final user = FirebaseAuth.instance.currentUser;
+    DateTime now = DateTime.now();
+    DateTime startOfMonth = DateTime(now.year, now.month, 1);
+
+    return FirebaseFirestore.instance
+        .collection("transactions")
+        .where("userId", isEqualTo: user?.uid)
+        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where("date", isLessThan: Timestamp.fromDate(DateTime(now.year, now.month + 1, 1)))
+        .orderBy("date", descending: true)
+        .snapshots();
+  }
+
   void _editTransaction(BuildContext context, DocumentSnapshot transaction) async {
     final result = await Navigator.push(
       context,
@@ -60,15 +75,9 @@ class _TransactionsViewState extends State<TransactionsView> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
     return Scaffold(
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection("transactions")
-            .where("userId", isEqualTo: user?.uid)
-            .orderBy('date', descending: true)
-            .snapshots(),
+        stream: _getTransactionsForCurrentMonth(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());

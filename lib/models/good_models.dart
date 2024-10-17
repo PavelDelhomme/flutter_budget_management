@@ -111,20 +111,20 @@ class Categorie {
 class UserTransaction {
   String id;
   bool type; // True : Débit | False : Crédit
-  String categorie_id;
+  String? categorie_id;
   String user_id;
   DateTime date;
   String notes;
-  bool isRemaining;
+  bool isRecurring;
 
   UserTransaction({
     required this.id,
     required this.type,
-    required this.categorie_id,
+    this.categorie_id,
     required this.user_id,
     required this.date,
     required this.notes,
-    required this.isRemaining,
+    required this.isRecurring,
   });
 
   Map<String, dynamic> toMap() {
@@ -135,7 +135,7 @@ class UserTransaction {
       "user_id": user_id,
       "date": date,
       "notes": notes,
-      "isRemaining": isRemaining,
+      "isRecurring": isRecurring,
     };
   }
 
@@ -147,7 +147,7 @@ class UserTransaction {
       user_id: map['user_id'],
       date: map['date'],
       notes: map['notes'],
-      isRemaining: map['isRemaining'],
+      isRecurring: map['isRecurring'],
     );
   }
 }

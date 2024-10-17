@@ -14,3 +14,11 @@ Future<void> udpateCategorySpending(String categoryId, double amount) async {
     throw Exception("Catégorie non trouvée.");
   }
 }
+
+Future<void> createCategory(String name, String userId) async {
+  await FirebaseFirestore.instance.collection("categories").add({
+    'name': name,
+    'userId': userId,
+    'spentAmount': 0.0,
+  });
+}

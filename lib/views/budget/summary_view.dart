@@ -13,60 +13,7 @@ class SummaryView extends StatefulWidget {
 }
 
 class _SummaryViewState extends State<SummaryView> {
-  final RandomColor _randomColor = RandomColor();  // Instance de RandomColor
-
-  @override
-  void initState() {
-    super.initState();
-    setState(() {
-      _getBudgetSummary();
-    });
-  }
-
-  Future<Map<String, dynamic>?> _getBudgetSummary() async {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-      try {
-        final budgetSnapshot = await FirebaseFirestore.instance
-            .collection('budgets')
-            .where('userId', isEqualTo: user.uid)
-            .where('month', isEqualTo: DateTime.now().month)
-            .where('year', isEqualTo: DateTime.now().year)
-            .get();
-
-        if (budgetSnapshot.docs.isEmpty) return null;
-
-        return {
-        };
-      } catch (e) {
-        print("Erreur lors de la récupération des données du budget : $e");
-        return null;
-      }
-    }
-    return null;
-  }
-
-  Widget _buildBudgetCard(String title, String amount, Color color) {
-    return Card(
-      elevation: 3.0,
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8.0),
-            Text(
-              "\$$amount",
-              style: TextStyle(fontSize: 20, color: color, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  final RandomColor _randomColor = RandomColor();
 
   @override
   Widget build(BuildContext context) {
@@ -88,38 +35,67 @@ class _SummaryViewState extends State<SummaryView> {
             }
 
             final transactionsData = snapshot.data!;
+            double totalDebit = 0.0;
+            double totalCredit = 0.0;
+            Map<String, double> categorySpending = {};
 
+            for (var doc in transactionsData.docs) {
+              final data = doc.data() as Map<String, dynamic>;
+              final category = data['category'] ?? 'Inconnu';
+              final amount = (data['amount'] as num?)?.toDouble() ?? 0.0;
+              final isDebit = data['type'] == true;
 
-            return FutureBuilder<Map<String, dynamic>?>(
-              future: _getBudgetSummary(),
-              builder: (context, budgetSnapshot) {
-                if (budgetSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+              if (isDebit) {
+                totalDebit += amount;
+                if (categorySpending.containsKey(category)) {
+                  categorySpending[category] = categorySpending[category]! + amount;
+                } else {
+                  categorySpending[category] = amount;
                 }
+              } else {
+                totalCredit += amount;
+              }
+            }
 
-                if (!budgetSnapshot.hasData || budgetSnapshot.data == null) {
-                  return const Center(child: Text("Aucune donnée disponible pour le résumé du budget."));
-                }
 
-                final data = budgetSnapshot.data!;
-
-                return ListView(
-                  children: [
-                    _buildBudgetCard('Total Budget', 100.0.toStringAsFixed(2), Colors.blue),
-                    _buildBudgetCard('Revenu Mensuel Total', 100.0.toStringAsFixed(2), Colors.purple),
-                    _buildBudgetCard('Dépenses Réelles', 100.0.toStringAsFixed(2), Colors.orange),
-                    _buildBudgetCard('Solde Restant', 100.0.toStringAsFixed(2), Colors.green),
-                    const SizedBox(height: 20),
-                    const Text(
-                      "Répartition des Catégories",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                );
-              },
+            return ListView(
+              children: [
+                _buildBudgetCard("Total Débit", totalDebit.toStringAsFixed(2), Colors.red),
+                _buildBudgetCard("Total Crédit", totalCredit.toStringAsFixed(2), Colors.green),
+                const SizedBox(height: 20),
+                const Text(
+                  "Dépenses par Catégorie",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                ...categorySpending.entries.map((entry) {
+                  final color = _randomColor.randomColor();
+                  return _buildBudgetCard(entry.key, entry.value.toStringAsFixed(2), color);
+                }).toList(),
+              ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBudgetCard(String title, String amount, Color color) {
+    return Card(
+      elevation: 3.0,
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8.0),
+            Text(
+              "\$$amount",
+              style: TextStyle(fontSize: 20, color: color, fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
       ),
     );

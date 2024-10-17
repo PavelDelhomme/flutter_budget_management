@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 // Flutter
 import 'package:budget_management/models/good_models.dart';
+import 'package:budget_management/utils/categories.dart';
 import 'package:budget_management/utils/generate_ids.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,12 +18,13 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-// Personnal dependencies
-import 'package:budget_management/services/budget/add_transaction.dart';
-import 'package:budget_management/services/image_service.dart';
+
 import 'package:nominatim_geocoding/nominatim_geocoding.dart';
 
-import '../../../services/permissions_service.dart';
+import '../../../utils/budgets.dart';
+import '../../../services/utils_services/image_service.dart';
+import '../../../services/utils_services/permissions_service.dart';
+import '../../../utils/transactions.dart';
 
 
 class TransactionFormScreen extends StatefulWidget {
@@ -39,30 +41,22 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   String? _selectedCategory;
   List<String> _categories = [];
   final FocusNode _categoryFocusNode = FocusNode();
+
   // Transaction
-  late bool _typeTransactionController = false; // true = début, false = crédit
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   bool _isRecurring = false;
+  bool _isDebit = false;
   LatLng? _userLocation;
   List<File> _receiptImages = [];
   List<String> _existingReceiptUrls = [];
+
   // Map
   final MapController _mapController = MapController();
   LatLng _defaultLocation = LatLng(48.8566, 2.3522); // Defaut paris
   String? _currentAdress;
   double _zoom = 16.0;
-
-
-  // TODO ajouter bouton croix pour supprimer photo
-  // TODO possibilité de rentrer l'adresse manuellement
-
-  // TODO api pour rechercher les adresses :
-  // TODO si il récupère une liste d'adresse la mettre en cache pour éviter de redemander continuellement les données
-  // TODO masquer la carte pour le moment car non nécessaire
-  // TODO champs de recherche pour entrer son adresse manuellement
-  // TODO icone position localisation
 
   @override
   void initState() {
@@ -74,34 +68,20 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       final transaction = widget.transaction!;
       log("Transaction reçue : ${transaction.data()}");
 
-      _typeTransactionController = transaction['type'] ?? false;
+      _isDebit = transaction['type'] ?? true;
       _notesController.text = transaction['notes'] ?? '';
       _amountController.text = transaction['amount']?.toString() ?? '';
       _selectedCategory = transaction['category']?.toString().trim();
       _isRecurring = transaction['isRecurring'] ?? false;
-
-      // Vérification de la date
       final Timestamp? date = transaction['date'] as Timestamp?;
-      if (date != null) {
-        _dateController.text = DateFormat('yMd').format(date.toDate());
-      } else {
-        _dateController.text = DateFormat('yMd').format(DateTime.now());
-      }
+      _dateController.text = date != null ? DateFormat('yMd').format(date.toDate()) : DateFormat('yMd').format(DateTime.now());
 
       // Initialisation des reçus existants
       _existingReceiptUrls = List<String>.from(transaction['receiptUrls'] ?? []);
-
       // Localisation
       final GeoPoint? location = transaction['location'] as GeoPoint?;
-      if (location != null) {
-        _userLocation = LatLng(location.latitude, location.longitude);
-      } else {
-        // Valeur par défaut si la localisation est absente
-        _userLocation = _defaultLocation;
-      }
+      _userLocation = location != null ? LatLng(location.latitude, location.longitude) : _defaultLocation;
     } else {
-      // Nouvelle transaction : initialisez avec les valeurs par défaut
-      //_amountController.addListener(_updateRemainingAmountWithInput);
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
       _getCurrentLocation(); // Récupérer la localisation actuelle
     }
@@ -115,7 +95,10 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           .where("userId", isEqualTo: user.uid)
           .get();
       setState(() {
-        _categories = categoriesSnapshot.docs.map((doc) => doc['name'].toString()).toSet().toList();
+        _categories =
+            categoriesSnapshot.docs.map((doc) => doc['name'].toString())
+                .toSet()
+                .toList();
       });
     }
   }
@@ -140,7 +123,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
     // Si la permission est accordée, récupérez la position actuelle
     try {
-      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
       setState(() {
         _userLocation = LatLng(position.latitude, position.longitude);
         _mapController.move(_userLocation!, _zoom);
@@ -148,11 +132,13 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
       // Utilisation de Nominatim pour obtenir l'adresse via un Coordinate
       try {
-        List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+            position.latitude, position.longitude);
         Placemark place = placemarks.first;
 
         setState(() {
-          _currentAdress = "${place.street}, ${place.locality}, ${place.administrativeArea}";
+          _currentAdress =
+          "${place.street}, ${place.locality}, ${place.administrativeArea}";
         });
       } catch (e) {
         log("Erreur lors de la récupération de l'adresse avec Nominatim : $e");
@@ -209,19 +195,106 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
 
+  Future<void> _selectDate() async {
+    DateTime initialDate = DateTime.now();
+    DateTime? selectedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(initialDate.year - 1),
+      lastDate: DateTime(initialDate.year + 1),
+    );
+
+    if (selectedDate != null) {
+      TimeOfDay? selectedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(initialDate),
+      );
+
+      if (selectedTime != null) {
+        DateTime finalDateTime = DateTime(
+          selectedDate.year,
+          selectedDate.month,
+          selectedDate.day,
+          selectedTime.hour,
+          selectedTime.minute,
+        );
+
+        setState(() {
+          _dateController.text = DateFormat('yMd').add_jm().format(finalDateTime);
+        });
+      }
+    }
+  }
+
+  Future<void> _createNewCategory() async {
+    final TextEditingController categoryController = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Créer une nouvelle catégorie"),
+          content: TextField(
+            controller: categoryController,
+            decoration: InputDecoration(hintText: "Nom de la catégorie"),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text("Annuler"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text("Créer"),
+              onPressed: () async {
+                final user = FirebaseAuth.instance.currentUser;
+                if (user != null && categoryController.text.isNotEmpty) {
+                  await createCategory(categoryController.text.trim(), user.uid);
+                  _loadCategories();
+                }
+                Navigator.of(context).pop();
+              },
+            )
+          ],
+        );
+      }
+    );
+  }
+
+  Future<String> _getOrCreateBudgetId(DateTime date) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final budgetSnapshot = await FirebaseFirestore.instance
+          .collection("budgets")
+          .where('user_id', isEqualTo: user.uid)
+          .where("month", isEqualTo: Timestamp.fromDate(DateTime(date.year, date.month, 1)))
+          .where('year', isEqualTo: Timestamp.fromDate(DateTime(date.year, 1, 1)))
+          .get();
+
+      if (budgetSnapshot.docs.isNotEmpty) {
+        return budgetSnapshot.docs.first.id;
+      } else {
+        await createBudget(userId: user.uid, date: date);
+        final newBudgetSnapshot = await FirebaseFirestore.instance
+            .collection('budgets')
+            .where('user_id', isEqualTo: user.uid)
+            .where("month", isEqualTo: Timestamp.fromDate(DateTime(date.year, date.month, 1)))
+            .where('year', isEqualTo: Timestamp.fromDate(DateTime(date.year, 1, 1)))
+            .get();
+        return newBudgetSnapshot.docs.first.id;
+      }
+    }
+    throw Exception("Impossible d'obtenir ou de créer le budget.");
+  }
+
   Future<void> _saveTransaction() async {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user != null && _notesController.text.isNotEmpty && _amountController.text.isNotEmpty && _selectedCategory != null) {
-      final typeTransaction = _typeTransactionController;
-
-      // Convertir les virgules en points avant la sauvegarde
+    if (user != null && _amountController.text.isNotEmpty) {
       final amount = double.tryParse(_amountController.text.replaceAll(",", ".")) ?? 0.0;
-
       final notes = _notesController.text;
-      final dateTransaction = _dateController.text.isNotEmpty
-          ? DateFormat('yMd').parse(_dateController.text)
-          : DateTime.now();
+      final dateTransaction = _dateController.text.isNotEmpty ? DateFormat('yMd').parse(_dateController.text) : DateTime.now();
+      final isReccuring = _isRecurring;
 
       List<String> newReceiptUrls = [];
       for (File image in _receiptImages) {
@@ -234,39 +307,36 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       // Fusionner les images existantes et nouvelles
       List<String> updatedReceiptUrls = [..._existingReceiptUrls, ...newReceiptUrls];
 
-      try {
-        // Création de l'objet UserTransaction
-        UserTransaction userTransaction = UserTransaction(
-          id: generateTransactionId(),
-          type: typeTransaction,
-          categorie_id: _selectedCategory!,
-          user_id: user.uid,
-          date: dateTransaction,
-          notes: notes,
-          isRemaining: _isRecurring,
-        );
+      // Conversion de la localisation
+      GeoPoint? geoPoint;
+      if (_userLocation != null) {
+        geoPoint = GeoPoint(_userLocation!.latitude, _userLocation!.longitude);
+      }
 
-        if (widget.transaction == null) {
-          // Ajout d'une nouvelle transaction
-          await addTransaction(
-            type: typeTransaction,
-            userTransaction: userTransaction,
+      try {
+        String budgetId = await _getOrCreateBudgetId(dateTransaction);
+
+        if (_isDebit) {
+          await addDebitTransaction(
+            budgetId: budgetId,
+            categoryId: _selectedCategory!,
+            userId: user.uid,
+            date: dateTransaction,
             amount: amount,
-            localisation: _userLocation,
-            photos: updatedReceiptUrls.isNotEmpty ? updatedReceiptUrls : null,
+            notes: notes,
+            receiptUrls: updatedReceiptUrls,
+            location: LatLng(geoPoint!.latitude, geoPoint.longitude),
+            isRecurring: isReccuring,
           );
         } else {
-          // Mettre à jour la transaction existante
-          await FirebaseFirestore.instance.collection('transactions').doc(widget.transaction!.id).update({
-            'type_transaction': typeTransaction,
-            'amount': amount,
-            'category': _selectedCategory!,
-            'date': Timestamp.fromDate(dateTransaction),
-            'notes': notes,
-            'isRecurring': _isRecurring,
-            'receiptUrls': updatedReceiptUrls.isNotEmpty ? updatedReceiptUrls : null,
-            'location': _userLocation != null ? GeoPoint(_userLocation!.latitude, _userLocation!.longitude) : null,
-          });
+          await addCreditTransaction(
+            budgetId: budgetId,
+            userId: user.uid,
+            date: dateTransaction,
+            amount: amount,
+            notes: notes,
+            isRecurring: isReccuring,
+          );
         }
 
         if (mounted) {
@@ -282,81 +352,120 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       }
     }
   }
-  void _createNewCategory() async {
-    final newCategoryNameController = TextEditingController();
-
-    await showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text("Nouvelle catégorie"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: newCategoryNameController,
-                  decoration: const InputDecoration(labelText: "Nom de la catégorie"),
-                ),
-              ],
+  Widget _buildAdditionalFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Afficher uniquement pour les transactions de type débit
+        if (_isDebit)
+          DropdownButton<String>(
+            focusNode: _categoryFocusNode,
+            value: _selectedCategory,
+            items: _categories.map((categoryName) {
+              return DropdownMenuItem<String>(
+                value: categoryName,
+                child: Text(categoryName),
+              );
+            }).toList()..add(
+              DropdownMenuItem<String>(
+                value: "Nouvelle catégorie",
+                child: const Text("Créer une nouvelle catégorie"),
+              ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text("Annuler"),
-              ),
-              TextButton(
-                onPressed: () async {
-                  final newCategoryName = newCategoryNameController.text.trim();
-
-                  // Empêcher les doublons
-                  if (newCategoryName.isNotEmpty && !_categories.contains(newCategoryName)) {
-                    // Ajouter dans Firestore et mettre à jour localement
-                    await FirebaseFirestore.instance.collection("categories").add({'name': newCategoryName});
-                    setState(() {
-                      _categories.add(newCategoryName);
-                      _selectedCategory = newCategoryName;
-                    });
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("La catégorie existe déjà ou est invalide.")),
-                    );
-                  }
-
-                  Navigator.of(context).pop();
-                },
-                child: const Text("Ajouter"),
-              ),
-            ],
-          );
-        }
+            onChanged: (newValue) {
+              if (newValue == 'Nouvelle catégorie') {
+                _createNewCategory();
+              } else {
+                setState(() {
+                  _selectedCategory = newValue;
+                });
+              }
+            },
+            hint: const Text("Sélectionner une catégorie."),
+          ),
+        if (_isDebit)
+          ElevatedButton(onPressed: _pickImage, child: const Text("Ajouter des reçus")),
+        if (_isDebit && _receiptImages.isNotEmpty)
+          Wrap(
+            children: _receiptImages.map((image) {
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.file(image, width: 100, height: 100, fit: BoxFit.cover),
+              );
+            }).toList(),
+          ),
+        if (_isDebit && _currentAdress != null)
+          Text("Adresse : $_currentAdress"),
+        if (_isDebit)
+          _buildMap(),
+        if (_isDebit)
+          ElevatedButton(
+            onPressed: _getCurrentLocation,
+            child: const Text("Récupérer ma position actuelle"),
+          ),
+      ],
     );
   }
 
-  Future<void> _pickImages() async {
-    final ImagePicker _picker = ImagePicker();
-    final List<XFile>? pickedFiles = await _picker.pickMultiImage();
 
-    if (pickedFiles != null) {
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
       setState(() {
-        _receiptImages = pickedFiles.map((file) => File(file.path)).toList();
+        _receiptImages.add(File(pickedFile.path));
       });
     }
   }
 
-  // Méthode pour supprimer une image existante
-  void _removeExistingImage(String url) {
-    setState(() {
-      _existingReceiptUrls.remove(url);
-    });
+  Widget _buildTransactionForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Montant"),
+        TextField(
+          controller: _amountController,
+          keyboardType: TextInputType.number,
+          inputFormatters: <TextInputFormatter>[
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+          ],
+          onChanged: (value) {
+            _amountController.text = value.replaceAll(",", ".");
+            _amountController.selection = TextSelection.fromPosition(
+              TextPosition(offset: _amountController.text.length),
+            );
+          },
+          decoration: const InputDecoration(hintText: "Saisissez le montant"),
+        ),
+        const SizedBox(height: 16.0),
+        const Text("Date de la transaction"),
+        TextField(
+          controller: _dateController,
+          readOnly: true,
+          onTap: _selectDate,
+          decoration: const InputDecoration(
+            hintText: "Sélectionner une date et une heure",
+          ),
+        ),
+        const SizedBox(height: 16.0),
+        const Text("Notes"),
+        TextField(
+          controller: _notesController,
+          decoration: const InputDecoration(hintText: "Ajouter des notes"),
+        ),
+        _buildAdditionalFields(),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.transaction == null ? 'Ajouter une transaction' : 'Modifier la transaction'),
+        title: Text(widget.transaction == null
+            ? 'Ajouter une transaction'
+            : 'Modifier la transaction'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -364,169 +473,32 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextField(
-                controller: _notesController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                textInputAction: TextInputAction.next,
-                onEditingComplete: () {
-                  FocusScope.of(context).nextFocus();
-                },
-              ),
-              TextField(
-                controller: _amountController,
-                decoration: const InputDecoration(labelText: 'Montant', hintText: 'Entrez le montant'),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                textInputAction: TextInputAction.done,
-                onEditingComplete: () {
-                  FocusScope.of(context).requestFocus(_categoryFocusNode);
-                },
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Débit"),
+                  Switch(
+                    value: _isDebit,
+                    onChanged: (value) {
+                      setState(() {
+                        _isDebit = value;
+                      });
+                    },
+                  ),
+                  const Text("Crédit")
                 ],
               ),
-              TextField(
-                controller: _dateController,
-                decoration: const InputDecoration(labelText: 'Date'),
-                keyboardType: TextInputType.datetime,
-                textInputAction: TextInputAction.done,
-                onEditingComplete: () {
-                  FocusScope.of(context).unfocus();
-                },
-                onTap: () async {
-                  DateTime? selectedDate = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2101),
-                  );
-                  if (selectedDate != null) {
-                    _dateController.text = DateFormat.yMd().format(selectedDate);
-                  }
-                },
-              ),
-              DropdownButton<String>(
-                focusNode: _categoryFocusNode,
-                value: _selectedCategory,
-                items: _categories.map((categoryName) {
-                  return DropdownMenuItem<String>(
-                    value: categoryName,
-                    child: Text(categoryName),
-                  );
-                }).toList()
-                  ..add(
-                    DropdownMenuItem<String>(
-                      value: 'New',
-                      child: const Text("Créer une nouvelle catégorie"),
-                    ),
-                  ),
-                onChanged: (newValue) {
-                  if (newValue == 'New') {
-                    _createNewCategory();
-                  } else {
-                    setState(() {
-                      _selectedCategory = newValue;
-                    });
-                  }
-                },
-                hint: const Text("Sélectionner une catégorie"),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _pickImages,
-                child: const Text("Ajouter des reçus"),
-              ),
-              const SizedBox(height: 20),
 
-              // Affichage des images existantes
-              if (_existingReceiptUrls.isNotEmpty)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Reçus existants :", style: TextStyle(fontWeight: FontWeight.bold)),
-                    Wrap(
-                      spacing: 8,
-                      children: _existingReceiptUrls.map((url) {
-                        return Stack(
-                          children: [
-                            Image.network(
-                              url,
-                              width: 100,
-                              height: 100,
-                              fit: BoxFit.cover,
-                            ),
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: IconButton(
-                                icon: Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  _removeExistingImage(url);
-                                },
-                              ),
-                            )
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              const SizedBox(height: 20),
-
-              // Affichage des nouvelles images ajoutées
-              if (_receiptImages.isNotEmpty) //todo ajouter la petites croix pour supprimer le recu l'image
-                //todo limite de 3 image
-                Wrap(
-                  spacing: 8,
-                  children: _receiptImages.map((image) {
-                    return Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Image.file(
-                        image,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                      ),
-                    );
-                  }).toList(),
-                ),
-
-              const SizedBox(height: 20),
-
-              // Affichage de l'adresse
-              if (_currentAdress != null)
-                Text(
-                  "Adresse : $_currentAdress",
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-              // todo affichage saisie de l'adrese avec proposition automatique via API
-              // todo Liste des propositions
-              //todo Icon(Icons.my_location); pour récuéprer localisationn utilisateur
-
-              // Intégration de la carte dans le formulaire
-              _buildMap(),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: _getCurrentLocation,
-                child: const Text("Récupérer ma position actuelle"),
-              ),
-
-              const SizedBox(height: 20),
-              CheckboxListTile(
-                title: const Text("Transaction récurrente"),
-                value: _isRecurring,
-                onChanged: (newValue) {
-                  setState(() {
-                    _isRecurring = newValue ?? false;
-                  });
-                },
-              ),
+              // afficher un formulaire en fonction du type
+              _buildTransactionForm(),
+              // Bouton pour enregistrer la transaction
               Center(
-                  child: ElevatedButton(
-                    onPressed: _saveTransaction,
-                    child: Text(widget.transaction == null ? 'Ajouter la transaction' : 'Mettre à jour la transaction'),
-                  )
+                child: ElevatedButton(
+                  onPressed: _saveTransaction,
+                  child: Text(
+                      widget.transaction == null ? 'Ajouter' : 'Mettre à jour'),
+                ),
               ),
-              //todo après ajout de la transaction il faut mettre a jour la liste des transactions du coup quand même enfaite
             ],
           ),
         ),

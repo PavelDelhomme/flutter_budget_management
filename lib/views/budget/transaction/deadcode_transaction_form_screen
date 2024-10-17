@@ -1,0 +1,169 @@
+
+
+              TextField(
+                controller: _amountController,
+                decoration: const InputDecoration(labelText: 'Montant', hintText: 'Entrez le montant'),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                textInputAction: TextInputAction.done,
+                onEditingComplete: () {
+                  FocusScope.of(context).requestFocus(_categoryFocusNode);
+                },
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                ],
+              ),
+              TextField(
+                controller: _dateController,
+                decoration: const InputDecoration(labelText: 'Date'),
+                keyboardType: TextInputType.datetime,
+                textInputAction: TextInputAction.done,
+                onEditingComplete: () {
+                  FocusScope.of(context).unfocus();
+                },
+                onTap: () async {
+                  DateTime? selectedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2101),
+                  );
+                  if (selectedDate != null) {
+                    _dateController.text = DateFormat.yMd().format(selectedDate);
+                  }
+                },
+              ),
+              DropdownButton<String>(
+                focusNode: _categoryFocusNode,
+                value: _selectedCategory,
+                items: _categories.map((categoryName) {
+                  return DropdownMenuItem<String>(
+                    value: categoryName,
+                    child: Text(categoryName),
+                  );
+                }).toList()
+                  ..add(
+                    DropdownMenuItem<String>(
+                      value: 'New',
+                      child: const Text("Créer une nouvelle catégorie"),
+                    ),
+                  ),
+                onChanged: (newValue) {
+                  if (newValue == 'New') {
+                    _createNewCategory();
+                  } else {
+                    setState(() {
+                      _selectedCategory = newValue;
+                    });
+                  }
+                },
+                hint: const Text("Sélectionner une catégorie"),
+              ), /*
+              CheckboxListTile(
+                title: const Text("Transaction récurrente"),
+                value: _isRecurring,
+                onChanged: (newValue) {
+                  setState(() {
+                    _isRecurring = newValue ?? false;
+                  });
+                },
+              ), */
+              // Switch recurrence
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _pickImages,
+                child: const Text("Ajouter des reçus"),
+              ),
+              const SizedBox(height: 20),
+
+              // Affichage des images existantes
+              if (_existingReceiptUrls.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Reçus existants :", style: TextStyle(fontWeight: FontWeight.bold)),
+                    Wrap(
+                      spacing: 8,
+                      children: _existingReceiptUrls.map((url) {
+                        return Stack(
+                          children: [
+                            Image.network(
+                              url,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            ),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: IconButton(
+                                icon: Icon(Icons.delete, color: Colors.red),
+                                onPressed: () {
+                                  _removeExistingImage(url);
+                                },
+                              ),
+                            )
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 20),
+
+              // Affichage des nouvelles images ajoutées
+              if (_receiptImages.isNotEmpty) //todo ajouter la petites croix pour supprimer le recu l'image
+                //todo limite de 3 image
+                Wrap(
+                  spacing: 8,
+                  children: _receiptImages.map((image) {
+                    return Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Image.file(
+                        image,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                    );
+                  }).toList(),
+                ),
+
+              const SizedBox(height: 20),
+
+              // Affichage de l'adresse
+              if (_currentAdress != null)
+                Text(
+                  "Adresse : $_currentAdress",
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              // todo affichage saisie de l'adrese avec proposition automatique via API
+              // todo Liste des propositions
+              //todo Icon(Icons.my_location); pour récuéprer localisationn utilisateur
+
+              // Intégration de la carte dans le formulaire
+              _buildMap(),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: _getCurrentLocation,
+                child: const Text("Récupérer ma position actuelle"),
+              ),
+
+              const SizedBox(height: 20),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _notesController,
+                decoration: const InputDecoration(labelText: 'Description'),
+                textInputAction: TextInputAction.next,
+                onEditingComplete: () {
+                  FocusScope.of(context).nextFocus();
+                },
+              ),
+              Center(
+                  child: ElevatedButton(
+                    onPressed: _saveTransaction,
+                    child: Text(widget.transaction == null ? 'Ajouter la transaction' : 'Mettre à jour la transaction'),
+                  )
+              ),
+              //todo après ajout de la transaction il faut mettre a jour la liste des transactions du coup quand même enfaite
+            ],
+          ),
