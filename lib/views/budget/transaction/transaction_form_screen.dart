@@ -352,56 +352,60 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       }
     }
   }
+
   Widget _buildAdditionalFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Afficher uniquement pour les transactions de type débit
+        // Afficher ces champs uniquement si la transaction est de type Débit (donc _isDebit est true)
         if (_isDebit)
-          DropdownButton<String>(
-            focusNode: _categoryFocusNode,
-            value: _selectedCategory,
-            items: _categories.map((categoryName) {
-              return DropdownMenuItem<String>(
-                value: categoryName,
-                child: Text(categoryName),
-              );
-            }).toList()..add(
-              DropdownMenuItem<String>(
-                value: "Nouvelle catégorie",
-                child: const Text("Créer une nouvelle catégorie"),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DropdownButton<String>(
+                focusNode: _categoryFocusNode,
+                value: _selectedCategory,
+                items: _categories.map((categoryName) {
+                  return DropdownMenuItem<String>(
+                    value: categoryName,
+                    child: Text(categoryName),
+                  );
+                }).toList()
+                  ..add(
+                    DropdownMenuItem<String>(
+                      value: "Nouvelle catégorie",
+                      child: const Text("Créer une nouvelle catégorie"),
+                    ),
+                  ),
+                onChanged: (newValue) {
+                  if (newValue == 'Nouvelle catégorie') {
+                    _createNewCategory();
+                  } else {
+                    setState(() {
+                      _selectedCategory = newValue;
+                    });
+                  }
+                },
+                hint: const Text("Sélectionner une catégorie."),
               ),
-            ),
-            onChanged: (newValue) {
-              if (newValue == 'Nouvelle catégorie') {
-                _createNewCategory();
-              } else {
-                setState(() {
-                  _selectedCategory = newValue;
-                });
-              }
-            },
-            hint: const Text("Sélectionner une catégorie."),
-          ),
-        if (_isDebit)
-          ElevatedButton(onPressed: _pickImage, child: const Text("Ajouter des reçus")),
-        if (_isDebit && _receiptImages.isNotEmpty)
-          Wrap(
-            children: _receiptImages.map((image) {
-              return Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Image.file(image, width: 100, height: 100, fit: BoxFit.cover),
-              );
-            }).toList(),
-          ),
-        if (_isDebit && _currentAdress != null)
-          Text("Adresse : $_currentAdress"),
-        if (_isDebit)
-          _buildMap(),
-        if (_isDebit)
-          ElevatedButton(
-            onPressed: _getCurrentLocation,
-            child: const Text("Récupérer ma position actuelle"),
+              ElevatedButton(
+                  onPressed: _pickImage, child: const Text("Ajouter des reçus")),
+              if (_receiptImages.isNotEmpty)
+                Wrap(
+                  children: _receiptImages.map((image) {
+                    return Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Image.file(image, width: 100, height: 100, fit: BoxFit.cover),
+                    );
+                  }).toList(),
+                ),
+              if (_currentAdress != null) Text("Adresse : $_currentAdress"),
+              _buildMap(),
+              ElevatedButton(
+                onPressed: _getCurrentLocation,
+                child: const Text("Récupérer ma position actuelle"),
+              ),
+            ],
           ),
       ],
     );
@@ -454,6 +458,21 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           controller: _notesController,
           decoration: const InputDecoration(hintText: "Ajouter des notes"),
         ),
+        const SizedBox(height: 16.0),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text("Récurrent"),
+            Switch(
+              value: _isRecurring,
+              onChanged: (value) {
+                setState(() {
+                  _isRecurring = value;
+                });
+              },
+            ),
+          ],
+        ),
         _buildAdditionalFields(),
       ],
     );
@@ -476,7 +495,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("Débit"),
+                  const Text("Crédit"),
                   Switch(
                     value: _isDebit,
                     onChanged: (value) {
@@ -485,7 +504,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                       });
                     },
                   ),
-                  const Text("Crédit")
+                  const Text("Débit")
                 ],
               ),
 
