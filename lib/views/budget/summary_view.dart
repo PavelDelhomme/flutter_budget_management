@@ -1,8 +1,6 @@
-import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:random_color/random_color.dart';  // Importation pour générer des couleurs aléatoires
+import 'package:flutter/material.dart';
 import 'package:budget_management/models/good_models.dart';
 
 class SummaryView extends StatefulWidget {
@@ -17,34 +15,134 @@ class _SummaryViewState extends State<SummaryView> {
   double totalDebit = 0.0;
   double remainingAmount = 0.0;
 
-  Future<void> _calculateMonthlySummary() async {
+
+  Future<void> _calculateTotalSummary() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      DateTime now = DateTime.now();
-      DateTime startOfMonth = DateTime(now.year, now.month, 1);
+      // Récupérer toutes les transactions depuis le début
+      List<Transaction> transactions = await _getAllTransactions();
 
-      final budgetSnapshot = await FirebaseFirestore.instance
-          .collection('budgets')
-          .where('user_id', isEqualTo: user.uid)
-          .where('month', isEqualTo: Timestamp.fromDate(startOfMonth))
-          .get();
+      if (transactions.isNotEmpty) {
+        // Calculer les débits et crédits pour tous les mois
+        double debitTotal = 0.0;
+        double creditTotal = 0.0;
 
-      if (budgetSnapshot.docs.isNotEmpty) {
-        Budget budget = Budget.fromMap(budgetSnapshot.docs.first.data());
+        for (var transaction in transactions) {
+          if (transaction is Debit) {
+            debitTotal += transaction.amount;
+          } else if (transaction is Credit) {
+            creditTotal += transaction.amount;
+          }
+        }
 
-        totalDebit = await budget.calculateDebit();
-        totalCredit = await budget.calculateCredit();
-        remainingAmount = totalCredit - totalDebit;
-
-        setState(() {});
+        setState(() {
+          totalDebit = debitTotal;
+          totalCredit = creditTotal;
+          remainingAmount = totalCredit - totalDebit;
+        });
       }
     }
   }
 
+  Future<List<Transaction>> _getAllTransactions() async {
+    final user = FirebaseAuth.instance.currentUser;
+    List<Transaction> transactions = [];
+
+    if (user != null) {
+      // Récupérer toutes les transactions de débit
+      final debitSnapshot = await fs.FirebaseFirestore.instance
+          .collection('debits')
+          .where('user_id', isEqualTo: user.uid)
+          .get();
+
+      // Récupérer toutes les transactions de crédit
+      final creditSnapshot = await fs.FirebaseFirestore.instance
+          .collection('credits')
+          .where('user_id', isEqualTo: user.uid)
+          .get();
+
+      // Ajouter toutes les transactions récupérées à la liste
+      for (var doc in debitSnapshot.docs) {
+        transactions.add(Debit.fromMap(doc.data()));
+      }
+      for (var doc in creditSnapshot.docs) {
+        transactions.add(Credit.fromMap(doc.data()));
+      }
+    }
+
+    return transactions;
+  }
+
+  Future<void> _calculateMonthlySummary() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // Récupérer les transactions pour le mois courant
+      List<Transaction> transactions = await _getTransactionsForCurrentMonth();
+
+      if (transactions.isNotEmpty) {
+        // Calculer les débits et crédits
+        double debitTotal = 0.0;
+        double creditTotal = 0.0;
+
+        for (var transaction in transactions) {
+          if (transaction is Debit) {
+            debitTotal += transaction.amount;
+          } else if (transaction is Credit) {
+            creditTotal += transaction.amount;
+          }
+        }
+
+        setState(() {
+          totalDebit = debitTotal;
+          totalCredit = creditTotal;
+          remainingAmount = totalCredit - totalDebit;
+        });
+      }
+    }
+  }
+
+  Future<List<Transaction>> _getTransactionsForCurrentMonth() async {
+    final user = FirebaseAuth.instance.currentUser;
+    List<Transaction> transactions = [];
+
+    if (user != null) {
+      DateTime now = DateTime.now();
+      DateTime startOfMonth = DateTime(now.year, now.month, 1);
+      DateTime endOfMonth = DateTime(now.year, now.month + 1, 1);
+
+      // Récupérer les transactions de débit
+      final debitSnapshot = await fs.FirebaseFirestore.instance
+          .collection('debits')
+          .where('user_id', isEqualTo: user.uid)
+          .where('date', isGreaterThanOrEqualTo: fs.Timestamp.fromDate(startOfMonth))
+          .where('date', isLessThan: fs.Timestamp.fromDate(endOfMonth))
+          .get();
+
+      // Récupérer les transactions de crédit
+      final creditSnapshot = await fs.FirebaseFirestore.instance
+          .collection('credits')
+          .where('user_id', isEqualTo: user.uid)
+          .where('date', isGreaterThanOrEqualTo: fs.Timestamp.fromDate(startOfMonth))
+          .where('date', isLessThan: fs.Timestamp.fromDate(endOfMonth))
+          .get();
+
+      // Ajouter toutes les transactions récupérées à la liste
+      for (var doc in debitSnapshot.docs) {
+        transactions.add(Debit.fromMap(doc.data()));
+      }
+      for (var doc in creditSnapshot.docs) {
+        transactions.add(Credit.fromMap(doc.data()));
+      }
+    }
+
+    return transactions;
+  }
+
+
   @override
   void initState() {
     super.initState();
-    _calculateMonthlySummary();
+    _calculateTotalSummary();
   }
 
   @override

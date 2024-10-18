@@ -1,9 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:budget_management/models/good_models.dart';
-
 class SavingsPage extends StatefulWidget {
   @override
   _SavingsPageState createState() => _SavingsPageState();
@@ -16,7 +15,7 @@ class _SavingsPageState extends State<SavingsPage> {
   Future<void> _calculateSavings() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final budgetsSnapshot = await FirebaseFirestore.instance
+      final budgetsSnapshot = await fs.FirebaseFirestore.instance
           .collection('budgets')
           .where('user_id', isEqualTo: user.uid)
           .orderBy('month', descending: true)
@@ -36,14 +35,17 @@ class _SavingsPageState extends State<SavingsPage> {
         double totalCredit = budget.calculateCredit(transactions);
         double remaining = totalCredit - totalDebit;
 
+        // Ajouter le reste aux économies
         savings += remaining;
         loadedBudgets.add(budget);
       }
 
-      setState(() {
-        totalSavings = savings;
-        budgets = loadedBudgets;
-      });
+      if (mounted) {
+        setState(() {
+          totalSavings = savings;
+          budgets = loadedBudgets;
+        });
+      }
     }
   }
 
@@ -54,17 +56,17 @@ class _SavingsPageState extends State<SavingsPage> {
 
     if (user != null) {
       // Récupérer les transactions de débit
-      final debitSnapshot = await FirebaseFirestore.instance
+      final debitSnapshot = await fs.FirebaseFirestore.instance
           .collection('debits')
           .where('user_id', isEqualTo: user.uid)
-          .where('budgetId', isEqualTo: budget.id)
+          .where('budget_id', isEqualTo: budget.id)
           .get();
 
       // Récupérer les transactions de crédit
-      final creditSnapshot = await FirebaseFirestore.instance
+      final creditSnapshot = await fs.FirebaseFirestore.instance
           .collection('credits')
           .where('user_id', isEqualTo: user.uid)
-          .where('budgetId', isEqualTo: budget.id)
+          .where('budget_id', isEqualTo: budget.id)
           .get();
 
       // Ajouter toutes les transactions récupérées à la liste

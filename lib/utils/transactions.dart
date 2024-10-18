@@ -7,8 +7,7 @@ import 'budgets.dart';
 import 'categories.dart';
 import 'generate_ids.dart';
 
-Future<void> copyRecurringTransactions(
-    String previousBudgetId, String newBudgetId) async {
+Future<void> copyRecurringTransactions(String previousBudgetId, String newBudgetId) async {
   // Copier les transaction réccurentes pour les débits
   final recurringTransactionsSnapshot = await FirebaseFirestore.instance
       .collection('debits')
@@ -34,11 +33,6 @@ Future<void> copyRecurringTransactions(
 
     // ajouter la nouvelle transaction de type débit
     await FirebaseFirestore.instance.collection("debits").doc(newDebit.id).set(newDebit.toMap());
-
-    // Mettre  a njour les dépenses de la catégorie si elle est présente
-    if (debitData['categorie_id'] != null) {
-      await updateCategorySpending(debitData['categorie_id'], debitData['amount']);
-    }
   }
 
   // Coppier les transactions réccurenytes pour les crédits

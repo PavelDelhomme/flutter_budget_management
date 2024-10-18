@@ -71,35 +71,25 @@ class Budget {
     );
   }
 
-  Future<double> calculateDebit(List<Transaction> transactions) async {
-    final debitTransactions = await FirebaseFirestore.instance
-    .collection("debits")
-    .where('user_id', isEqualTo: user_id)
-    .where("buget_id", isEqualTo: id)
-    .get();
-
+  /// Méthode pour calculer les débits à partir de la liste des transactions
+  double calculateDebit(List<Transaction> transactions) {
     double totalDebit = 0;
-    for (var doc in debitTransactions.docs) {
-      final data = doc.data();
-      totalDebit += (data['amount'] as num).toDouble();
+    for (var transaction in transactions) {
+      if (transaction is Debit) {
+        totalDebit += transaction.amount;
+      }
     }
-
     return totalDebit;
   }
 
-  Future<double> calculateCredit(List<Transaction> transactions) async {
-    final creditTransactions = await FirebaseFirestore.instance
-      .collection("credits")
-      .where('user_id', isEqualTo: user_id)
-      .where('budget_id', isEqualTo: id)
-      .get();
-
+  /// Méthode pour calculer les crédits à partir de la liste des transactions
+  double calculateCredit(List<Transaction> transactions) {
     double totalCredit = 0;
-    for (var doc in creditTransactions.docs) {
-      final data = doc.data();
-      totalCredit += (data['amount'] as num).toDouble();
+    for (var transaction in transactions) {
+      if (transaction is Credit) {
+        totalCredit += transaction.amount;
+      }
     }
-
     return totalCredit;
   }
 }
