@@ -333,7 +333,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             amount: amount,
             notes: notes,
             receiptUrls: updatedReceiptUrls,
-            location: LatLng(geoPoint!.latitude, geoPoint.longitude),
+            location: geoPoint,
             isRecurring: isReccuring,
           );
         } else {

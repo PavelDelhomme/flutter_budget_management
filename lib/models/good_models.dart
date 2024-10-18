@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -70,14 +71,36 @@ class Budget {
     );
   }
 
-  double calculateDebit(List<Transaction> transactions) {
-    //todo récupérer toutes les transactions de type débit correspondant au mois actuel
-    return 0.0;
+  Future<double> calculateDebit(List<Transaction> transactions) async {
+    final debitTransactions = await FirebaseFirestore.instance
+    .collection("debits")
+    .where('user_id', isEqualTo: user_id)
+    .where("buget_id", isEqualTo: id)
+    .get();
+
+    double totalDebit = 0;
+    for (var doc in debitTransactions.docs) {
+      final data = doc.data();
+      totalDebit += (data['amount'] as num).toDouble();
+    }
+
+    return totalDebit;
   }
 
-  double calculateCredit(List<Transaction> transactions) {
-    //todo récupérer toutes les transactions de type crédit correspondant au mois actuel
-    return 0.0;
+  Future<double> calculateCredit(List<Transaction> transactions) async {
+    final creditTransactions = await FirebaseFirestore.instance
+      .collection("credits")
+      .where('user_id', isEqualTo: user_id)
+      .where('budget_id', isEqualTo: id)
+      .get();
+
+    double totalCredit = 0;
+    for (var doc in creditTransactions.docs) {
+      final data = doc.data();
+      totalCredit += (data['amount'] as num).toDouble();
+    }
+
+    return totalCredit;
   }
 }
 
@@ -143,7 +166,7 @@ class Transaction {
 // Classe Debit héritant de Transaction et ajoutant des champs spécifiques
 class Debit extends Transaction {
   List<String>? photos;
-  LatLng localisation;
+  GeoPoint localisation;
   String? categorie_id;
 
   Debit({
@@ -185,7 +208,7 @@ class Debit extends Transaction {
       isRecurring: map['isRecurring'],
       amount: map['amount'],
       photos: List<String>.from(map['photos'] ?? []),
-      localisation: LatLng(map['localisation'].latitude, map['localisation'].longitude),
+      localisation: map['localisation'],
       categorie_id: map['categorie_id'],
     );
   }

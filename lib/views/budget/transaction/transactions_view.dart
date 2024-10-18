@@ -15,17 +15,19 @@ class TransactionsView extends StatefulWidget {
 }
 
 class _TransactionsViewState extends State<TransactionsView> {
-  Future<List<QueryDocumentSnapshot>> _getTransactionsForCurrentMonth() async {
+  DateTime selectedMonth = DateTime.now();
+
+  Future<List<QueryDocumentSnapshot>> _getTransactionsForSelectedMonth() async {
     final user = FirebaseAuth.instance.currentUser;
-    DateTime now = DateTime.now();
-    DateTime startOfMonth = DateTime(now.year, now.month, 1);
+    DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
+    DateTime endOfMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
 
     // Récupérer les débits
     var debitQuery = await FirebaseFirestore.instance
         .collection("debits")
         .where("user_id", isEqualTo: user?.uid)
         .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .where("date", isLessThan: Timestamp.fromDate(DateTime(now.year, now.month + 1, 1)))
+        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
         .get();
 
     // Récupérer les crédits
@@ -33,7 +35,7 @@ class _TransactionsViewState extends State<TransactionsView> {
         .collection("credits")
         .where("user_id", isEqualTo: user?.uid)
         .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .where("date", isLessThan: Timestamp.fromDate(DateTime(now.year, now.month + 1, 1)))
+        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
         .get();
 
     // Combiner les deux listes de documents
@@ -84,162 +86,174 @@ class _TransactionsViewState extends State<TransactionsView> {
     }
   }
 
+  void _previousMonth() {
+    setState(() {
+      selectedMonth = DateTime(selectedMonth.year, selectedMonth.month - 1);
+    });
+  }
+
+  void _nextMonth() {
+    setState(() {
+      selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + 1);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('debits')
-            .where('user_id', isEqualTo: user?.uid)
-            .snapshots(),
-        builder: (context, debitSnapshot) {
-          if (debitSnapshot.connectionState == ConnectionState.waiting) {
+      appBar: AppBar(
+        title: Text(DateFormat.yMMMM('fr_FR').format(selectedMonth)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: _previousMonth,
+          ),
+          IconButton(
+            icon: const Icon(Icons.arrow_forward),
+            onPressed: _nextMonth,
+          ),
+        ],
+      ),
+      body: FutureBuilder<List<QueryDocumentSnapshot>>(
+        future: _getTransactionsForSelectedMonth(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('credits')
-                .where('user_id', isEqualTo: user?.uid)
-                .snapshots(),
-            builder: (context, creditSnapshot) {
-              if (creditSnapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+          if (snapshot.hasError) {
+            return const Center(child: Text('Erreur lors du chargement des transactions.'));
+          }
+
+          List<QueryDocumentSnapshot> transactions = snapshot.data ?? [];
+
+          // Organiser les transactions par jour
+          Map<String, List<QueryDocumentSnapshot>> transactionsByDay = {};
+
+          for (var transaction in transactions) {
+            DateTime date = (transaction['date'] as Timestamp).toDate();
+            String dayKey = DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(date);
+
+            if (!transactionsByDay.containsKey(dayKey)) {
+              transactionsByDay[dayKey] = [];
+            }
+            transactionsByDay[dayKey]!.add(transaction);
+          }
+
+          if (transactions.isEmpty) {
+            return const Center(child: Text('Aucune transaction disponible.'));
+          }
+
+          return ListView.builder(
+            itemCount: transactionsByDay.keys.length,
+            itemBuilder: (context, index) {
+              String dayKey = transactionsByDay.keys.elementAt(index);
+              var transactionsForDay = transactionsByDay[dayKey]!;
+
+              // Calculer le montant total des transactions pour chaque jour
+              double totalAmount = 0;
+              for (var transaction in transactionsForDay) {
+                totalAmount += transaction['amount'];
               }
 
-              if (debitSnapshot.hasError || creditSnapshot.hasError) {
-                return const Center(child: Text('Erreur lors du chargement des transactions.'));
-              }
+              return ExpansionTile(
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        dayKey,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      'Total: \$${totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                children: transactionsForDay.map((transaction) {
+                  bool isDebit = transaction.reference.parent.id == 'debits';
+                  String transactionType = isDebit ? 'Débit' : 'Crédit';
+                  String? category = isDebit ? transaction['categorie_id'] : null;
 
-              // Fusionner les transactions de débits et crédits
-              List<QueryDocumentSnapshot> transactions = [
-                ...debitSnapshot.data?.docs ?? [],
-                ...creditSnapshot.data?.docs ?? [],
-              ];
+                  // Appliquer les couleurs en fonction du type de transaction
+                  Color transactionColor = isDebit ? Colors.red : Colors.green;
 
-              // Organiser les transactions par jour
-              Map<String, List<QueryDocumentSnapshot>> transactionsByDay = {};
-
-              for (var transaction in transactions) {
-                DateTime date = (transaction['date'] as Timestamp).toDate();
-                String dayKey = DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(date);
-
-                if (!transactionsByDay.containsKey(dayKey)) {
-                  transactionsByDay[dayKey] = [];
-                }
-                transactionsByDay[dayKey]!.add(transaction);
-              }
-
-              if (transactions.isEmpty) {
-                return const Center(child: Text('Aucune transaction disponible.'));
-              }
-
-              return ListView.builder(
-                itemCount: transactionsByDay.keys.length,
-                itemBuilder: (context, index) {
-                  String dayKey = transactionsByDay.keys.elementAt(index);
-                  var transactionsForDay = transactionsByDay[dayKey]!;
-
-                  // Calculer le montant total des transactions pour chaque jour
-                  double totalAmount = 0;
-                  for (var transaction in transactionsForDay) {
-                    totalAmount += transaction['amount'];
-                  }
-
-                  return ExpansionTile(
-                    title: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  return Slidable(
+                    key: Key(transaction.id),
+                    startActionPane: ActionPane(
+                      motion: const StretchMotion(),
                       children: [
-                        Expanded(
-                          child: Text(
-                            dayKey,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(
-                          'Total: \$${totalAmount.toStringAsFixed(2)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        SlidableAction(
+                          onPressed: (context) {
+                            _editTransaction(context, transaction);
+                          },
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          icon: Icons.edit,
+                          label: 'Modifier',
                         ),
                       ],
                     ),
-                    children: transactionsForDay.map((transaction) {
-                      bool isDebit = transaction.reference.parent.id == 'debits';
-                      String transactionType = isDebit ? 'Débit' : 'Crédit';
-                      String? category = isDebit ? transaction['categorie_id'] : null;
-
-                      return Slidable(
-                        key: Key(transaction.id),
-                        startActionPane: ActionPane(
-                          motion: const StretchMotion(),
-                          children: [
-                            SlidableAction(
-                              onPressed: (context) {
-                                _editTransaction(context, transaction);
-                              },
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              icon: Icons.edit,
-                              label: 'Modifier',
-                            ),
-                          ],
+                    endActionPane: ActionPane(
+                      motion: const StretchMotion(),
+                      children: [
+                        SlidableAction(
+                          onPressed: (context) async {
+                            bool confirm = await _showDeleteConfirmation(context);
+                            if (confirm) {
+                              _deleteTransaction(context, transaction);
+                            }
+                          },
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          icon: Icons.delete,
+                          label: 'Supprimer',
                         ),
-                        endActionPane: ActionPane(
-                          motion: const StretchMotion(),
-                          children: [
-                            SlidableAction(
-                              onPressed: (context) async {
-                                bool confirm = await _showDeleteConfirmation(context);
-                                if (confirm) {
-                                  _deleteTransaction(context, transaction);
-                                }
-                              },
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                              icon: Icons.delete,
-                              label: 'Supprimer',
-                            ),
-                          ],
-                        ),
-                        child: ListTile(
-                          title: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('${transaction['amount'].toStringAsFixed(2)} \$'),
-                              Text(transactionType),
-                            ],
+                      ],
+                    ),
+                    child: ListTile(
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${transaction['amount'].toStringAsFixed(2)} \$',
+                            style: TextStyle(color: transactionColor),
                           ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (category != null) Text('Catégorie: $category'),
-                              Text(transaction['notes'] ?? 'Aucune note'),
-                            ],
+                          Text(transactionType),
+                        ],
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (category != null) Text('Catégorie: $category'),
+                          Text(transaction['notes'] ?? 'Aucune note'),
+                        ],
+                      ),
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
                           ),
-                          onTap: () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+                          builder: (context) {
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                bottom: MediaQuery.of(context).viewInsets.bottom,
                               ),
-                              builder: (context) {
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: MediaQuery.of(context).viewInsets.bottom,
-                                  ),
-                                  child: TransactionDetailsModal(transaction: transaction),
-                                );
-                              },
+                              child: TransactionDetailsModal(transaction: transaction),
                             );
                           },
-                        ),
-                      );
-                    }).toList(),
+                        );
+                      },
+                    ),
                   );
-                },
+                }).toList(),
               );
             },
           );

@@ -28,7 +28,7 @@ Future<void> copyRecurringTransactions(
       isRecurring: debitData['isRecurring'],
       amount: debitData['amount'],
       photos: List<String>.from(debitData['photos'] ?? []),
-      localisation: LatLng(debitData['localisation'].latitude, debitData['localisation'].longitude),
+      localisation: debitData['localisation'],
       categorie_id: debitData['categorie_id'],
     );
 
@@ -76,7 +76,7 @@ Future<void> addDebitTransaction({
   required double amount,
   String? notes,
   List<String>? receiptUrls,
-  LatLng? location,
+  GeoPoint? location,
   bool isRecurring = false,
 }) async {
   final transactionId = generateTransactionId();
@@ -88,7 +88,7 @@ Future<void> addDebitTransaction({
     isRecurring: isRecurring,
     amount: amount,
     photos: receiptUrls,
-    localisation: location ?? LatLng(0, 0),
+    localisation: location ?? const GeoPoint(0, 0),
     categorie_id: categoryId,
   );
 

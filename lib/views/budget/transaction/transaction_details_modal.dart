@@ -21,15 +21,30 @@ class TransactionDetailsModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typeTransaction = transaction['type_transaction'] ?? false;
-    final amount = transaction['amount'] ?? 0.0;
-    final categoryId = transaction['categoryId'];
-    final date = DateFormat.yMMMMd().format((transaction['date'] as Timestamp).toDate());
-    final notes = transaction['notes'] ?? '';
-    final isRecurring = transaction['isRecurring'] ?? false;
-    final receiptUrls = List<String>.from(transaction['receiptUrls'] ?? []);
-    final LatLng? location = transaction['location'] != null
-        ? LatLng((transaction['location'] as GeoPoint).latitude, (transaction['location'] as GeoPoint).longitude)
+    // Récupération des données de la transaction
+    final data = transaction.data() as Map<String, dynamic>?;
+
+    if (data == null) {
+      return const Center(
+        child: Text('Erreur : Aucune donnée disponible pour cette transaction.'),
+      );
+    }
+
+    // Vérifie si la transaction est un débit ou un crédit
+    final bool isDebit = transaction.reference.parent.id == 'debits';
+    final amount = data['amount'] ?? 0.0;
+    final date = DateFormat.yMMMMd().format((data['date'] as Timestamp).toDate());
+    final notes = data['notes'] ?? '';
+    final isRecurring = data['isRecurring'] ?? false;
+
+    // Pour les débits, récupère les photos, la localisation et la catégorie
+    final List<String> receiptUrls = isDebit && data.containsKey('photos')
+        ? List<String>.from(data['photos'] ?? [])
+        : [];
+
+    final String? categoryId = isDebit ? data['categorie_id'] : null;
+    final LatLng? location = data['localisation'] != null
+        ? LatLng((data['localisation'] as GeoPoint).latitude, (data['localisation'] as GeoPoint).longitude)
         : null;
 
     return Container(
@@ -45,7 +60,7 @@ class TransactionDetailsModal extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  "Transaction du $date}",
+                  "Transaction du $date",
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -62,15 +77,17 @@ class TransactionDetailsModal extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text('Notes : $notes', style: const TextStyle(fontSize: 18)),
-          const SizedBox(height: 10),
           Text('Montant : \$${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18)),
+          const SizedBox(height: 10),
+          if (categoryId != null) Text('Catégorie : $categoryId', style: const TextStyle(fontSize: 18)),
+          const SizedBox(height: 10),
+          Text('Notes : $notes', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),
           Text('Transaction récurrente : ${isRecurring ? 'Oui' : 'Non'}', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 20),
 
-          // Utilisation de FutureBuilder pour afficher l'adresse
-          if (location != null)
+          // Utilisation de FutureBuilder pour afficher l'adresse si la transaction est un débit
+          if (location != null && isDebit)
             FutureBuilder<String>(
               future: _getAddressFromLatLng(location),
               builder: (context, snapshot) {
@@ -83,13 +100,13 @@ class TransactionDetailsModal extends StatelessWidget {
               },
             ),
 
-          if (location != null)
+          if (location != null && isDebit)
             SizedBox(
               height: 200,
               child: FlutterMap(
                 mapController: MapController(),
                 options: MapOptions(
-                  initialCenter: location, // Utiliser initialCenter au lieu de center
+                  initialCenter: location, // Utiliser initialCenter
                   initialZoom: 16,
                 ),
                 children: [
@@ -103,7 +120,7 @@ class TransactionDetailsModal extends StatelessWidget {
                         point: location,
                         width: 80,
                         height: 80,
-                        child: const Icon( // Utiliser child au lieu de builder
+                        child: const Icon(
                           Icons.location_on,
                           size: 40,
                           color: Colors.red,
