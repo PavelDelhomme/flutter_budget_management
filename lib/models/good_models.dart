@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 class UserModel {
@@ -69,12 +70,12 @@ class Budget {
     );
   }
 
-  double calculateDebit(List<UserTransaction> transactions) {
+  double calculateDebit(List<Transaction> transactions) {
     //todo récupérer toutes les transactions de type débit correspondant au mois actuel
     return 0.0;
   }
 
-  double calculateCredit(List<UserTransaction> transactions) {
+  double calculateCredit(List<Transaction> transactions) {
     //todo récupérer toutes les transactions de type crédit correspondant au mois actuel
     return 0.0;
   }
@@ -108,62 +109,138 @@ class Categorie {
   }
 }
 
-class UserTransaction {
+
+// Classe parent Transaction pour les champs communs
+class Transaction {
   String id;
-  bool type; // True : Débit | False : Crédit
-  String? categorie_id;
   String user_id;
   DateTime date;
   String notes;
   bool isRecurring;
+  double amount;
 
-  UserTransaction({
+  Transaction({
     required this.id,
-    required this.type,
-    this.categorie_id,
     required this.user_id,
     required this.date,
     required this.notes,
     required this.isRecurring,
+    required this.amount,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      "id": id,
-      "type": type,
-      "categorie_id": categorie_id,
-      "user_id": user_id,
-      "date": date,
-      "notes": notes,
-      "isRecurring": isRecurring,
+      'id': id,
+      'user_id': user_id,
+      'date': date,
+      'notes': notes,
+      'isRecurring': isRecurring,
+      'amount': amount,
     };
   }
+}
 
-  static UserTransaction fromMap(Map<String, dynamic> map) {
-    return UserTransaction(
+// Classe Debit héritant de Transaction et ajoutant des champs spécifiques
+class Debit extends Transaction {
+  List<String>? photos;
+  LatLng localisation;
+  String? categorie_id;
+
+  Debit({
+    required String id,
+    required String user_id,
+    required DateTime date,
+    required String notes,
+    required bool isRecurring,
+    required double amount,
+    this.photos,
+    required this.localisation,
+    this.categorie_id,
+  }) : super(
+    id: id,
+    user_id: user_id,
+    date: date,
+    notes: notes,
+    isRecurring: isRecurring,
+    amount: amount,
+  );
+
+  @override
+  Map<String, dynamic> toMap() {
+    final map = super.toMap();
+    map.addAll({
+      'photos': photos ?? [],
+      'localisation': localisation,
+      'categorie_id': categorie_id,
+    });
+    return map;
+  }
+
+  static Debit fromMap(Map<String, dynamic> map) {
+    return Debit(
       id: map['id'],
-      type: map['type'],
-      categorie_id: map['categorie_id'],
       user_id: map['user_id'],
-      date: map['date'],
+      date: (map['date'] as Timestamp).toDate(),
       notes: map['notes'],
       isRecurring: map['isRecurring'],
+      amount: map['amount'],
+      photos: List<String>.from(map['photos'] ?? []),
+      localisation: LatLng(map['localisation'].latitude, map['localisation'].longitude),
+      categorie_id: map['categorie_id'],
     );
   }
 }
 
+// Classe Credit héritant de Transaction, n'ajoutant que le montant spécifique
+class Credit extends Transaction {
+  Credit({
+    required String id,
+    required String user_id,
+    required DateTime date,
+    required String notes,
+    required bool isRecurring,
+    required double amount,
+  }) : super(
+    id: id,
+    user_id: user_id,
+    date: date,
+    notes: notes,
+    isRecurring: isRecurring,
+    amount: amount,
+  );
+
+  @override
+  Map<String, dynamic> toMap() {
+    return super.toMap();
+  }
+
+  static Credit fromMap(Map<String, dynamic> map) {
+    return Credit(
+      id: map['id'],
+      user_id: map['user_id'],
+      date: (map['date'] as Timestamp).toDate(),
+      notes: map['notes'],
+      isRecurring: map['isRecurring'],
+      amount: map['amount'],
+    );
+  }
+}
+
+/*
 class Debit {
   String id;
   double amount;
   List<String>? photos;
   LatLng localisation;
   String transaction_id;
+  String user_id;
 
   Debit({
     required this.id,
     required this.amount,
     required this.localisation,
     required this.transaction_id,
+    required this.user_id,
     this.photos,
   });
 
@@ -184,10 +261,11 @@ class Debit {
       localisation: map['localisation'],
       transaction_id: map['transaction_id'],
       photos: List<String>.from(map['photos'] ?? []),
+      user_id: map['user_id'],
     );
   }
 }
-
+*//*
 class Credit {
   String id;
   String transaction_id;
@@ -215,3 +293,4 @@ class Credit {
     );
   }
 }
+*/

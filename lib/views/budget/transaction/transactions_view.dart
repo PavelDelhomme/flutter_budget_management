@@ -40,8 +40,6 @@ class _TransactionsViewState extends State<TransactionsView> {
     return [...debitQuery.docs, ...creditQuery.docs];
   }
 
-
-
   void _editTransaction(BuildContext context, DocumentSnapshot transaction) async {
     final result = await Navigator.push(
       context,
@@ -69,14 +67,15 @@ class _TransactionsViewState extends State<TransactionsView> {
   }
 
   void _deleteTransaction(BuildContext context, DocumentSnapshot transaction) async {
-    // Confirmation avant suppression
     bool confirm = await _showDeleteConfirmation(context);
-    if (!confirm) return;  // Si l'utilisateur annule
+    if (!confirm) return;
 
-    // Supprimer la transaction de la collection Firestore
-    await FirebaseFirestore.instance.collection('transactions').doc(transaction.id).delete();
+    bool isDebit = transaction.reference.parent.id == 'debits';
+    String collection = isDebit ? 'debits' : 'credits';
 
-    // Afficher un message de succès après suppression et rafraichir la liste
+    // Supprimer la transaction de la collection appropriée
+    await FirebaseFirestore.instance.collection(collection).doc(transaction.id).delete();
+
     if (mounted) {
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
@@ -88,14 +87,17 @@ class _TransactionsViewState extends State<TransactionsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder<List<QueryDocumentSnapshot>>(
-        future: _getTransactionsForCurrentMonth(),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection("debits")
+            .where("user_id", isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+            .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          var transactions = snapshot.data!;
+          var transactions = snapshot.data!.docs;
           Map<String, Map<String, List<QueryDocumentSnapshot>>> transactionsByDay = {};
 
           // Organiser les transactions par jour
@@ -235,7 +237,6 @@ class _TransactionsViewState extends State<TransactionsView> {
       ),
     );
   }
-
 
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
     return await showDialog(

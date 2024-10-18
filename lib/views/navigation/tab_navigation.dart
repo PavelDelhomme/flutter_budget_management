@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../budget/summary_view.dart';
-import '../budget/transaction/transaction_view.dart';
+import '../budget/transaction/transactions_view.dart';
 import 'custom_drawer.dart';
 
 class TabNavigation extends StatefulWidget {

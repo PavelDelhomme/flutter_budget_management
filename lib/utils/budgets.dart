@@ -52,17 +52,33 @@ Future<void> updateBudgetAfterTransaction(String budgetId, double amount,
 }
 
 Future<void> createDefaultCategories(String userId) async {
-  List<String> debitCategories = ["Logement", "Alimentation", "Transport", "Abonnements", "Santé"];
-  List<String> creditCategories = ["Salaire", "Aides", "Ventes"];
+  // Catégories pour les débits (dépenses)
+  List<Map<String, String>> debitCategories = [
+    {"name": "Logement", "type": "debit"},
+    {"name": "Alimentation", "type": "debit"},
+    {"name": "Transport", "type": "debit"},
+    {"name": "Abonnements", "type": "debit"},
+    {"name": "Santé", "type": "debit"},
+  ];
 
-  for (String category in debitCategories) {
-    await createCategory(category, userId);
+  // Catégories pour les crédits (revenus)
+  List<Map<String, String>> creditCategories = [
+    {"name": "Salaire", "type": "credit"},
+    {"name": "Aides", "type": "credit"},
+    {"name": "Ventes", "type": "credit"},
+  ];
+
+  // Ajouter les catégories de débits
+  for (var category in debitCategories) {
+    await createCategory(category['name']!, userId, category['type']!);
   }
 
-  for (String category in creditCategories) {
-    await createCategory(category, userId);
+  // Ajouter les catégories de crédits
+  for (var category in creditCategories) {
+    await createCategory(category['name']!, userId, category['type']!);
   }
 }
+
 
 
 Future<void> updateCategorySpending(String categoryId, double amount, {bool isDebit = true}) async {

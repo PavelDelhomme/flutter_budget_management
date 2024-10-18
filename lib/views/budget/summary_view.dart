@@ -16,62 +16,74 @@ class _SummaryViewState extends State<SummaryView> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection("transactions")
-              .where("userId", isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+          stream: FirebaseFirestore.instance.collection('debits')
+              .where('user_id', isEqualTo: user?.uid)
               .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+          builder: (context, debitSnapshot) {
+            if (debitSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (!snapshot.hasData || snapshot.data == null) {
-              return const Center(child: Text("Aucune donnée disponible pour le résumé du budget."));
-            }
-
-            final transactionsData = snapshot.data!;
-            double totalDebit = 0.0;
-            double totalCredit = 0.0;
-            Map<String, double> categorySpending = {};
-
-            for (var doc in transactionsData.docs) {
-              final data = doc.data() as Map<String, dynamic>;
-              final category = data['category'] ?? 'Inconnu';
-              final amount = (data['amount'] as num?)?.toDouble() ?? 0.0;
-              final isDebit = data['type'] == true;
-
-              if (isDebit) {
-                totalDebit += amount;
-                if (categorySpending.containsKey(category)) {
-                  categorySpending[category] = categorySpending[category]! + amount;
-                } else {
-                  categorySpending[category] = amount;
+            return StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('credits')
+                  .where('user_id', isEqualTo: user?.uid)
+                  .snapshots(),
+              builder: (context, creditSnapshot) {
+                if (creditSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
                 }
-              } else {
-                totalCredit += amount;
-              }
-            }
 
+                // Fusionner les données des deux collections
+                List<QueryDocumentSnapshot> transactions = [
+                  ...debitSnapshot.data?.docs ?? [],
+                  ...creditSnapshot.data?.docs ?? [],
+                ];
 
-            return ListView(
-              children: [
-                _buildBudgetCard("Total Débit", totalDebit.toStringAsFixed(2), Colors.red),
-                _buildBudgetCard("Total Crédit", totalCredit.toStringAsFixed(2), Colors.green),
-                const SizedBox(height: 20),
-                const Text(
-                  "Dépenses par Catégorie",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                ...categorySpending.entries.map((entry) {
-                  final color = _randomColor.randomColor();
-                  return _buildBudgetCard(entry.key, entry.value.toStringAsFixed(2), color);
-                }).toList(),
-              ],
+                double totalDebit = 0.0;
+                double totalCredit = 0.0;
+                Map<String, double> categorySpending = {};
+
+                for (var doc in transactions) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final category = data['categorie_id'] ?? 'Inconnu';
+                  final amount = (data['amount'] as num?)?.toDouble() ?? 0.0;
+                  final isDebit = doc.reference.parent.id == 'debits';
+
+                  if (isDebit) {
+                    totalDebit += amount;
+                    if (categorySpending.containsKey(category)) {
+                      categorySpending[category] = categorySpending[category]! + amount;
+                    } else {
+                      categorySpending[category] = amount;
+                    }
+                  } else {
+                    totalCredit += amount;
+                  }
+                }
+
+                return ListView(
+                  children: [
+                    _buildBudgetCard("Total Débit", totalDebit.toStringAsFixed(2), Colors.red),
+                    _buildBudgetCard("Total Crédit", totalCredit.toStringAsFixed(2), Colors.green),
+                    const SizedBox(height: 20),
+                    const Text(
+                      "Dépenses par Catégorie",
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                    ...categorySpending.entries.map((entry) {
+                      final color = _randomColor.randomColor();
+                      return _buildBudgetCard(entry.key, entry.value.toStringAsFixed(2), color);
+                    }).toList(),
+                  ],
+                );
+              },
             );
           },
         ),
