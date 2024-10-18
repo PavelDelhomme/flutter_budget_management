@@ -86,71 +86,88 @@ class _TransactionsViewState extends State<TransactionsView> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection("debits")
-            .where("user_id", isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+            .collection('debits')
+            .where('user_id', isEqualTo: user?.uid)
             .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+        builder: (context, debitSnapshot) {
+          if (debitSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          var transactions = snapshot.data!.docs;
-          Map<String, Map<String, List<QueryDocumentSnapshot>>> transactionsByDay = {};
+          return StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('credits')
+                .where('user_id', isEqualTo: user?.uid)
+                .snapshots(),
+            builder: (context, creditSnapshot) {
+              if (creditSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          // Organiser les transactions par jour
-          for (var transaction in transactions) {
-            DateTime date = (transaction['date'] as Timestamp).toDate();
-            String dayKey = DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(date);
-            String timeKey = DateFormat('HH:mm').format(date);
+              if (debitSnapshot.hasError || creditSnapshot.hasError) {
+                return const Center(child: Text('Erreur lors du chargement des transactions.'));
+              }
 
-            if (!transactionsByDay.containsKey(dayKey)) {
-              transactionsByDay[dayKey] = {};
-            }
+              // Fusionner les transactions de débits et crédits
+              List<QueryDocumentSnapshot> transactions = [
+                ...debitSnapshot.data?.docs ?? [],
+                ...creditSnapshot.data?.docs ?? [],
+              ];
 
-            if (!transactionsByDay[dayKey]!.containsKey(timeKey)) {
-              transactionsByDay[dayKey]![timeKey] = [];
-            }
+              // Organiser les transactions par jour
+              Map<String, List<QueryDocumentSnapshot>> transactionsByDay = {};
 
-            transactionsByDay[dayKey]![timeKey]!.add(transaction);
-          }
+              for (var transaction in transactions) {
+                DateTime date = (transaction['date'] as Timestamp).toDate();
+                String dayKey = DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(date);
 
-          if (transactionsByDay.isEmpty) {
-            return const Center(child: Text("Aucune transaction disponible."));
-          }
-
-          return ListView.builder(
-            itemCount: transactionsByDay.keys.length,
-            itemBuilder: (context, index) {
-              String dayKey = transactionsByDay.keys.elementAt(index);
-              var transactionsForDay = transactionsByDay[dayKey]!;
-
-              // Calculer le montant total des transactions pour chaque jour
-              double totalAmount = 0;
-              transactionsForDay.forEach((timeKey, trans) {
-                for (var transaction in trans) {
-                  totalAmount += transaction['amount'];
+                if (!transactionsByDay.containsKey(dayKey)) {
+                  transactionsByDay[dayKey] = [];
                 }
-              });
+                transactionsByDay[dayKey]!.add(transaction);
+              }
 
-              return ExpansionTile(
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(dayKey),
-                    Text('Total: \$${totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                children: transactionsForDay.entries.map((entry) {
-                  String timeKey = entry.key;
-                  List<QueryDocumentSnapshot> transactionsAtTime = entry.value;
+              if (transactions.isEmpty) {
+                return const Center(child: Text('Aucune transaction disponible.'));
+              }
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: transactionsAtTime.map((transaction) {
+              return ListView.builder(
+                itemCount: transactionsByDay.keys.length,
+                itemBuilder: (context, index) {
+                  String dayKey = transactionsByDay.keys.elementAt(index);
+                  var transactionsForDay = transactionsByDay[dayKey]!;
+
+                  // Calculer le montant total des transactions pour chaque jour
+                  double totalAmount = 0;
+                  for (var transaction in transactionsForDay) {
+                    totalAmount += transaction['amount'];
+                  }
+
+                  return ExpansionTile(
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            dayKey,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          'Total: \$${totalAmount.toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    children: transactionsForDay.map((transaction) {
                       bool isDebit = transaction.reference.parent.id == 'debits';
+                      String transactionType = isDebit ? 'Débit' : 'Crédit';
                       String? category = isDebit ? transaction['categorie_id'] : null;
 
                       return Slidable(
@@ -165,7 +182,7 @@ class _TransactionsViewState extends State<TransactionsView> {
                               backgroundColor: Colors.blue,
                               foregroundColor: Colors.white,
                               icon: Icons.edit,
-                              label: "Modifier",
+                              label: 'Modifier',
                             ),
                           ],
                         ),
@@ -190,15 +207,14 @@ class _TransactionsViewState extends State<TransactionsView> {
                           title: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('$timeKey'),
-                              Text('\$${transaction['amount'].toStringAsFixed(2)}'),
+                              Text('${transaction['amount'].toStringAsFixed(2)} \$'),
+                              Text(transactionType),
                             ],
                           ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (isDebit && category != null)
-                                Text('Catégorie: $category'),
+                              if (category != null) Text('Catégorie: $category'),
                               Text(transaction['notes'] ?? 'Aucune note'),
                             ],
                           ),
@@ -223,7 +239,7 @@ class _TransactionsViewState extends State<TransactionsView> {
                       );
                     }).toList(),
                   );
-                }).toList(),
+                },
               );
             },
           );
