@@ -1,4 +1,4 @@
-import 'package:budget_management/views/budget/transaction/transaction_view.dart';
+import 'package:budget_management/views/budget/transaction/transactions_view.dart';
 import 'package:flutter/material.dart';
 
 import '../../navigation/custom_drawer.dart';

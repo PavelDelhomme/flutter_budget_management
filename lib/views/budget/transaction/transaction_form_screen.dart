@@ -78,12 +78,16 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
       // Initialisation des reçus existants
       _existingReceiptUrls = List<String>.from(transaction['receiptUrls'] ?? []);
-      // Localisation
-      final GeoPoint? location = transaction['location'] as GeoPoint?;
-      _userLocation = location != null ? LatLng(location.latitude, location.longitude) : _defaultLocation;
+      // Localisation, uniquement pour les débits
+      if (_isDebit) {
+        final GeoPoint? location = transaction['location'] as GeoPoint?;
+        _userLocation = location != null ? LatLng(location.latitude, location.longitude) : _defaultLocation;
+      }
     } else {
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
-      _getCurrentLocation(); // Récupérer la localisation actuelle
+      if (_isDebit) {
+        _getCurrentLocation(); // Récupérer la localisation actuelle
+      }
     }
   }
 
@@ -93,12 +97,11 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       final categoriesSnapshot = await FirebaseFirestore.instance
           .collection('categories')
           .where("userId", isEqualTo: user.uid)
+          .where("type", isEqualTo: _isDebit ? 'debit' : 'credit')  // Charger en fonction du type (débit ou crédit)
           .get();
+
       setState(() {
-        _categories =
-            categoriesSnapshot.docs.map((doc) => doc['name'].toString())
-                .toSet()
-                .toList();
+        _categories = categoriesSnapshot.docs.map((doc) => doc['name'].toString()).toSet().toList();
       });
     }
   }
@@ -225,31 +228,36 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       }
     }
   }
-
   Future<void> _createNewCategory() async {
     final TextEditingController categoryController = TextEditingController();
+
     await showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Créer une nouvelle catégorie"),
+          title: const Text("Créer une nouvelle catégorie"),
           content: TextField(
             controller: categoryController,
-            decoration: InputDecoration(hintText: "Nom de la catégorie"),
+            decoration: const InputDecoration(hintText: "Nom de la catégorie"),
           ),
           actions: <Widget>[
             TextButton(
-              child: Text("Annuler"),
+              child: const Text("Annuler"),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text("Créer"),
+              child: const Text("Créer"),
               onPressed: () async {
                 final user = FirebaseAuth.instance.currentUser;
                 if (user != null && categoryController.text.isNotEmpty) {
-                  await createCategory(categoryController.text.trim(), user.uid);
+                  String type = _isDebit ? 'debit' : 'credit';  // Déterminer le type (débit ou crédit)
+
+                  // Créer la nouvelle catégorie avec le type approprié
+                  await createCategory(categoryController.text.trim(), user.uid, type);
+
+                  // Recharger les catégories après la création
                   _loadCategories();
                 }
                 Navigator.of(context).pop();
@@ -257,7 +265,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             )
           ],
         );
-      }
+      },
     );
   }
 
@@ -325,7 +333,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             amount: amount,
             notes: notes,
             receiptUrls: updatedReceiptUrls,
-            location: LatLng(geoPoint!.latitude, geoPoint.longitude),
+            location: geoPoint,
             isRecurring: isReccuring,
           );
         } else {
@@ -501,6 +509,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                     onChanged: (value) {
                       setState(() {
                         _isDebit = value;
+                        _loadCategories();  // Recharger les catégories lorsque le type change
                       });
                     },
                   ),

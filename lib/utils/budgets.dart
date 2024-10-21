@@ -1,4 +1,5 @@
 import 'package:budget_management/utils/categories.dart';
+import 'package:budget_management/utils/transactions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/good_models.dart';
 
@@ -12,13 +13,32 @@ Future<void> createBudget({
   final Timestamp monthTimestamp = Timestamp.fromDate(DateTime(date.year, date.month, 1));
   final Timestamp yearTimestamp = Timestamp.fromDate(DateTime(date.year, 1, 1));
 
+  double remainingAmountFromPreviousMonth = 0.0;
+
+  // Récupérer le budget du mois précédent
+  DateTime previousMonth = DateTime(date.year, date.month - 1, 1);
+  final previousBudgetSnapshot = await FirebaseFirestore.instance
+      .collection('budgets')
+      .where('user_id', isEqualTo: userId)
+      .where('month', isEqualTo: Timestamp.fromDate(previousMonth))
+      .get();
+
+  if (previousBudgetSnapshot.docs.isNotEmpty) {
+    final previousBudget = Budget.fromMap(previousBudgetSnapshot.docs.first.data());
+    remainingAmountFromPreviousMonth = previousBudget.total_credit - previousBudget.total_debit;
+
+    // Copier les transactions réccurentes du mois précédent
+    await copyRecurringTransactions(previousBudget.id, budgetId);
+  }
+
+  // Créer le nouveau budget avec le reste du mois précédent ajouté aux crédits
   final budget = Budget(
     id: budgetId,
     user_id: userId,
     month: monthTimestamp,
     year: yearTimestamp,
     total_debit: 0.0,
-    total_credit: 0.0,
+    total_credit: remainingAmountFromPreviousMonth,  // Inclure le reste
   );
 
   await FirebaseFirestore.instance
@@ -52,17 +72,33 @@ Future<void> updateBudgetAfterTransaction(String budgetId, double amount,
 }
 
 Future<void> createDefaultCategories(String userId) async {
-  List<String> debitCategories = ["Logement", "Alimentation", "Transport", "Abonnements", "Santé"];
-  List<String> creditCategories = ["Salaire", "Aides", "Ventes"];
+  // Catégories pour les débits (dépenses)
+  List<Map<String, String>> debitCategories = [
+    {"name": "Logement", "type": "debit"},
+    {"name": "Alimentation", "type": "debit"},
+    {"name": "Transport", "type": "debit"},
+    {"name": "Abonnements", "type": "debit"},
+    {"name": "Santé", "type": "debit"},
+  ];
 
-  for (String category in debitCategories) {
-    await createCategory(category, userId);
+  // Catégories pour les crédits (revenus)
+  List<Map<String, String>> creditCategories = [
+    {"name": "Salaire", "type": "credit"},
+    {"name": "Aides", "type": "credit"},
+    {"name": "Ventes", "type": "credit"},
+  ];
+
+  // Ajouter les catégories de débits
+  for (var category in debitCategories) {
+    await createCategory(category['name']!, userId, category['type']!);
   }
 
-  for (String category in creditCategories) {
-    await createCategory(category, userId);
+  // Ajouter les catégories de crédits
+  for (var category in creditCategories) {
+    await createCategory(category['name']!, userId, category['type']!);
   }
 }
+
 
 
 Future<void> updateCategorySpending(String categoryId, double amount, {bool isDebit = true}) async {

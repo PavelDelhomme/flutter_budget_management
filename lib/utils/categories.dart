@@ -15,10 +15,11 @@ Future<void> udpateCategorySpending(String categoryId, double amount) async {
   }
 }
 
-Future<void> createCategory(String name, String userId) async {
+Future<void> createCategory(String name, String userId, String type) async {
   await FirebaseFirestore.instance.collection("categories").add({
     'name': name,
     'userId': userId,
+    'type': type,  // Ajouter le type (debit ou credit)
     'spentAmount': 0.0,
   });
 }
