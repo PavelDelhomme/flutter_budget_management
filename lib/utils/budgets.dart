@@ -74,7 +74,6 @@ Future<void> updateCategorySpending(String categoryId, double amount, {bool isDe
     throw Exception("Catégorie non trouvée.");
   }
 }
-
 Future<void> createDefaultCategories(String userId) async {
   // Catégories pour les débits (dépenses)
   List<Map<String, String>> debitCategories = [
@@ -85,20 +84,11 @@ Future<void> createDefaultCategories(String userId) async {
     {"name": "Santé", "type": "debit"},
   ];
 
-  // Catégories pour les crédits (revenus)
-  List<Map<String, String>> creditCategories = [
-    {"name": "Salaire", "type": "credit"},
-    {"name": "Aides", "type": "credit"},
-    {"name": "Ventes", "type": "credit"},
-  ];
-
   // Ajouter les catégories de débits
   for (var category in debitCategories) {
     await createCategory(category['name']!, userId, category['type']!);
   }
 
-  // Ajouter les catégories de crédits
-  for (var category in creditCategories) {
-    await createCategory(category['name']!, userId, category['type']!);
-  }
+  // Ajouter la catégorie "Revenus" pour les crédits
+  await createCategory("Revenus", userId, "credit");
 }

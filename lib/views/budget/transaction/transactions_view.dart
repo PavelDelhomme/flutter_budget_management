@@ -8,6 +8,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
+import '../budget/budget_details_screen.dart';
+
 class TransactionsView extends StatefulWidget {
   const TransactionsView({Key? key}) : super(key: key);
 
@@ -141,7 +143,12 @@ class _TransactionsViewState extends State<TransactionsView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(DateFormat.yMMMM('fr_FR').format(selectedMonth)),
+        title: GestureDetector(
+          onTap: () {
+            _showMonthDetails(context);
+          },
+          child: Text(DateFormat.yMMMM('fr_FR').format(selectedMonth)),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -238,7 +245,6 @@ class _TransactionsViewState extends State<TransactionsView> {
                             ),
                           ],
                         ),
-
                         children: transactionsForDay.map((transaction) {
                           bool isDebit = transaction.reference.parent.id == 'debits';
                           String transactionType = isDebit ? 'Débit' : 'Crédit';
@@ -335,6 +341,17 @@ class _TransactionsViewState extends State<TransactionsView> {
       ),
     );
   }
+
+  // Affiche une vue modale avec les détails du mois sélectionné
+  void _showMonthDetails(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BudgetDetailsScreen(selectedMonth: selectedMonth),
+      ),
+    );
+  }
+
 
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
     return await showDialog(

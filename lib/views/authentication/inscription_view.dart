@@ -1,4 +1,5 @@
 import 'package:budget_management/models/good_models.dart';
+import 'package:budget_management/utils/budgets.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -52,6 +53,9 @@ class InscriptionViewState extends State<InscriptionView> {
         );
 
         await _db.collection('users').doc(newUser.id).set(newUser.toMap());
+
+        // Ajouter des catégories par défaut pour l'utilisateur
+        await createDefaultCategories(newUser.id);
 
         if (mounted) {
           // Après l'inscription, rediriger vers l'écran principal

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:budget_management/models/good_models.dart';
 
+import '../../navigation/custom_drawer.dart';
+
 class SavingsPage extends StatefulWidget {
   @override
   _SavingsPageState createState() => _SavingsPageState();
@@ -81,6 +83,7 @@ class _SavingsPageState extends State<SavingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Résumé des Économies')),
+      drawer: const CustomDrawer(activeItem: 'savings'), // Ajoutez le CustomDrawer ici
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

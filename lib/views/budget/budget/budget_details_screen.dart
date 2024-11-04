@@ -62,12 +62,14 @@ class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
     return transactionsByCategory;
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: const CustomDrawer(activeItem: 'budgets'),
       appBar: AppBar(
-        title: const Text('Détails du Mois'),
+        title: Text(
+          'Transactions - ${DateFormat.yMMMM('fr_FR').format(widget.selectedMonth)}',
+        ),
       ),
       body: FutureBuilder<Map<String, List<Map<String, dynamic>>>>(
         future: _getTransactionsByCategory(),

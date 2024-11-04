@@ -48,7 +48,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   bool _isRecurring = false;
-  bool _isDebit = false;
+  bool _isDebit = true;
   LatLng? _userLocation;
   List<File> _receiptImages = [];
   List<String> _existingReceiptUrls = [];
@@ -94,7 +94,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   Future<void> _loadCategories() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
+    if (user != null && _isDebit) {  // Charger seulement si _isDebit est vrai
       final categoriesSnapshot = await FirebaseFirestore.instance
           .collection('categories')
           .where("userId", isEqualTo: user.uid)
@@ -298,17 +298,15 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
       try {
         if (_isDebit) {
-          final totalCredit = await _getTotalCredit(user.uid);
-          final totalDebit = await _getTotalDebit(user.uid);
-          double remainingCredit = totalCredit - totalDebit;
+          // Vérifiez que la catégorie sélectionnée existe bien pour les débits
+          await _checkAndCreateCategoryIfNeeded(user.uid, _selectedCategory!, 'debit');
 
-          if (amount > remainingCredit) {
-            final deficit = amount - remainingCredit;
-            await _deductFromSavings(deficit, user.uid);  // Déduire des économies
-          }
+          // Récupérer l'ID de la catégorie sélectionnée
+          final categoryId = await _getCategoryId(user.uid, _selectedCategory!, 'debit');
 
+          // Transaction de type Débit
           await addDebitTransaction(
-            categoryId: _selectedCategory!,
+            categoryId: categoryId,
             userId: user.uid,
             date: dateTransaction,
             amount: amount,
@@ -318,6 +316,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             isRecurring: isReccuring,
           );
         } else {
+          // Transaction de type Crédit
           await addCreditTransaction(
             userId: user.uid,
             date: dateTransaction,
@@ -338,6 +337,37 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           SnackBar(content: Text("Erreur: $e")),
         );
       }
+    }
+  }
+
+  Future<String> _getCategoryId(String userId, String categoryName, String type) async {
+    final categoriesSnapshot = await FirebaseFirestore.instance
+        .collection('categories')
+        .where("userId", isEqualTo: userId)
+        .where("name", isEqualTo: categoryName)
+        .where("type", isEqualTo: type)
+        .limit(1)
+        .get();
+
+    if (categoriesSnapshot.docs.isNotEmpty) {
+      return categoriesSnapshot.docs.first.id;
+    } else {
+      throw Exception("Catégorie non trouvée.");
+    }
+  }
+
+  // Vérifier et créer la catégorie si elle n'existe pas
+  Future<void> _checkAndCreateCategoryIfNeeded(String userId, String categoryName, String type) async {
+    final categoriesSnapshot = await FirebaseFirestore.instance
+        .collection('categories')
+        .where("userId", isEqualTo: userId)
+        .where("name", isEqualTo: categoryName)
+        .where("type", isEqualTo: type)
+        .get();
+
+    if (categoriesSnapshot.docs.isEmpty) {
+      await createCategory(categoryName, userId, type);
+      await _loadCategories(); // Recharger les catégories pour inclure la nouvelle catégorie
     }
   }
 

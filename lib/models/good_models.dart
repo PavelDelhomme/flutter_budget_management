@@ -199,9 +199,6 @@ class Debit extends Transaction {
     if (map['user_id'] == null) {
       throw Exception('user_id est manquant dans les données : $map');
     }
-    if (map['budget_id'] == null) {
-      throw Exception('budget_id est manquant dans les données : $map');
-    }
     if (map['localisation'] == null) {
       throw Exception('localisation est manquante dans les données : $map');
     }
