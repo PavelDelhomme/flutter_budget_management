@@ -28,7 +28,11 @@ class _TransactionsViewState extends State<TransactionsView> {
     DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
     DateTime endOfMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
 
-    // Récupérer les débits
+    List<QueryDocumentSnapshot> transactions = [];
+    double debitTotal = 0.0;
+    double creditTotal = 0.0;
+
+    // Récupérer les transactions dans le mois sélectionné
     var debitQuery = await FirebaseFirestore.instance
         .collection("debits")
         .where("user_id", isEqualTo: user?.uid)
@@ -36,7 +40,6 @@ class _TransactionsViewState extends State<TransactionsView> {
         .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
         .get();
 
-    // Récupérer les crédits
     var creditQuery = await FirebaseFirestore.instance
         .collection("credits")
         .where("user_id", isEqualTo: user?.uid)
@@ -44,18 +47,37 @@ class _TransactionsViewState extends State<TransactionsView> {
         .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
         .get();
 
-    // Calculer les totaux
-    double debitTotal = 0.0;
-    double creditTotal = 0.0;
-
-    List<QueryDocumentSnapshot> transactions = [];
-
     for (var doc in debitQuery.docs) {
       debitTotal += (doc['amount'] as num).toDouble();
       transactions.add(doc);
     }
-
     for (var doc in creditQuery.docs) {
+      creditTotal += (doc['amount'] as num).toDouble();
+      transactions.add(doc);
+    }
+
+    // Inclure les transactions récurrentes non validées du mois précédent
+    var recurringDebitQuery = await FirebaseFirestore.instance
+        .collection("debits")
+        .where("user_id", isEqualTo: user?.uid)
+        .where("isRecurring", isEqualTo: true)
+        .where("isValidated", isEqualTo: false)
+        .where("date", isLessThan: Timestamp.fromDate(startOfMonth))
+        .get();
+
+    var recurringCreditQuery = await FirebaseFirestore.instance
+        .collection("credits")
+        .where("user_id", isEqualTo: user?.uid)
+        .where("isRecurring", isEqualTo: true)
+        .where("isValidated", isEqualTo: false)
+        .where("date", isLessThan: Timestamp.fromDate(startOfMonth))
+        .get();
+
+    for (var doc in recurringDebitQuery.docs) {
+      debitTotal += (doc['amount'] as num).toDouble();
+      transactions.add(doc);
+    }
+    for (var doc in recurringCreditQuery.docs) {
       creditTotal += (doc['amount'] as num).toDouble();
       transactions.add(doc);
     }
@@ -66,6 +88,7 @@ class _TransactionsViewState extends State<TransactionsView> {
       'totalCredit': creditTotal,
     };
   }
+
 
   void _updateMonthlyTotals() async {
     final data = await _getTransactionsForSelectedMonth();
