@@ -27,8 +27,11 @@ Future<void> createBudget({
     final previousBudget = Budget.fromMap(previousBudgetSnapshot.docs.first.data());
     remainingAmountFromPreviousMonth = previousBudget.total_credit - previousBudget.total_debit;
 
-    // Copier les transactions réccurentes du mois précédent
+    print('Copie des transactions récurrentes du mois précédent');
+    // Copier les transactions récurrentes du mois précédent
     await copyRecurringTransactions(previousBudget.id, budgetId);
+  } else {
+    print('Pas de budget pour le mois précédent.');
   }
 
   // Créer le nouveau budget avec le reste du mois précédent ajouté aux crédits
@@ -41,33 +44,36 @@ Future<void> createBudget({
     total_credit: remainingAmountFromPreviousMonth,  // Inclure le reste
   );
 
+  print('Création du nouveau budget pour le mois de ${date.month}');
   await FirebaseFirestore.instance
       .collection("budgets")
       .doc(budgetId)
       .set(budget.toMap());
+
+  print('Budget créé avec succès : $budgetId');
 }
 
-Future<void> updateBudgetAfterTransaction(String budgetId, double amount,
-    {required bool isDebit}) async {
-  final budgetRef =
-      FirebaseFirestore.instance.collection('budgets').doc(budgetId);
+Future<void> updateBudgetAfterTransaction(String budgetId, double amount, {required bool isDebit}) async {
+  final budgetRef = FirebaseFirestore.instance.collection('budgets').doc(budgetId);
   final budgetDoc = await budgetRef.get();
 
   if (budgetDoc.exists) {
-    final currentTotalDebit =
-        (budgetDoc.data()?['total_debit'] as num).toDouble();
-    final currentTotalCredit =
-        (budgetDoc.data()?['total_credit'] as num).toDouble();
+    final currentTotalDebit = (budgetDoc.data()?['total_debit'] as num).toDouble();
+    final currentTotalCredit = (budgetDoc.data()?['total_credit'] as num).toDouble();
 
     if (isDebit) {
       await budgetRef.update({
         'total_debit': currentTotalDebit + amount,
       });
+      print('Total Débit mis à jour : ${currentTotalDebit + amount}');
     } else {
       await budgetRef.update({
         'total_credit': currentTotalCredit + amount,
       });
+      print('Total Crédit mis à jour : ${currentTotalCredit + amount}');
     }
+  } else {
+    print('Le budget n\'existe pas : $budgetId');
   }
 }
 
