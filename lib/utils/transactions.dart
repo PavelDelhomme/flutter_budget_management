@@ -29,6 +29,41 @@ DateTime _calculateNewDate(DateTime originalDate) {
   return DateTime(year, month, day);
 }
 
+// Copie des transactions récurrentes pour le mois suivant sans budgetId
+Future<void> copyRecurringTransactionsForNewMonth() async {
+  final user = FirebaseAuth.instance.currentUser;
+
+  if (user != null) {
+    final recurringTransactionsSnapshot = await FirebaseFirestore.instance
+        .collection('debits')
+        .where('user_id', isEqualTo: user.uid)
+        .where('isRecurring', isEqualTo: true)
+        .get();
+
+    for (var debitDoc in recurringTransactionsSnapshot.docs) {
+      final debitData = debitDoc.data();
+      DateTime newDate = _calculateNewDate((debitData['date'] as Timestamp).toDate());
+
+      final newDebit = Debit(
+        id: generateTransactionId(),
+        user_id: debitData['user_id'],
+        date: newDate,
+        notes: debitData['notes'],
+        isRecurring: debitData['isRecurring'],
+        amount: debitData['amount'],
+        photos: List<String>.from(debitData['photos'] ?? []),
+        localisation: debitData['localisation'],
+        categorie_id: debitData['categorie_id'],
+        isValidated: false,
+      );
+
+      await FirebaseFirestore.instance
+          .collection("debits")
+          .doc(newDebit.id)
+          .set(newDebit.toMap());
+    }
+  }
+}
 
 Future<void> copyRecurringTransactions(
     String previousBudgetId, String newBudgetId) async {
@@ -110,7 +145,6 @@ Future<void> copyRecurringTransactions(
 
 // Ajout d'une transaction de type Débit
 Future<void> addDebitTransaction({
-  required String budgetId,
   required String userId,
   required String categoryId,
   required DateTime date,
@@ -131,7 +165,6 @@ Future<void> addDebitTransaction({
     photos: receiptUrls,
     localisation: location ?? const GeoPoint(0, 0),
     categorie_id: categoryId,
-    budget_id: budgetId,
     isValidated: false,
   );
 
@@ -140,12 +173,11 @@ Future<void> addDebitTransaction({
       .doc(transactionId)
       .set(debit.toMap());
 
-  await updateBudgetAfterTransaction(budgetId, amount, isDebit: true);
+  await updateCategorySpending(categoryId, amount, isDebit: true);
 }
 
 // Ajout d'une transaction de type Crédit
 Future<void> addCreditTransaction({
-  required String budgetId,
   required String userId,
   required DateTime date,
   required double amount,
@@ -160,7 +192,6 @@ Future<void> addCreditTransaction({
     notes: notes ?? '',
     isRecurring: isRecurring,
     amount: amount,
-    budget_id: budgetId,
     isValidated: false,
   );
 
@@ -168,8 +199,6 @@ Future<void> addCreditTransaction({
       .collection('credits')
       .doc(transactionId)
       .set(credit.toMap());
-
-  await updateBudgetAfterTransaction(budgetId, amount, isDebit: false);
 }
 
 // Récupérer les transactions du mois actuel par type (Débit ou Crédit)

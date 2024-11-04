@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:budget_management/models/good_models.dart';
 import 'package:budget_management/utils/categories.dart';
 import 'package:budget_management/utils/generate_ids.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart';
@@ -269,32 +270,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     );
   }
 
-  Future<String> _getOrCreateBudgetId(DateTime date) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final budgetSnapshot = await FirebaseFirestore.instance
-          .collection("budgets")
-          .where('user_id', isEqualTo: user.uid)
-          .where("month", isEqualTo: Timestamp.fromDate(DateTime(date.year, date.month, 1)))
-          .where('year', isEqualTo: Timestamp.fromDate(DateTime(date.year, 1, 1)))
-          .get();
-
-      if (budgetSnapshot.docs.isNotEmpty) {
-        return budgetSnapshot.docs.first.id;
-      } else {
-        await createBudget(userId: user.uid, date: date);
-        final newBudgetSnapshot = await FirebaseFirestore.instance
-            .collection('budgets')
-            .where('user_id', isEqualTo: user.uid)
-            .where("month", isEqualTo: Timestamp.fromDate(DateTime(date.year, date.month, 1)))
-            .where('year', isEqualTo: Timestamp.fromDate(DateTime(date.year, 1, 1)))
-            .get();
-        return newBudgetSnapshot.docs.first.id;
-      }
-    }
-    throw Exception("Impossible d'obtenir ou de créer le budget.");
-  }
-
   Future<void> _saveTransaction() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -322,11 +297,17 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       }
 
       try {
-        String budgetId = await _getOrCreateBudgetId(dateTransaction);
-
         if (_isDebit) {
+          final totalCredit = await _getTotalCredit(user.uid);
+          final totalDebit = await _getTotalDebit(user.uid);
+          double remainingCredit = totalCredit - totalDebit;
+
+          if (amount > remainingCredit) {
+            final deficit = amount - remainingCredit;
+            await _deductFromSavings(deficit, user.uid);  // Déduire des économies
+          }
+
           await addDebitTransaction(
-            budgetId: budgetId,
             categoryId: _selectedCategory!,
             userId: user.uid,
             date: dateTransaction,
@@ -338,7 +319,6 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           );
         } else {
           await addCreditTransaction(
-            budgetId: budgetId,
             userId: user.uid,
             date: dateTransaction,
             amount: amount,
@@ -358,6 +338,41 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
           SnackBar(content: Text("Erreur: $e")),
         );
       }
+    }
+  }
+
+  Future<double> _getTotalCredit(String userId) async {
+    final creditSnapshot = await FirebaseFirestore.instance
+        .collection('credits')
+        .where("user_id", isEqualTo: userId)
+        .get();
+
+    double totalCredit = 0.0;
+    for (var doc in creditSnapshot.docs) {
+      totalCredit += (doc.data()['amount'] as num).toDouble();
+    }
+    return totalCredit;
+  }
+  Future<double> _getTotalDebit(String userId) async {
+    final debitSnapshot = await FirebaseFirestore.instance
+        .collection('debits')
+        .where("user_id", isEqualTo: userId)
+        .get();
+
+    double totalDebit = 0.0;
+    for (var doc in debitSnapshot.docs) {
+      totalDebit += (doc.data()['amount'] as num).toDouble();
+    }
+    return totalDebit;
+  }
+  Future<void> _deductFromSavings(double amount, String userId) async {
+    final userSavingsRef = FirebaseFirestore.instance.collection('savings').doc(userId);
+    final userSavingsDoc = await userSavingsRef.get();
+
+    if (userSavingsDoc.exists) {
+      double currentSavings = (userSavingsDoc.data()?['amount'] as num).toDouble();
+      double newSavings = currentSavings - amount;
+      await userSavingsRef.update({'amount': newSavings});
     }
   }
 

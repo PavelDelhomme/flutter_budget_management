@@ -64,21 +64,30 @@ class _TransactionsViewState extends State<TransactionsView> {
       'totalCredit': creditTotal,
     };
   }
-
+  void _updateMonthlyTotals() async {
+    final data = await _getTransactionsForSelectedMonth();
+    setState(() {
+      totalDebit = data['totalDebit'] ?? 0.0;
+      totalCredit = data['totalCredit'] ?? 0.0;
+    });
+  }
   @override
   void initState() {
     super.initState();
-    _getTransactionsForSelectedMonth();
+    _updateMonthlyTotals();
+    //_getTransactionsForSelectedMonth();
   }
   void _previousMonth() {
     setState(() {
       selectedMonth = DateTime(selectedMonth.year, selectedMonth.month - 1);
+      _updateMonthlyTotals();
     });
   }
 
   void _nextMonth() {
     setState(() {
       selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + 1);
+      _updateMonthlyTotals();
     });
   }
 
