@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:budget_management/models/good_models.dart';
+
 class SavingsPage extends StatefulWidget {
   @override
   _SavingsPageState createState() => _SavingsPageState();
@@ -10,81 +11,70 @@ class SavingsPage extends StatefulWidget {
 
 class _SavingsPageState extends State<SavingsPage> {
   double totalSavings = 0.0;
-  List<Budget> budgets = [];
-
-  Future<void> _calculateSavings() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final budgetsSnapshot = await fs.FirebaseFirestore.instance
-          .collection('budgets')
-          .where('user_id', isEqualTo: user.uid)
-          .orderBy('month', descending: true)
-          .get();
-
-      double savings = 0.0;
-      List<Budget> loadedBudgets = [];
-
-      for (var doc in budgetsSnapshot.docs) {
-        Budget budget = Budget.fromMap(doc.data());
-
-        // Récupérer les transactions pour ce budget/mois
-        List<Transaction> transactions = await _getTransactionsForBudget(budget);
-
-        // Calculer les débits et crédits en passant les transactions
-        double totalDebit = budget.calculateDebit(transactions);
-        double totalCredit = budget.calculateCredit(transactions);
-        double remaining = totalCredit - totalDebit;
-
-        // Ajouter le reste aux économies
-        savings += remaining;
-        loadedBudgets.add(budget);
-      }
-
-      if (mounted) {
-        setState(() {
-          totalSavings = savings;
-          budgets = loadedBudgets;
-        });
-      }
-    }
-  }
-
-  /// Récupère les transactions pour un budget donné
-  Future<List<Transaction>> _getTransactionsForBudget(Budget budget) async {
-    final user = FirebaseAuth.instance.currentUser;
-    List<Transaction> transactions = [];
-
-    if (user != null) {
-      // Récupérer les transactions de débit
-      final debitSnapshot = await fs.FirebaseFirestore.instance
-          .collection('debits')
-          .where('user_id', isEqualTo: user.uid)
-          .where('budget_id', isEqualTo: budget.id)
-          .get();
-
-      // Récupérer les transactions de crédit
-      final creditSnapshot = await fs.FirebaseFirestore.instance
-          .collection('credits')
-          .where('user_id', isEqualTo: user.uid)
-          .where('budget_id', isEqualTo: budget.id)
-          .get();
-
-      // Ajouter toutes les transactions récupérées à la liste
-      for (var doc in debitSnapshot.docs) {
-        transactions.add(Debit.fromMap(doc.data()));
-      }
-      for (var doc in creditSnapshot.docs) {
-        transactions.add(Credit.fromMap(doc.data()));
-      }
-    }
-
-    return transactions;
-  }
+  Map<String, double> monthlySavings = {};
 
   @override
   void initState() {
     super.initState();
     _calculateSavings();
+  }
+
+  // Fonction pour calculer les économies par mois et les économies totales
+  Future<void> _calculateSavings() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      print('Calcul des économies pour l\'utilisateur : ${user.uid}');
+
+      // Récupérer toutes les transactions de l'utilisateur
+      final debitsSnapshot = await fs.FirebaseFirestore.instance
+          .collection('debits')
+          .where('user_id', isEqualTo: user.uid)
+          .get();
+
+      final creditsSnapshot = await fs.FirebaseFirestore.instance
+          .collection('credits')
+          .where('user_id', isEqualTo: user.uid)
+          .get();
+
+      // Calcul des économies par mois
+      Map<String, double> savingsPerMonth = {};
+      double totalSavings = 0.0;
+
+      void addTransactionToMonth(
+          String monthKey, double amount, bool isDebit) {
+        if (!savingsPerMonth.containsKey(monthKey)) {
+          savingsPerMonth[monthKey] = 0.0;
+        }
+        savingsPerMonth[monthKey] =
+            savingsPerMonth[monthKey]! + (isDebit ? -amount : amount);
+      }
+
+      // Traiter les débits
+      for (var doc in debitsSnapshot.docs) {
+        Debit debit = Debit.fromMap(doc.data());
+        String monthKey = DateFormat('yyyy-MM').format(debit.date);
+        addTransactionToMonth(monthKey, debit.amount, true);
+      }
+
+      // Traiter les crédits
+      for (var doc in creditsSnapshot.docs) {
+        Credit credit = Credit.fromMap(doc.data());
+        String monthKey = DateFormat('yyyy-MM').format(credit.date);
+        addTransactionToMonth(monthKey, credit.amount, false);
+      }
+
+      // Calcul des économies totales
+      savingsPerMonth.forEach((month, savings) {
+        if (savings > 0) totalSavings += savings;
+      });
+
+      setState(() {
+        this.totalSavings = totalSavings;
+        monthlySavings = savingsPerMonth;
+      });
+
+      print('Économies totales : $totalSavings');
+    }
   }
 
   @override
@@ -103,17 +93,20 @@ class _SavingsPageState extends State<SavingsPage> {
             const SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
-                itemCount: budgets.length,
+                itemCount: monthlySavings.keys.length,
                 itemBuilder: (context, index) {
-                  Budget budget = budgets[index];
-                  double remaining = budget.total_credit - budget.total_debit;
+                  String monthKey = monthlySavings.keys.elementAt(index);
+                  double savings = monthlySavings[monthKey] ?? 0.0;
+                  DateTime monthDate =
+                  DateFormat('yyyy-MM').parse(monthKey); // Convertir en DateTime
+
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 8.0),
                     child: ListTile(
                       title: Text(
-                        'Budget du ${DateFormat('MMMM yyyy').format(budget.month.toDate())}',
+                        'Économies de ${DateFormat('MMMM yyyy').format(monthDate)}',
                       ),
-                      subtitle: Text('Reste: \$${remaining.toStringAsFixed(2)}'),
+                      subtitle: Text('Reste: \$${savings.toStringAsFixed(2)}'),
                     ),
                   );
                 },

@@ -5,75 +5,73 @@ import '../models/good_models.dart';
 
 import 'generate_ids.dart';
 
-Future<void> createBudget({
+Future<void> handleMonthTransition({
   required String userId,
   required DateTime date,
 }) async {
-  final budgetId = generateBudgetId();
   final Timestamp monthTimestamp = Timestamp.fromDate(DateTime(date.year, date.month, 1));
-  final Timestamp yearTimestamp = Timestamp.fromDate(DateTime(date.year, 1, 1));
 
-  double remainingAmountFromPreviousMonth = 0.0;
-
-  // Récupérer le budget du mois précédent
+  // Obtenir le mois précédent pour copier les transactions récurrentes
   DateTime previousMonth = DateTime(date.year, date.month - 1, 1);
-  final previousBudgetSnapshot = await FirebaseFirestore.instance
-      .collection('budgets')
+
+  // Vérifier si des transactions récurrentes existent pour le mois précédent
+  final previousTransactionsSnapshot = await FirebaseFirestore.instance
+      .collection('debits')
       .where('user_id', isEqualTo: userId)
-      .where('month', isEqualTo: Timestamp.fromDate(previousMonth))
+      .where('isRecurring', isEqualTo: true)
+      .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(previousMonth))
       .get();
 
-  if (previousBudgetSnapshot.docs.isNotEmpty) {
-    final previousBudget = Budget.fromMap(previousBudgetSnapshot.docs.first.data());
-    remainingAmountFromPreviousMonth = previousBudget.total_credit - previousBudget.total_debit;
-
+  // Copier les transactions récurrentes pour le mois courant
+  if (previousTransactionsSnapshot.docs.isNotEmpty) {
     print('Copie des transactions récurrentes du mois précédent');
-    // Copier les transactions récurrentes du mois précédent
-    await copyRecurringTransactions(previousBudget.id, budgetId);
+    await copyRecurringTransactions(previousTransactionsSnapshot, userId, monthTimestamp);
   } else {
-    print('Pas de budget pour le mois précédent.');
+    print('Pas de transactions récurrentes à copier pour le mois précédent.');
   }
-
-  // Créer le nouveau budget avec le reste du mois précédent ajouté aux crédits
-  final budget = Budget(
-    id: budgetId,
-    user_id: userId,
-    month: monthTimestamp,
-    year: yearTimestamp,
-    total_debit: 0.0,
-    total_credit: remainingAmountFromPreviousMonth,  // Inclure le reste
-  );
-
-  print('Création du nouveau budget pour le mois de ${date.month}');
-  await FirebaseFirestore.instance
-      .collection("budgets")
-      .doc(budgetId)
-      .set(budget.toMap());
-
-  print('Budget créé avec succès : $budgetId');
 }
 
-Future<void> updateBudgetAfterTransaction(String budgetId, double amount, {required bool isDebit}) async {
-  final budgetRef = FirebaseFirestore.instance.collection('budgets').doc(budgetId);
-  final budgetDoc = await budgetRef.get();
+// Copie des transactions récurrentes pour le nouveau mois
+Future<void> copyRecurringTransactions(
+    QuerySnapshot previousTransactionsSnapshot, String userId, Timestamp newMonthTimestamp) async {
+  for (var doc in previousTransactionsSnapshot.docs) {
+    final transactionData = doc.data() as Map<String, dynamic>;
 
-  if (budgetDoc.exists) {
-    final currentTotalDebit = (budgetDoc.data()?['total_debit'] as num).toDouble();
-    final currentTotalCredit = (budgetDoc.data()?['total_credit'] as num).toDouble();
+    DateTime newDate = DateTime(newMonthTimestamp.toDate().year, newMonthTimestamp.toDate().month, transactionData['date'].toDate().day);
 
-    if (isDebit) {
-      await budgetRef.update({
-        'total_debit': currentTotalDebit + amount,
-      });
-      print('Total Débit mis à jour : ${currentTotalDebit + amount}');
-    } else {
-      await budgetRef.update({
-        'total_credit': currentTotalCredit + amount,
-      });
-      print('Total Crédit mis à jour : ${currentTotalCredit + amount}');
-    }
+    final newTransaction = Debit(
+      id: generateTransactionId(),
+      user_id: userId,
+      date: newDate,
+      notes: transactionData['notes'],
+      isRecurring: transactionData['isRecurring'],
+      amount: transactionData['amount'],
+      photos: List<String>.from(transactionData['photos'] ?? []),
+      localisation: transactionData['localisation'],
+      categorie_id: transactionData['categorie_id'],
+      isValidated: false,
+    );
+
+    await FirebaseFirestore.instance
+        .collection("debits")
+        .doc(newTransaction.id)
+        .set(newTransaction.toMap());
+
+    print('Nouvelle transaction récurrente ajoutée pour le mois : ${newTransaction.id}');
+  }
+}
+
+Future<void> updateCategorySpending(String categoryId, double amount, {bool isDebit = true}) async {
+  final categoryRef = await FirebaseFirestore.instance.collection('categories').doc(categoryId).get();
+
+  if (categoryRef.exists) {
+    final currentSpent = (categoryRef.data()?['spentAmount'] as num?)?.toDouble() ?? 0.0;
+    final newAmount = isDebit ? (currentSpent + amount) : (currentSpent - amount);
+    await FirebaseFirestore.instance.collection("categories").doc(categoryId).update({
+      'spentAmount': newAmount,
+    });
   } else {
-    print('Le budget n\'existe pas : $budgetId');
+    throw Exception("Catégorie non trouvée.");
   }
 }
 
@@ -102,21 +100,5 @@ Future<void> createDefaultCategories(String userId) async {
   // Ajouter les catégories de crédits
   for (var category in creditCategories) {
     await createCategory(category['name']!, userId, category['type']!);
-  }
-}
-
-
-
-Future<void> updateCategorySpending(String categoryId, double amount, {bool isDebit = true}) async {
-  final categoryRef = await FirebaseFirestore.instance.collection('categories').doc(categoryId).get();
-
-  if (categoryRef.exists) {
-    final currentSpent = (categoryRef.data()?['spentAmount'] as num?)?.toDouble() ?? 0.0;
-    final newAmount = isDebit ? (currentSpent + amount) : (currentSpent - amount);
-    await FirebaseFirestore.instance.collection("categories").doc(categoryId).update({
-      'spentAmount': newAmount,
-    });
-  } else {
-    throw Exception("Catégorie non trouvée.");
   }
 }

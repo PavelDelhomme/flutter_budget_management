@@ -15,7 +15,6 @@ class _SummaryViewState extends State<SummaryView> {
   double totalDebit = 0.0;
   double remainingAmount = 0.0;
 
-
   Future<void> _calculateTotalSummary() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -35,6 +34,8 @@ class _SummaryViewState extends State<SummaryView> {
           }
         }
 
+        print('Total Crédit = $creditTotal, Total Débit = $debitTotal, Montant restant = ${creditTotal - debitTotal}');
+
         setState(() {
           totalDebit = debitTotal;
           totalCredit = creditTotal;
@@ -43,6 +44,7 @@ class _SummaryViewState extends State<SummaryView> {
       }
     }
   }
+
 
   Future<List<Transaction>> _getAllTransactions() async {
     final user = FirebaseAuth.instance.currentUser;

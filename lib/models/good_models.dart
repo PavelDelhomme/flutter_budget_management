@@ -31,7 +31,7 @@ class UserModel {
   }
 }
 
-
+/*
 class Budget {
   String id;
   String user_id;
@@ -92,7 +92,7 @@ class Budget {
     }
     return totalCredit;
   }
-}
+}*/
 
 class Categorie {
   String id;
@@ -158,6 +158,8 @@ class Debit extends Transaction {
   List<String>? photos;
   GeoPoint localisation;
   String? categorie_id;
+  String? budget_id;
+  bool isValidated;
 
   Debit({
     required String id,
@@ -169,6 +171,8 @@ class Debit extends Transaction {
     this.photos,
     required this.localisation,
     this.categorie_id,
+    this.budget_id,
+    this.isValidated = false,
   }) : super(
     id: id,
     user_id: user_id,
@@ -185,27 +189,44 @@ class Debit extends Transaction {
       'photos': photos ?? [],
       'localisation': localisation,
       'categorie_id': categorie_id,
+      'budget_id': budget_id,
+      'isValidated': isValidated,
     });
     return map;
   }
 
   static Debit fromMap(Map<String, dynamic> map) {
+    if (map['user_id'] == null) {
+      throw Exception('user_id est manquant dans les données : $map');
+    }
+    if (map['budget_id'] == null) {
+      throw Exception('budget_id est manquant dans les données : $map');
+    }
+    if (map['localisation'] == null) {
+      throw Exception('localisation est manquante dans les données : $map');
+    }
+
     return Debit(
-      id: map['id'],
-      user_id: map['user_id'],
+      id: map['id'] ?? '',
+      user_id: map['user_id'] ?? '',
       date: (map['date'] as Timestamp).toDate(),
-      notes: map['notes'],
-      isRecurring: map['isRecurring'],
-      amount: map['amount'],
+      notes: map['notes'] ?? '',
+      isRecurring: map['isRecurring'] ?? false,
+      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
       photos: List<String>.from(map['photos'] ?? []),
-      localisation: map['localisation'],
+      localisation: map['localisation'] ?? const GeoPoint(0, 0), // Valeur par défaut
       categorie_id: map['categorie_id'],
+      budget_id: map['budget_id'] ?? '', // Valeur par défaut
+      isValidated: map['isValidated'] ?? false,
     );
   }
 }
 
 // Classe Credit héritant de Transaction, n'ajoutant que le montant spécifique
 class Credit extends Transaction {
+  String? budget_id;
+  bool isValidated;
+
   Credit({
     required String id,
     required String user_id,
@@ -213,6 +234,8 @@ class Credit extends Transaction {
     required String notes,
     required bool isRecurring,
     required double amount,
+    this.budget_id,
+    this.isValidated = false,
   }) : super(
     id: id,
     user_id: user_id,
@@ -224,7 +247,12 @@ class Credit extends Transaction {
 
   @override
   Map<String, dynamic> toMap() {
-    return super.toMap();
+    final map = super.toMap();
+    map.addAll({
+      'budget_id': budget_id,
+      'isValidated': isValidated,
+    });
+    return map;
   }
 
   static Credit fromMap(Map<String, dynamic> map) {
@@ -235,6 +263,8 @@ class Credit extends Transaction {
       notes: map['notes'],
       isRecurring: map['isRecurring'],
       amount: map['amount'],
+      budget_id: map['budget_id'],
+      isValidated: map['isValidated'] ?? false,
     );
   }
 }
