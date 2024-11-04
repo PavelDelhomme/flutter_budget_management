@@ -90,7 +90,7 @@ class _SavingsPageState extends State<SavingsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Total des Économies: \$${totalSavings.toStringAsFixed(2)}',
+              'Total des Économies: €${totalSavings.toStringAsFixed(2)}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
@@ -109,7 +109,7 @@ class _SavingsPageState extends State<SavingsPage> {
                       title: Text(
                         'Économies de ${DateFormat('MMMM yyyy').format(monthDate)}',
                       ),
-                      subtitle: Text('Reste: \$${savings.toStringAsFixed(2)}'),
+                      subtitle: Text('Reste: €${savings.toStringAsFixed(2)}'),
                     ),
                   );
                 },

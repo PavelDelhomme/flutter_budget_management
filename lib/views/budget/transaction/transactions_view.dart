@@ -21,7 +21,7 @@ class _TransactionsViewState extends State<TransactionsView> {
   DateTime selectedMonth = DateTime.now();
   double totalDebit = 0.0;
   double totalCredit = 0.0;
-
+  Map<String, String> categoryMap = {}; // Stocker les noms des catégories
 
   Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -66,6 +66,7 @@ class _TransactionsViewState extends State<TransactionsView> {
       'totalCredit': creditTotal,
     };
   }
+
   void _updateMonthlyTotals() async {
     final data = await _getTransactionsForSelectedMonth();
     setState(() {
@@ -73,12 +74,31 @@ class _TransactionsViewState extends State<TransactionsView> {
       totalCredit = data['totalCredit'] ?? 0.0;
     });
   }
+
   @override
   void initState() {
     super.initState();
+    _loadCategories();
     _updateMonthlyTotals();
-    //_getTransactionsForSelectedMonth();
   }
+
+  Future<void> _loadCategories() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      final categorySnapshot = await FirebaseFirestore.instance
+          .collection("categories")
+          .where("userId", isEqualTo: user.uid)
+          .get();
+
+      setState(() {
+        for (var doc in categorySnapshot.docs) {
+          categoryMap[doc.id] = doc['name'];
+        }
+      });
+    }
+  }
+
   void _previousMonth() {
     setState(() {
       selectedMonth = DateTime(selectedMonth.year, selectedMonth.month - 1);
@@ -93,6 +113,13 @@ class _TransactionsViewState extends State<TransactionsView> {
     });
   }
 
+  Future<void> _validateTransaction(DocumentSnapshot transaction) async {
+    await transaction.reference.update({'isValidated': true});
+    setState(() {}); // Rafraîchir l'interface
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Transaction validée.")),
+    );
+  }
 
   void _editTransaction(BuildContext context, DocumentSnapshot transaction) async {
     final result = await Navigator.push(
@@ -137,7 +164,6 @@ class _TransactionsViewState extends State<TransactionsView> {
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -201,15 +227,15 @@ class _TransactionsViewState extends State<TransactionsView> {
                   margin: const EdgeInsets.symmetric(vertical: 8.0),
                   child: ListTile(
                     title: Text(
-                      'Total Crédit : \$${totalCredit.toStringAsFixed(2)}',
+                      'Total Crédit : €${totalCredit.toStringAsFixed(2)}',
                       style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(
-                      'Total Débit : \$${totalDebit.toStringAsFixed(2)}',
+                      'Total Débit : €${totalDebit.toStringAsFixed(2)}',
                       style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                     ),
                     trailing: Text(
-                      'Économies : \$${(totalCredit - totalDebit).toStringAsFixed(2)}',
+                      'Économies : €${(totalCredit - totalDebit).toStringAsFixed(2)}',
                       style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -240,15 +266,18 @@ class _TransactionsViewState extends State<TransactionsView> {
                               ),
                             ),
                             Text(
-                              'Total: \$${totalAmount.toStringAsFixed(2)}',
+                              'Total: €${totalAmount.toStringAsFixed(2)}',
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
                         children: transactionsForDay.map((transaction) {
                           bool isDebit = transaction.reference.parent.id == 'debits';
+                          bool isValidated = transaction['isValidated'];
                           String transactionType = isDebit ? 'Débit' : 'Crédit';
-                          String? category = isDebit ? transaction['categorie_id'] : null;
+                          String? categoryName = isDebit && transaction['categorie_id'] != null
+                              ? categoryMap[transaction['categorie_id']]
+                              : 'Sans catégorie';
 
                           // Appliquer les couleurs en fonction du type de transaction
                           Color transactionColor = isDebit ? Colors.red : Colors.green;
@@ -273,6 +302,15 @@ class _TransactionsViewState extends State<TransactionsView> {
                               motion: const StretchMotion(),
                               children: [
                                 SlidableAction(
+                                  onPressed: (context) {
+                                    _validateTransaction(transaction);
+                                  },
+                                  backgroundColor: isValidated ? Colors.grey : Colors.green,
+                                  foregroundColor: Colors.white,
+                                  icon: Icons.check,
+                                  label: isValidated ? 'Validée' : 'Valider',
+                                ),
+                                SlidableAction(
                                   onPressed: (context) async {
                                     bool confirm = await _showDeleteConfirmation(context);
                                     if (confirm) {
@@ -291,7 +329,7 @@ class _TransactionsViewState extends State<TransactionsView> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    '${transaction['amount'].toStringAsFixed(2)} \$',
+                                    '${transaction['amount'].toStringAsFixed(2)} €',
                                     style: TextStyle(color: transactionColor),
                                   ),
                                   Text(transactionType),
@@ -300,7 +338,7 @@ class _TransactionsViewState extends State<TransactionsView> {
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (category != null) Text('Catégorie: $category'),
+                                  Text("$categoryName"),
                                   Text(transaction['notes'] ?? 'Aucune note'),
                                 ],
                               ),
@@ -342,7 +380,6 @@ class _TransactionsViewState extends State<TransactionsView> {
     );
   }
 
-  // Affiche une vue modale avec les détails du mois sélectionné
   void _showMonthDetails(BuildContext context) {
     Navigator.push(
       context,
@@ -352,10 +389,8 @@ class _TransactionsViewState extends State<TransactionsView> {
     );
   }
 
-
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
     return await showDialog(
-      context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Confirmer la suppression"),
@@ -371,7 +406,7 @@ class _TransactionsViewState extends State<TransactionsView> {
             ),
           ],
         );
-      },
+      }, context: context,
     ) ?? false;
   }
 }

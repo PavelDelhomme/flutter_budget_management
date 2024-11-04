@@ -77,7 +77,7 @@ class TransactionDetailsModal extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text('Montant : \$${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18)),
+          Text('Montant : €${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),
           if (categoryId != null) Text('Catégorie : $categoryId', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),

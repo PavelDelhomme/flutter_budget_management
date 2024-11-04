@@ -1,3 +1,4 @@
+import 'package:budget_management/utils/transactions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ class _HomeViewState extends State<HomeView> {
   @override
   void initState() {
     super.initState();
+    copyRecurringTransactionsForNewMonth();
     //_checkAndAddDefaultCategories();
   }
 

@@ -1,11 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:intl/intl.dart';
 
 import '../models/good_models.dart';
 import 'budgets.dart';
-import 'categories.dart';
 import 'generate_ids.dart';
 
 DateTime _calculateNewDate(DateTime originalDate) {
@@ -38,6 +35,7 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
         .collection('debits')
         .where('user_id', isEqualTo: user.uid)
         .where('isRecurring', isEqualTo: true)
+        .where('isValidated', isEqualTo: true)
         .get();
 
     for (var debitDoc in recurringTransactionsSnapshot.docs) {
@@ -64,6 +62,57 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
     }
   }
 }
+
+Future<void> updateRecurringTransactionsForCurrentMonth() async  {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    DateTime now = DateTime.now();
+    DateTime startOfMonth = DateTime(now.year, now.month, 1);
+    DateTime endOfMonth = DateTime(now.year, now.month + 1, 1);
+
+    final recurringTransactionsSnapshot = await FirebaseFirestore.instance
+      .collection("debits")
+      .where('user_id', isEqualTo: user.uid)
+      .where('isRecurring', isEqualTo: true)
+      .get();
+
+    for (var doc in recurringTransactionsSnapshot.docs) {
+      DateTime transactionDate = (doc['date'] as Timestamp).toDate();
+
+      // Si une transaction similaire n'existe pas déjà pour le mois en cours
+      bool transactionExists = await FirebaseFirestore.instance
+          .collection('debits')
+          .where('user_id', isEqualTo: user.uid)
+          .where('isRecurring', isEqualTo: true)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+          .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
+          .where('categorie_id', isEqualTo: doc['categorie_id'])
+          .get()
+          .then((snapshot) => snapshot.docs.isNotEmpty);
+
+      if (!transactionExists) {
+        DateTime newTransactionDate = DateTime(now.year, now.month, transactionDate.day);
+
+        // Créer une transaction pour le mois actuel
+        final newTransaction = {
+          "id": generateTransactionId(),
+          "user_id": user.uid,
+          "date": Timestamp.fromDate(newTransactionDate),
+          "notes": doc['notes'],
+          "isRecurring": doc['isRecurring'],
+          "amount": doc['amount'],
+          "photos": doc['photos'] ?? [],
+          "localisation": doc['localisation'],
+          'categorie_id': doc['categorie_id'],
+          "isValidated": false,
+        };
+
+        await FirebaseFirestore.instance.collection("debits").doc(newTransaction['id']).set(newTransaction);
+      }
+    }
+  }
+}
+
 
 Future<void> copyRecurringTransactions(
     String previousBudgetId, String newBudgetId) async {
