@@ -170,6 +170,7 @@ Future<void> updateRecurringTransactionsForCurrentMonth() async  {
   }
 }
 */
+
 Future<void> copyRecurringTransactionsForNewMonth() async {
   final user = FirebaseAuth.instance.currentUser;
 
@@ -178,8 +179,8 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
     DateTime startOfMonth = DateTime(now.year, now.month, 1);
     DateTime endOfMonth = DateTime(now.year, now.month + 1, 1);
 
-    // Vérifiez d'abord si les transactions récurrentes pour le mois en cours existent déjà
-    final existingTransactions = await FirebaseFirestore.instance
+    // Vérifiez si des transactions récurrentes existent déjà pour le mois courant
+    final existingDebitTransactions = await FirebaseFirestore.instance
         .collection('debits')
         .where('user_id', isEqualTo: user.uid)
         .where('isRecurring', isEqualTo: true)
@@ -187,12 +188,20 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
         .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
         .get();
 
-    if (existingTransactions.docs.isNotEmpty) {
+    final existingCreditTransactions = await FirebaseFirestore.instance
+        .collection('credits')
+        .where('user_id', isEqualTo: user.uid)
+        .where('isRecurring', isEqualTo: true)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
+        .get();
+
+    if (existingDebitTransactions.docs.isNotEmpty || existingCreditTransactions.docs.isNotEmpty) {
       log("Les transactions récurrentes existent déjà pour le mois en cours.");
       return;
     }
 
-    // Si elles n'existent pas, alors copier les transactions récurrentes pour le nouveau mois
+    // Si elles n'existent pas, copier les transactions récurrentes de débit
     final recurringDebitTransactionsSnapshot = await FirebaseFirestore.instance
         .collection('debits')
         .where('user_id', isEqualTo: user.uid)
@@ -218,7 +227,7 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
       await FirebaseFirestore.instance.collection("debits").doc(newDebit.id).set(newDebit.toMap());
     }
 
-    // Répétez les étapes ci-dessus pour les transactions de crédit
+    // Copier les transactions récurrentes de crédit
     final recurringCreditTransactionsSnapshot = await FirebaseFirestore.instance
         .collection('credits')
         .where('user_id', isEqualTo: user.uid)
