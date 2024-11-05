@@ -108,3 +108,38 @@ Future<void> createDefaultCategories(String userId) async {
   // Ajouter la catégorie "Revenus" pour les crédits
   await createCategory("Revenus", userId, "credit");
 }
+
+Future<void> updateCurrentMonthBudget(String userId, double amount, {required bool isDebit}) async {
+  final now = DateTime.now();
+  final budgetRef = FirebaseFirestore.instance
+      .collection('budgets')
+      .where('user_id', isEqualTo: userId)
+      .where('month', isEqualTo: now.month)
+      .where('year', isEqualTo: now.year)
+      .limit(1);
+
+  final budgetSnapshot = await budgetRef.get();
+
+  if (budgetSnapshot.docs.isNotEmpty) {
+    // Si le budget existe, mise à jour des totaux
+    final budgetData = budgetSnapshot.docs.first;
+    final newTotalDebit = (budgetData['total_debit'] as num).toDouble() + (isDebit ? amount : 0.0);
+    final newTotalCredit = (budgetData['total_credit'] as num).toDouble() + (!isDebit ? amount : 0.0);
+
+    await budgetData.reference.update({
+      'total_debit': newTotalDebit,
+      'total_credit': newTotalCredit,
+    });
+  } else {
+    // Si le budget n'existe pas, création d'un nouveau document
+    final newBudget = Budget(
+      id: generateTransactionId(),
+      user_id: userId,
+      month: now.month,
+      year: now.year,
+      total_debit: isDebit ? amount : 0.0,
+      total_credit: !isDebit ? amount : 0.0,
+    );
+    await FirebaseFirestore.instance.collection('budgets').doc(newBudget.id).set(newBudget.toMap());
+  }
+}

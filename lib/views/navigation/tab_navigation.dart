@@ -23,7 +23,7 @@ class _TabNavigationState extends State<TabNavigation> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${DateFormat.MMMM('fr_FR').format(DateTime.now())} ${DateTime.now().year}'),
+        title: Text('${DateTime.now().day} ${DateFormat.MMMM('fr_FR').format(DateTime.now())} ${DateTime.now().year}'),
       ),
       drawer: const CustomDrawer(activeItem: 'home'),  // Toujours "home" lorsque tu es dans TabNavigation
       body: _pages[_currentIndex],

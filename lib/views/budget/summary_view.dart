@@ -27,81 +27,73 @@ class _SummaryViewState extends State<SummaryView> {
     _calculateTotalSummary();
   }
 
+
+
   Future<void> _calculateTotalSummary() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      //List<Transaction> transactions = await _getAllTransactions();
-      double debitTotal = 0.0;
-      double creditTotal = 0.0;
-      double futureDebitTotal = 0.0;
-      double futureCreditTotal = 0.0;
-      double savingsTotal = 0.0;
+      final now = DateTime.now();
 
-      DateTime now = DateTime.now();
-      DateTime startOfMonth = DateTime(now.year, now.month, 1);
-
-      final transactionsSnapshot = await fs.FirebaseFirestore.instance
-          .collectionGroup('transactions')
+      final budgetSnapshot = await fs.FirebaseFirestore.instance
+          .collection('budgets')
           .where('user_id', isEqualTo: user.uid)
+          .where('month', isEqualTo: now.month)
+          .where('year', isEqualTo: now.year)
           .get();
 
-      for (var doc in transactionsSnapshot.docs) {
-        var transactionData = doc.data();
-        var isDebit = transactionData['type'] == 'debit';
-        var isValidated = transactionData['isValidated'] ?? false;
-        var amount = (transactionData['amount'] as num).toDouble();
-        var isRecurring = transactionData['isRecurring'] ?? false;
-        var transactionDate = (transactionData['date'] as Timestamp).toDate();
+      print("Budget Snapshot for ${now.month}/${now.year}: ${budgetSnapshot.docs}");
 
-        // Calculer les totaux actuels validés
-        if (isValidated) {
-          if (isDebit) {
-            debitTotal += amount;
-          } else {
-            creditTotal += amount;
-          }
-        }
+      if (budgetSnapshot.docs.isNotEmpty) {
+        // Budget existe pour le mois
+        final budgetData = budgetSnapshot.docs.first.data();
+        setState(() {
+          totalDebit = (budgetData['total_debit'] as num?)?.toDouble() ?? 0.0;
+          totalCredit = (budgetData['total_credit'] as num?)?.toDouble() ?? 0.0;
+          remainingAmount = totalCredit - totalDebit;
+          //projectedRemainingAmount = remainingAmount + futureCredit - futureDebit + totalSavings;
+          projectedRemainingAmount = remainingAmount + totalSavings;
+        });
+      } else {
+        // Calcule des valeurs à aprtir des transactiosn
+        double debitTotal = 0.0;
+        double creditTotal = 0.0;
 
-        // Ajouter les transactions récurrentes futures comme prévisions
-        if (isRecurring && !isValidated && transactionDate.isBefore(startOfMonth)) {
-          if (isDebit) {
-            futureDebitTotal += amount;
-          } else {
-            futureCreditTotal += amount;
-          }
-        }
-
-        // Récupérer les économies de la collection `savings`
-        final savingsSnapshot = await fs.FirebaseFirestore.instance
-            .collection('savings')
-            .where('user_id', isEqualTo: user.uid)
+        var debitQuery = await FirebaseFirestore.instance
+            .collection("debits")
+            .where("user_id", isEqualTo: user.uid)
+            .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime(now.year, now.month, 1)))
+            .where("date", isLessThan: Timestamp.fromDate(DateTime(now.year, now.month + 1, 1)))
             .get();
 
-        for (var doc in savingsSnapshot.docs) {
-          savingsTotal += (doc['amount'] as num).toDouble();
+        var creditQuery = await FirebaseFirestore.instance
+            .collection("credits")
+            .where("user_id", isEqualTo: user.uid)
+            .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime(now.year, now.month, 1)))
+            .where("date", isLessThan: Timestamp.fromDate(DateTime(now.year, now.month + 1, 1)))
+            .get();
+
+        for (var doc in debitQuery.docs) {
+          debitTotal += (doc['amount'] as num).toDouble();
         }
 
-        if (mounted) {
-          setState(() {
-            totalDebit = debitTotal;
-            totalCredit = creditTotal;
-            remainingAmount = totalCredit - totalDebit;
-            futureDebit = futureDebitTotal;
-            futureCredit = futureCreditTotal;
-            totalSavings = savingsTotal;
-            projectedRemainingAmount = remainingAmount + futureCredit - futureDebit + totalSavings;
-          });
+        for (var doc in creditQuery.docs) {
+          creditTotal += (doc['amount'] as num).toDouble();
         }
+
+        setState(() {
+          totalDebit = debitTotal;
+          totalCredit = creditTotal;
+          remainingAmount = totalCredit - totalDebit;
+          projectedRemainingAmount = remainingAmount + totalSavings;
+        });
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    String formattedDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
-
     return Scaffold(
-      appBar: AppBar(title: Text('Résumé au $formattedDate')),
+      //appBar: AppBar(title: Text('Résumé au ${DateFormat('dd/MM/yyyy').format(DateTime.now())}')),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -112,10 +104,6 @@ class _SummaryViewState extends State<SummaryView> {
               _buildBudgetCard("Total Débits", totalDebit.toStringAsFixed(2), Colors.red),
               _buildBudgetCard("Montant Restant", remainingAmount.toStringAsFixed(2), Colors.blue),
               _buildBudgetCard("Montant Restant avec Économies", projectedRemainingAmount.toStringAsFixed(2), Colors.orange),
-              const SizedBox(height: 20),
-              _buildBudgetCard("Total Crédits Prévu", futureCredit.toStringAsFixed(2), Colors.green),
-              _buildBudgetCard("Total Débits Prévu", futureDebit.toStringAsFixed(2), Colors.red),
-              _buildBudgetCard("Montant Restant Prévu", projectedRemainingAmount.toStringAsFixed(2), Colors.purple),
             ],
           ),
         ),
@@ -134,10 +122,7 @@ class _SummaryViewState extends State<SummaryView> {
           children: [
             Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8.0),
-            Text(
-              "€$amount",
-              style: TextStyle(fontSize: 20, color: color, fontWeight: FontWeight.bold),
-            ),
+            Text("€$amount", style: TextStyle(fontSize: 20, color: color, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

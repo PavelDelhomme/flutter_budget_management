@@ -18,6 +18,7 @@ class _HomeViewState extends State<HomeView> {
   void initState() {
     super.initState();
     copyRecurringTransactionsForNewMonth();
+    handleMonthTransition(userId: FirebaseAuth.instance.currentUser!.uid, date: DateTime.now());
     //_checkAndAddDefaultCategories();
   }
 

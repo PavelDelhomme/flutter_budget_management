@@ -95,8 +95,11 @@ class _TransactionsViewState extends State<TransactionsView> {
       });
     }
   }
+  Future<String> getCategoryName(String? categoryId) async {
+    if (categoryId == null || categoryId.isEmpty) {
+      return "Sans catégorie"; // Retourne "Sans catégorie" si l'id est absent
+    }
 
-  Future<String> getCategoryName(String categoryId) async {
     if (categoryMap.containsKey(categoryId)) {
       return categoryMap[categoryId]!;
     } else {
@@ -288,10 +291,10 @@ class _TransactionsViewState extends State<TransactionsView> {
                           String transactionType = isDebit ? 'Débit' : 'Crédit';
 
                           return FutureBuilder<String>(
-                            future: getCategoryName(transaction['categorie_id'] ?? ''),
+                            future: isDebit ? getCategoryName(transaction['categorie_id']) : Future.value("Sans catégorie"),
                             builder: (context, snapshot) {
                               String categoryName = snapshot.data ?? 'Sans catégorie';
-                              Color backgroundColor = isValidated ? Colors.transparent : Colors.orange.withOpacity(0.1);
+                              Color backgroundColor = isValidated ? Colors.greenAccent.withOpacity(0.2) : Colors.orange.withOpacity(0.1);
 
                               return Container(
                                 color: backgroundColor,
@@ -318,10 +321,10 @@ class _TransactionsViewState extends State<TransactionsView> {
                                         onPressed: (context) {
                                           _validateTransaction(transaction);
                                         },
-                                        backgroundColor: isValidated ? Colors.grey : Colors.green,
+                                        backgroundColor: isValidated ? Colors.green : Colors.blueGrey,
                                         foregroundColor: Colors.white,
                                         icon: Icons.check,
-                                        label: isValidated ? 'Validée' : 'Valider',
+                                        label: isValidated ? 'Annuler' : 'Oui',
                                       ),
                                       SlidableAction(
                                         onPressed: (context) async {
