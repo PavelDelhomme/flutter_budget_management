@@ -1,5 +1,4 @@
 import 'dart:developer';
-import 'dart:ui';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +31,7 @@ class _TransactionsViewState extends State<TransactionsView> {
     double debitTotal = 0.0;
     double creditTotal = 0.0;
 
-    // Récupérer les transactions dans le mois sélectionné
+    // Charger les transactions de débit et crédit du mois sélectionné
     var debitQuery = await FirebaseFirestore.instance
         .collection("debits")
         .where("user_id", isEqualTo: user?.uid)
@@ -47,37 +46,12 @@ class _TransactionsViewState extends State<TransactionsView> {
         .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
         .get();
 
+    // Calcul des totaux et ajout des transactions récupérées
     for (var doc in debitQuery.docs) {
       debitTotal += (doc['amount'] as num).toDouble();
       transactions.add(doc);
     }
     for (var doc in creditQuery.docs) {
-      creditTotal += (doc['amount'] as num).toDouble();
-      transactions.add(doc);
-    }
-
-    // Inclure les transactions récurrentes non validées du mois précédent
-    var recurringDebitQuery = await FirebaseFirestore.instance
-        .collection("debits")
-        .where("user_id", isEqualTo: user?.uid)
-        .where("isRecurring", isEqualTo: true)
-        .where("isValidated", isEqualTo: false)
-        .where("date", isLessThan: Timestamp.fromDate(startOfMonth))
-        .get();
-
-    var recurringCreditQuery = await FirebaseFirestore.instance
-        .collection("credits")
-        .where("user_id", isEqualTo: user?.uid)
-        .where("isRecurring", isEqualTo: true)
-        .where("isValidated", isEqualTo: false)
-        .where("date", isLessThan: Timestamp.fromDate(startOfMonth))
-        .get();
-
-    for (var doc in recurringDebitQuery.docs) {
-      debitTotal += (doc['amount'] as num).toDouble();
-      transactions.add(doc);
-    }
-    for (var doc in recurringCreditQuery.docs) {
       creditTotal += (doc['amount'] as num).toDouble();
       transactions.add(doc);
     }
@@ -122,6 +96,20 @@ class _TransactionsViewState extends State<TransactionsView> {
     }
   }
 
+  Future<String> getCategoryName(String categoryId) async {
+    if (categoryMap.containsKey(categoryId)) {
+      return categoryMap[categoryId]!;
+    } else {
+      var categorySnapshot = await FirebaseFirestore.instance.collection("categories").doc(categoryId).get();
+      if (categorySnapshot.exists) {
+        String categoryName = categorySnapshot['name'];
+        categoryMap[categoryId] = categoryName; // Cache le nom pour les prochaines utilisations
+        return categoryName;
+      } else {
+        return "Sans catégorie";
+      }
+    }
+  }
   void _previousMonth() {
     setState(() {
       selectedMonth = DateTime(selectedMonth.year, selectedMonth.month - 1);
@@ -231,7 +219,7 @@ class _TransactionsViewState extends State<TransactionsView> {
             totalDebit = data['totalDebit'] ?? 0.0;
             totalCredit = data['totalCredit'] ?? 0.0;
 
-            // Organiser les transactions par jour
+            // transactions par jour
             Map<String, List<QueryDocumentSnapshot>> transactionsByDays = {};
 
             for (var transaction in transactions) {
@@ -298,91 +286,96 @@ class _TransactionsViewState extends State<TransactionsView> {
                           bool isDebit = transaction.reference.parent.id == 'debits';
                           bool isValidated = transaction['isValidated'];
                           String transactionType = isDebit ? 'Débit' : 'Crédit';
-                          String? categoryName = isDebit && transaction['categorie_id'] != null
-                              ? categoryMap[transaction['categorie_id']]
-                              : 'Sans catégorie';
 
-                          // Appliquer les couleurs en fonction du type de transaction
-                          Color transactionColor = isDebit ? Colors.red : Colors.green;
+                          return FutureBuilder<String>(
+                            future: getCategoryName(transaction['categorie_id'] ?? ''),
+                            builder: (context, snapshot) {
+                              String categoryName = snapshot.data ?? 'Sans catégorie';
+                              Color backgroundColor = isValidated ? Colors.transparent : Colors.orange.withOpacity(0.1);
 
-                          return Slidable(
-                            key: Key(transaction.id),
-                            startActionPane: ActionPane(
-                              motion: const StretchMotion(),
-                              children: [
-                                SlidableAction(
-                                  onPressed: (context) {
-                                    _editTransaction(context, transaction);
-                                  },
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
-                                  icon: Icons.edit,
-                                  label: 'Modifier',
-                                ),
-                              ],
-                            ),
-                            endActionPane: ActionPane(
-                              motion: const StretchMotion(),
-                              children: [
-                                SlidableAction(
-                                  onPressed: (context) {
-                                    _validateTransaction(transaction);
-                                  },
-                                  backgroundColor: isValidated ? Colors.grey : Colors.green,
-                                  foregroundColor: Colors.white,
-                                  icon: Icons.check,
-                                  label: isValidated ? 'Validée' : 'Valider',
-                                ),
-                                SlidableAction(
-                                  onPressed: (context) async {
-                                    bool confirm = await _showDeleteConfirmation(context);
-                                    if (confirm) {
-                                      _deleteTransaction(context, transaction);
-                                    }
-                                  },
-                                  backgroundColor: Colors.red,
-                                  foregroundColor: Colors.white,
-                                  icon: Icons.delete,
-                                  label: 'Supprimer',
-                                ),
-                              ],
-                            ),
-                            child: ListTile(
-                              title: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '${transaction['amount'].toStringAsFixed(2)} €',
-                                    style: TextStyle(color: transactionColor),
-                                  ),
-                                  Text(transactionType),
-                                ],
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text("$categoryName"),
-                                  Text(transaction['notes'] ?? 'Aucune note'),
-                                ],
-                              ),
-                              onTap: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
-                                  ),
-                                  builder: (context) {
-                                    return Padding(
-                                      padding: EdgeInsets.only(
-                                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                              return Container(
+                                color: backgroundColor,
+                                child: Slidable(
+                                  key: Key(transaction.id),
+                                  startActionPane: ActionPane(
+                                    motion: const StretchMotion(),
+                                    children: [
+                                      SlidableAction(
+                                        onPressed: (context) {
+                                          _editTransaction(context, transaction);
+                                        },
+                                        backgroundColor: Colors.blue,
+                                        foregroundColor: Colors.white,
+                                        icon: Icons.edit,
+                                        label: 'Modifier',
                                       ),
-                                      child: TransactionDetailsModal(transaction: transaction),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
+                                    ],
+                                  ),
+                                  endActionPane: ActionPane(
+                                    motion: const StretchMotion(),
+                                    children: [
+                                      SlidableAction(
+                                        onPressed: (context) {
+                                          _validateTransaction(transaction);
+                                        },
+                                        backgroundColor: isValidated ? Colors.grey : Colors.green,
+                                        foregroundColor: Colors.white,
+                                        icon: Icons.check,
+                                        label: isValidated ? 'Validée' : 'Valider',
+                                      ),
+                                      SlidableAction(
+                                        onPressed: (context) async {
+                                          bool confirm = await _showDeleteConfirmation(context);
+                                          if (confirm) {
+                                            _deleteTransaction(context, transaction);
+                                          }
+                                        },
+                                        backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
+                                        icon: Icons.delete,
+                                        label: 'Supprimer',
+                                      ),
+                                    ],
+                                  ),
+                                  child: ListTile(
+                                    title: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          '${transaction['amount'].toStringAsFixed(2)} €',
+                                          style: TextStyle(color: isDebit ? Colors.red : Colors.green),
+                                        ),
+                                        Text(transactionType),
+                                      ],
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(categoryName),
+                                        Text(transaction['notes'] ?? 'Aucune note'),
+                                      ],
+                                    ),
+                                    onTap: () {
+                                      showModalBottomSheet(
+                                        context: context,
+                                        isScrollControlled: true,
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+                                        ),
+                                        builder: (context) {
+                                          return Padding(
+                                            padding: EdgeInsets.only(
+                                              bottom: MediaQuery.of(context).viewInsets.bottom,
+                                            ),
+                                            child: TransactionDetailsModal(transaction: transaction),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         }).toList(),
                       );

@@ -1,3 +1,6 @@
+import 'dart:developer';
+
+import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
@@ -16,6 +19,24 @@ class TransactionDetailsModal extends StatelessWidget {
       return placemarks.isNotEmpty ? placemarks.first.street ?? 'Adresse inconnue' : 'Adresse inconnue';
     } catch (e) {
       return 'Adresse inconnue';
+    }
+  }
+
+  Future<String>getCategoryName(String categoryId) async {
+    try {
+      DocumentSnapshot categorySnapshot = await FirebaseFirestore.instance
+          .collection("categories")
+          .doc(categoryId)
+          .get();
+
+      if (categorySnapshot.exists) {
+        return categorySnapshot.get("name");
+      } else {
+        return "Catégorie inconnue";
+      }
+    } catch (e) {
+      log("Erreur lors de la récupération de la catégorie $e");
+      return "Erreur lors de la récupération de la catégorie";
     }
   }
 
@@ -60,7 +81,7 @@ class TransactionDetailsModal extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  "Transaction du $date",
+                  "$date",
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -79,7 +100,18 @@ class TransactionDetailsModal extends StatelessWidget {
           const SizedBox(height: 10),
           Text('Montant : €${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),
-          if (categoryId != null) Text('Catégorie : $categoryId', style: const TextStyle(fontSize: 18)),
+          if (categoryId != null)
+            FutureBuilder<String>(
+              future: getCategoryName(categoryId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Text('Chargement de la catégorie...', style: TextStyle(fontSize: 18));
+                } else if (snapshot.hasError || !snapshot.hasData) {
+                  return const Text('Catégorie inconnue', style: TextStyle(fontSize: 18));
+                }
+                return Text('Catégorie : ${snapshot.data}', style: const TextStyle(fontSize: 18));
+              },
+            ),
           const SizedBox(height: 10),
           Text('Notes : $notes', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as fs;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -22,60 +23,29 @@ class _SavingsPageState extends State<SavingsPage> {
   }
 
   // Fonction pour calculer les économies par mois et les économies totales
+
   Future<void> _calculateSavings() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      print('Calcul des économies pour l\'utilisateur : ${user.uid}');
-
-      // Récupérer toutes les transactions de l'utilisateur
-      final debitsSnapshot = await fs.FirebaseFirestore.instance
-          .collection('debits')
+      final budgetsSnapshot = await FirebaseFirestore.instance
+          .collection('budgets')
           .where('user_id', isEqualTo: user.uid)
           .get();
 
-      final creditsSnapshot = await fs.FirebaseFirestore.instance
-          .collection('credits')
-          .where('user_id', isEqualTo: user.uid)
-          .get();
-
-      // Calcul des économies par mois
-      Map<String, double> savingsPerMonth = {};
       double totalSavings = 0.0;
+      Map<String, double> savingsPerMonth = {};
 
-      void addTransactionToMonth(
-          String monthKey, double amount, bool isDebit) {
-        if (!savingsPerMonth.containsKey(monthKey)) {
-          savingsPerMonth[monthKey] = 0.0;
-        }
-        savingsPerMonth[monthKey] =
-            savingsPerMonth[monthKey]! + (isDebit ? -amount : amount);
+      for (var doc in budgetsSnapshot.docs) {
+        Budget budget = Budget.fromMap(doc.data());
+        String monthKey = '${budget.year}-${budget.month.toString().padLeft(2, '0')}';
+        savingsPerMonth[monthKey] = budget.remaining;
+        totalSavings += budget.remaining;
       }
-
-      // Traiter les débits
-      for (var doc in debitsSnapshot.docs) {
-        Debit debit = Debit.fromMap(doc.data());
-        String monthKey = DateFormat('yyyy-MM').format(debit.date);
-        addTransactionToMonth(monthKey, debit.amount, true);
-      }
-
-      // Traiter les crédits
-      for (var doc in creditsSnapshot.docs) {
-        Credit credit = Credit.fromMap(doc.data());
-        String monthKey = DateFormat('yyyy-MM').format(credit.date);
-        addTransactionToMonth(monthKey, credit.amount, false);
-      }
-
-      // Calcul des économies totales
-      savingsPerMonth.forEach((month, savings) {
-        if (savings > 0) totalSavings += savings;
-      });
 
       setState(() {
         this.totalSavings = totalSavings;
         monthlySavings = savingsPerMonth;
       });
-
-      print('Économies totales : $totalSavings');
     }
   }
 

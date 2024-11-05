@@ -40,25 +40,39 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
 
     for (var debitDoc in recurringTransactionsSnapshot.docs) {
       final debitData = debitDoc.data();
-      DateTime newDate = _calculateNewDate((debitData['date'] as Timestamp).toDate());
+      DateTime newDate = _calculateNewDate(
+          (debitData['date'] as Timestamp).toDate());
 
-      final newDebit = Debit(
-        id: generateTransactionId(),
-        user_id: debitData['user_id'],
-        date: newDate,
-        notes: debitData['notes'],
-        isRecurring: debitData['isRecurring'],
-        amount: debitData['amount'],
-        photos: List<String>.from(debitData['photos'] ?? []),
-        localisation: debitData['localisation'],
-        categorie_id: debitData['categorie_id'],
-        isValidated: false,
-      );
+      // Vérifier si cette transaction n'existe pas déjà pour le mois sélectionné
+      bool transactionExists = await FirebaseFirestore.instance
+          .collection('debits')
+          .where('user_id', isEqualTo: user.uid)
+          .where('isRecurring', isEqualTo: true)
+          .where('date', isEqualTo: Timestamp.fromDate(newDate))
+          .where('categorie_id', isEqualTo: debitData['categorie_id'])
+          .get()
+          .then((snapshot) => snapshot.docs.isNotEmpty);
 
-      await FirebaseFirestore.instance
-          .collection("debits")
-          .doc(newDebit.id)
-          .set(newDebit.toMap());
+      if (!transactionExists) {
+        final newDebit = Debit(
+          id: generateTransactionId(),
+          user_id: debitData['user_id'],
+          date: newDate,
+          notes: debitData['notes'],
+          isRecurring: debitData['isRecurring'],
+          amount: debitData['amount'],
+          photos: List<String>.from(debitData['photos'] ?? []),
+          localisation: debitData['localisation'],
+          categorie_id: debitData['categorie_id'],
+          isValidated: false,
+        );
+
+
+        await FirebaseFirestore.instance
+            .collection("debits")
+            .doc(newDebit.id)
+            .set(newDebit.toMap());
+      }
     }
   }
 }

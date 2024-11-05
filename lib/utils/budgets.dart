@@ -9,35 +9,30 @@ Future<void> handleMonthTransition({
   required String userId,
   required DateTime date,
 }) async {
-  final Timestamp monthTimestamp = Timestamp.fromDate(DateTime(date.year, date.month, 1));
+  final currentMonth = DateTime(date.year, date.month, 1);
+  final previousMonth = DateTime(date.year, date.month - 1, 1);
 
-  // Obtenir le mois précédent pour copier les transactions récurrentes
-  DateTime previousMonth = DateTime(date.year, date.month - 1, 1);
-
-  // Vérifier si des transactions récurrentes existent pour le mois précédent
-  final previousTransactionsSnapshot = await FirebaseFirestore.instance
+  // Calcul des transactions récurrentes pour le mois précédent
+  final recurringTransactionsSnapshot = await FirebaseFirestore.instance
       .collection('debits')
       .where('user_id', isEqualTo: userId)
       .where('isRecurring', isEqualTo: true)
       .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(previousMonth))
       .get();
 
-  // Copier les transactions récurrentes pour le mois courant
-  if (previousTransactionsSnapshot.docs.isNotEmpty) {
-    print('Copie des transactions récurrentes du mois précédent');
-    await copyRecurringTransactions(previousTransactionsSnapshot, userId, monthTimestamp);
-  } else {
-    print('Pas de transactions récurrentes à copier pour le mois précédent.');
+  if (recurringTransactionsSnapshot.docs.isNotEmpty) {
+    await copyRecurringTransactions(recurringTransactionsSnapshot, userId, currentMonth);
   }
 }
 
+
 // Copie des transactions récurrentes pour le nouveau mois
 Future<void> copyRecurringTransactions(
-    QuerySnapshot previousTransactionsSnapshot, String userId, Timestamp newMonthTimestamp) async {
+    QuerySnapshot previousTransactionsSnapshot, String userId, DateTime newMonth
+    ) async {
   for (var doc in previousTransactionsSnapshot.docs) {
     final transactionData = doc.data() as Map<String, dynamic>;
-
-    DateTime newDate = DateTime(newMonthTimestamp.toDate().year, newMonthTimestamp.toDate().month, transactionData['date'].toDate().day);
+    final newDate = DateTime(newMonth.year, newMonth.month, transactionData['date'].toDate().day);
 
     final newTransaction = Debit(
       id: generateTransactionId(),
@@ -52,12 +47,32 @@ Future<void> copyRecurringTransactions(
       isValidated: false,
     );
 
-    await FirebaseFirestore.instance
-        .collection("debits")
-        .doc(newTransaction.id)
-        .set(newTransaction.toMap());
+    await FirebaseFirestore.instance.collection("debits").doc(newTransaction.id).set(newTransaction.toMap());
+  }
+}
 
-    print('Nouvelle transaction récurrente ajoutée pour le mois : ${newTransaction.id}');
+Future<void> updateBudetTotals(String userId, double amount, {required bool isDebit}) async {
+  final currentMonth = DateTime.now();
+  final budgetDoc = await FirebaseFirestore.instance
+    .collection('budgets')
+    .where('user_id', isEqualTo: userId)
+    .where('month', isEqualTo: currentMonth.month)
+    .where('year', isEqualTo: currentMonth.year)
+    .limit(1)
+    .get();
+
+  if (budgetDoc.docs.isNotEmpty) {
+    final budgetData = budgetDoc.docs.first;
+    final double totalDebit = (budgetData['total_debit'] as num?)?.toDouble() ?? 0.0;
+    final double totalCredit = (budgetData['total_credit'] as num?)?.toDouble() ?? 0.0;
+
+    final newTotalDebit = isDebit ? totalDebit + amount : totalDebit;
+    final newTotalCredit = isDebit ? totalCredit : totalCredit + amount;
+
+    await budgetData.reference.update({
+      'total_debit': newTotalDebit,
+      'total_credit': newTotalCredit,
+    });
   }
 }
 
@@ -74,6 +89,7 @@ Future<void> updateCategorySpending(String categoryId, double amount, {bool isDe
     throw Exception("Catégorie non trouvée.");
   }
 }
+
 Future<void> createDefaultCategories(String userId) async {
   // Catégories pour les débits (dépenses)
   List<Map<String, String>> debitCategories = [

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as fs;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:budget_management/models/good_models.dart';
@@ -15,15 +16,21 @@ class _SummaryViewState extends State<SummaryView> {
   double totalCredit = 0.0;
   double totalDebit = 0.0;
   double remainingAmount = 0.0;
-  double totalSavings = 0.0;
+  double projectedRemainingAmount = 0.0;
   double futureCredit = 0.0;
   double futureDebit = 0.0;
-  double projectedRemainingAmount = 0.0;
+  double totalSavings = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateTotalSummary();
+  }
 
   Future<void> _calculateTotalSummary() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      List<Transaction> transactions = await _getAllTransactions();
+      //List<Transaction> transactions = await _getAllTransactions();
       double debitTotal = 0.0;
       double creditTotal = 0.0;
       double futureDebitTotal = 0.0;
@@ -33,79 +40,60 @@ class _SummaryViewState extends State<SummaryView> {
       DateTime now = DateTime.now();
       DateTime startOfMonth = DateTime(now.year, now.month, 1);
 
-      for (var transaction in transactions) {
-        // Vérifier les transactions validées
-        if (transaction is Debit && transaction.isValidated) {
-          debitTotal += transaction.amount;
-        } else if (transaction is Credit && transaction.isValidated) {
-          creditTotal += transaction.amount;
-        }
+      final transactionsSnapshot = await fs.FirebaseFirestore.instance
+          .collectionGroup('transactions')
+          .where('user_id', isEqualTo: user.uid)
+          .get();
 
-        // Inclure les transactions récurrentes non validées comme prévisions
-        if (transaction.isRecurring && transaction.date.isBefore(startOfMonth)) {
-          if (transaction is Debit && !transaction.isValidated) {
-            futureDebitTotal += transaction.amount;
-          } else if (transaction is Credit && !transaction.isValidated) {
-            futureCreditTotal += transaction.amount;
+      for (var doc in transactionsSnapshot.docs) {
+        var transactionData = doc.data();
+        var isDebit = transactionData['type'] == 'debit';
+        var isValidated = transactionData['isValidated'] ?? false;
+        var amount = (transactionData['amount'] as num).toDouble();
+        var isRecurring = transactionData['isRecurring'] ?? false;
+        var transactionDate = (transactionData['date'] as Timestamp).toDate();
+
+        // Calculer les totaux actuels validés
+        if (isValidated) {
+          if (isDebit) {
+            debitTotal += amount;
+          } else {
+            creditTotal += amount;
           }
         }
-      }
 
-      // Récupérer les économies de SavingsPage
-      final savingsSnapshot = await fs.FirebaseFirestore.instance
-          .collection('savings')
-          .where('user_id', isEqualTo: user.uid)
-          .get();
+        // Ajouter les transactions récurrentes futures comme prévisions
+        if (isRecurring && !isValidated && transactionDate.isBefore(startOfMonth)) {
+          if (isDebit) {
+            futureDebitTotal += amount;
+          } else {
+            futureCreditTotal += amount;
+          }
+        }
 
-      for (var doc in savingsSnapshot.docs) {
-        savingsTotal += (doc['amount'] as num).toDouble();
-      }
+        // Récupérer les économies de la collection `savings`
+        final savingsSnapshot = await fs.FirebaseFirestore.instance
+            .collection('savings')
+            .where('user_id', isEqualTo: user.uid)
+            .get();
 
-      // Vérifier si le widget est monté avant d'appeler setState()
-      if (mounted) {
-        setState(() {
-          totalDebit = debitTotal;
-          totalCredit = creditTotal;
-          remainingAmount = totalCredit - totalDebit;
-          futureDebit = futureDebitTotal;
-          futureCredit = futureCreditTotal;
-          totalSavings = savingsTotal;
-          projectedRemainingAmount = remainingAmount + futureCredit - futureDebit + totalSavings;
-        });
-      }
-    }
-  }
+        for (var doc in savingsSnapshot.docs) {
+          savingsTotal += (doc['amount'] as num).toDouble();
+        }
 
-  Future<List<Transaction>> _getAllTransactions() async {
-    final user = FirebaseAuth.instance.currentUser;
-    List<Transaction> transactions = [];
-
-    if (user != null) {
-      final debitSnapshot = await fs.FirebaseFirestore.instance
-          .collection('debits')
-          .where('user_id', isEqualTo: user.uid)
-          .get();
-
-      final creditSnapshot = await fs.FirebaseFirestore.instance
-          .collection('credits')
-          .where('user_id', isEqualTo: user.uid)
-          .get();
-
-      for (var doc in debitSnapshot.docs) {
-        transactions.add(Debit.fromMap(doc.data()));
-      }
-      for (var doc in creditSnapshot.docs) {
-        transactions.add(Credit.fromMap(doc.data()));
+        if (mounted) {
+          setState(() {
+            totalDebit = debitTotal;
+            totalCredit = creditTotal;
+            remainingAmount = totalCredit - totalDebit;
+            futureDebit = futureDebitTotal;
+            futureCredit = futureCreditTotal;
+            totalSavings = savingsTotal;
+            projectedRemainingAmount = remainingAmount + futureCredit - futureDebit + totalSavings;
+          });
+        }
       }
     }
-
-    return transactions;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _calculateTotalSummary();
   }
 
   @override

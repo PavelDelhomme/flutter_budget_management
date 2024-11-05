@@ -31,68 +31,6 @@ class UserModel {
   }
 }
 
-/*
-class Budget {
-  String id;
-  String user_id;
-  Timestamp month;
-  Timestamp year;
-  double total_debit;
-  double total_credit;
-
-  Budget({
-    required this.id,
-    required this.user_id,
-    required this.month,
-    required this.year,
-    this.total_debit = 0,
-    this.total_credit = 0,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'user_id': user_id,
-      'month': month,
-      'year': year,
-      'total_debit': total_debit,
-      'total_credit': total_credit,
-    };
-  }
-
-  static Budget fromMap(Map<String, dynamic> map) {
-    return Budget(
-      id: map['id'],
-      user_id: map['user_id'],
-      month: map['month'],
-      year: map['year'],
-      total_debit: map['total_debit'],
-      total_credit: map['total_credit'],
-    );
-  }
-
-  /// Méthode pour calculer les débits à partir de la liste des transactions
-  double calculateDebit(List<Transaction> transactions) {
-    double totalDebit = 0;
-    for (var transaction in transactions) {
-      if (transaction is Debit) {
-        totalDebit += transaction.amount;
-      }
-    }
-    return totalDebit;
-  }
-
-  /// Méthode pour calculer les crédits à partir de la liste des transactions
-  double calculateCredit(List<Transaction> transactions) {
-    double totalCredit = 0;
-    for (var transaction in transactions) {
-      if (transaction is Credit) {
-        totalCredit += transaction.amount;
-      }
-    }
-    return totalCredit;
-  }
-}*/
 
 class Categorie {
   String id;
@@ -158,7 +96,7 @@ class Debit extends Transaction {
   List<String>? photos;
   GeoPoint localisation;
   String? categorie_id;
-  String? budget_id;
+  //String? budget_id;
   bool isValidated;
 
   Debit({
@@ -171,7 +109,7 @@ class Debit extends Transaction {
     this.photos,
     required this.localisation,
     this.categorie_id,
-    this.budget_id,
+    //this.budget_id,
     this.isValidated = false,
   }) : super(
     id: id,
@@ -189,7 +127,7 @@ class Debit extends Transaction {
       'photos': photos ?? [],
       'localisation': localisation,
       'categorie_id': categorie_id,
-      'budget_id': budget_id,
+      //'budget_id': budget_id,
       'isValidated': isValidated,
     });
     return map;
@@ -213,7 +151,7 @@ class Debit extends Transaction {
       photos: List<String>.from(map['photos'] ?? []),
       localisation: map['localisation'] ?? const GeoPoint(0, 0), // Valeur par défaut
       categorie_id: map['categorie_id'],
-      budget_id: map['budget_id'] ?? '', // Valeur par défaut
+      //budget_id: map['budget_id'] ?? '', // Valeur par défaut
       isValidated: map['isValidated'] ?? false,
     );
   }
@@ -221,7 +159,7 @@ class Debit extends Transaction {
 
 // Classe Credit héritant de Transaction, n'ajoutant que le montant spécifique
 class Credit extends Transaction {
-  String? budget_id;
+  //String? budget_id;
   bool isValidated;
 
   Credit({
@@ -231,7 +169,7 @@ class Credit extends Transaction {
     required String notes,
     required bool isRecurring,
     required double amount,
-    this.budget_id,
+    //this.budget_id,
     this.isValidated = false,
   }) : super(
     id: id,
@@ -246,7 +184,7 @@ class Credit extends Transaction {
   Map<String, dynamic> toMap() {
     final map = super.toMap();
     map.addAll({
-      'budget_id': budget_id,
+      //'budget_id': budget_id,
       'isValidated': isValidated,
     });
     return map;
@@ -260,11 +198,117 @@ class Credit extends Transaction {
       notes: map['notes'],
       isRecurring: map['isRecurring'],
       amount: map['amount'],
-      budget_id: map['budget_id'],
+      //budget_id: map['budget_id'],
       isValidated: map['isValidated'] ?? false,
     );
   }
 }
+
+class Budget {
+  String id;
+  String user_id;
+  int month;
+  int year;
+  double total_debit;
+  double total_credit;
+  double remaining = 0.0;
+
+  Budget({
+    required this.id,
+    required this.user_id,
+    required this.month,
+    required this.year,
+    this.total_debit = 0.0,
+    this.total_credit = 0.0,
+    this.remaining = 0.0,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'user_id': user_id,
+      'month': month,
+      'year': year,
+      'total_debit': total_debit,
+      'total_credit': total_credit,
+      'remaining': remaining,
+    };
+  }
+
+  static Budget fromMap(Map<String, dynamic> map) {
+    return Budget(
+      id: map['id'],
+      user_id: map['user_id'],
+      month: map['month'],
+      year: map['year'],
+      total_debit: (map['total_debit'] as num?)?.toDouble() ?? 0.0,
+      total_credit: (map['total_debit'] as num?)?.toDouble() ?? 0.0,
+      remaining: (map['remaining'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+/*
+class Budget {
+  String id;
+  String user_id;
+  Timestamp month;
+  Timestamp year;
+  double total_debit;
+  double total_credit;
+
+  Budget({
+    required this.id,
+    required this.user_id,
+    required this.month,
+    required this.year,
+    this.total_debit = 0,
+    this.total_credit = 0,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'user_id': user_id,
+      'month': month,
+      'year': year,
+      'total_debit': total_debit,
+      'total_credit': total_credit,
+    };
+  }
+
+  static Budget fromMap(Map<String, dynamic> map) {
+    return Budget(
+      id: map['id'],
+      user_id: map['user_id'],
+      month: map['month'],
+      year: map['year'],
+      total_debit: map['total_debit'],
+      total_credit: map['total_credit'],
+    );
+  }
+
+  /// Méthode pour calculer les débits à partir de la liste des transactions
+  double calculateDebit(List<Transaction> transactions) {
+    double totalDebit = 0;
+    for (var transaction in transactions) {
+      if (transaction is Debit) {
+        totalDebit += transaction.amount;
+      }
+    }
+    return totalDebit;
+  }
+
+  /// Méthode pour calculer les crédits à partir de la liste des transactions
+  double calculateCredit(List<Transaction> transactions) {
+    double totalCredit = 0;
+    for (var transaction in transactions) {
+      if (transaction is Credit) {
+        totalCredit += transaction.amount;
+      }
+    }
+    return totalCredit;
+  }
+}*/
 
 /*
 class Debit {
@@ -305,7 +349,7 @@ class Debit {
     );
   }
 }
-*//*
+
 class Credit {
   String id;
   String transaction_id;
