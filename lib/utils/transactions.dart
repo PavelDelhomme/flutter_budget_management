@@ -28,12 +28,16 @@ DateTime _calculateNewDate(DateTime originalDate) {
   return DateTime(year, month, day);
 }
 
-/*
+
 Future<void> copyRecurringTransactionsForNewMonth() async {
   final user = FirebaseAuth.instance.currentUser;
 
   if (user != null) {
     DateTime now = DateTime.now();
+    /*
+    TODO Check here !
+    */
+
 
     // Récupérer les transactions récurrentes de débit pour le mois suivant
     final recurringDebitTransactionsSnapshot = await FirebaseFirestore.instance
@@ -70,19 +74,18 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
             .doc(newDebit.id)
             .set(newDebit.toMap());
       }
-      /*bool transactionExists = await FirebaseFirestore.instance
+      bool transactionExists = await FirebaseFirestore.instance
           .collection('debits')
           .where('user_id', isEqualTo: user.uid)
           .where('isRecurring', isEqualTo: true)
           .where('date', isEqualTo: Timestamp.fromDate(newDate))
           .where('categorie_id', isEqualTo: debitData['categorie_id'])
           .get()
-          .then((snapshot) => snapshot.docs.isNotEmpty);*/
+          .then((snapshot) => snapshot.docs.isNotEmpty);
       }
     }
 
     // Récupérer les transactions récurrentes de crédit pour le mois suivant
-  /*
     final recurringCreditTransactionsSnapshot = await FirebaseFirestore.instance
         .collection('credits')
         .where('user_id', isEqualTo: user.uid)
@@ -117,10 +120,10 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
             .set(newCredit.toMap());
       }
     }
-  }*/
+  }
 }
- */
-/*
+
+
 Future<void> updateRecurringTransactionsForCurrentMonth() async  {
   final user = FirebaseAuth.instance.currentUser;
   if (user != null) {
@@ -169,8 +172,11 @@ Future<void> updateRecurringTransactionsForCurrentMonth() async  {
     }
   }
 }
-*/
+
+
+
 Future<void> copyRecurringTransactionsForNewMonth() async {
+ */
   final user = FirebaseAuth.instance.currentUser;
 
   if (user != null) {
