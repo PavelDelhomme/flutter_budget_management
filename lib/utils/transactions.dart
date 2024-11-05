@@ -170,38 +170,24 @@ Future<void> updateRecurringTransactionsForCurrentMonth() async  {
   }
 }
 */
-
 Future<void> copyRecurringTransactionsForNewMonth() async {
   final user = FirebaseAuth.instance.currentUser;
 
   if (user != null) {
     DateTime now = DateTime.now();
-    DateTime startOfMonth = DateTime(now.year, now.month, 1);
-    DateTime endOfMonth = DateTime(now.year, now.month + 1, 1);
+    String currentMonth = '${now.year}-${now.month.toString().padLeft(2, '0')}';
 
-    // Vérifiez si des transactions récurrentes existent déjà pour le mois courant
-    final existingDebitTransactions = await FirebaseFirestore.instance
-        .collection('debits')
-        .where('user_id', isEqualTo: user.uid)
-        .where('isRecurring', isEqualTo: true)
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
-        .get();
+    // Récupérer le dernier mois traité depuis le document utilisateur
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    String lastProcessedMonth = userDoc.data()?['lastProcessedMonth'] ?? '';
 
-    final existingCreditTransactions = await FirebaseFirestore.instance
-        .collection('credits')
-        .where('user_id', isEqualTo: user.uid)
-        .where('isRecurring', isEqualTo: true)
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .where('date', isLessThan: Timestamp.fromDate(endOfMonth))
-        .get();
-
-    if (existingDebitTransactions.docs.isNotEmpty || existingCreditTransactions.docs.isNotEmpty) {
+    // Si le mois actuel a déjà été traité, on arrête le processus
+    if (lastProcessedMonth == currentMonth) {
       log("Les transactions récurrentes existent déjà pour le mois en cours.");
       return;
     }
 
-    // Si elles n'existent pas, copier les transactions récurrentes de débit
+    // Transactions de débit
     final recurringDebitTransactionsSnapshot = await FirebaseFirestore.instance
         .collection('debits')
         .where('user_id', isEqualTo: user.uid)
@@ -212,22 +198,35 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
       final debitData = debitDoc.data();
       DateTime newDate = _calculateNewDate((debitData['date'] as Timestamp).toDate());
 
-      final newDebit = Debit(
-        id: generateTransactionId(),
-        user_id: debitData['user_id'],
-        date: newDate,
-        notes: debitData['notes'],
-        isRecurring: debitData['isRecurring'],
-        amount: debitData['amount'],
-        photos: List<String>.from(debitData['photos'] ?? []),
-        localisation: debitData['localisation'],
-        categorie_id: debitData['categorie_id'],
-      );
+      // Vérifier si une transaction similaire existe déjà pour le mois en cours
+      bool transactionExists = await FirebaseFirestore.instance
+          .collection('debits')
+          .where('user_id', isEqualTo: user.uid)
+          .where('isRecurring', isEqualTo: true)
+          .where('date', isEqualTo: Timestamp.fromDate(newDate))
+          .where('amount', isEqualTo: debitData['amount'])
+          .where('categorie_id', isEqualTo: debitData['categorie_id'])
+          .get()
+          .then((snapshot) => snapshot.docs.isNotEmpty);
 
-      await FirebaseFirestore.instance.collection("debits").doc(newDebit.id).set(newDebit.toMap());
+      if (!transactionExists) {
+        final newDebit = Debit(
+          id: generateTransactionId(),
+          user_id: debitData['user_id'],
+          date: newDate,
+          notes: debitData['notes'],
+          isRecurring: debitData['isRecurring'],
+          amount: debitData['amount'],
+          photos: List<String>.from(debitData['photos'] ?? []),
+          localisation: debitData['localisation'],
+          categorie_id: debitData['categorie_id'],
+        );
+
+        await FirebaseFirestore.instance.collection("debits").doc(newDebit.id).set(newDebit.toMap());
+      }
     }
 
-    // Copier les transactions récurrentes de crédit
+    // Transactions de crédit
     final recurringCreditTransactionsSnapshot = await FirebaseFirestore.instance
         .collection('credits')
         .where('user_id', isEqualTo: user.uid)
@@ -238,21 +237,40 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
       final creditData = creditDoc.data();
       DateTime newDate = _calculateNewDate((creditData['date'] as Timestamp).toDate());
 
-      final newCredit = Credit(
-        id: generateTransactionId(),
-        user_id: creditData['user_id'],
-        date: newDate,
-        notes: creditData['notes'],
-        isRecurring: creditData['isRecurring'],
-        amount: creditData['amount'],
-      );
+      // Vérifier si une transaction similaire existe déjà pour le mois en cours
+      bool transactionExists = await FirebaseFirestore.instance
+          .collection('credits')
+          .where('user_id', isEqualTo: user.uid)
+          .where('isRecurring', isEqualTo: true)
+          .where('date', isEqualTo: Timestamp.fromDate(newDate))
+          .where('amount', isEqualTo: creditData['amount'])
+          .where('categorie_id', isEqualTo: creditData['categorie_id'])
+          .get()
+          .then((snapshot) => snapshot.docs.isNotEmpty);
 
-      await FirebaseFirestore.instance.collection("credits").doc(newCredit.id).set(newCredit.toMap());
+      if (!transactionExists) {
+        final newCredit = Credit(
+          id: generateTransactionId(),
+          user_id: creditData['user_id'],
+          date: newDate,
+          notes: creditData['notes'],
+          isRecurring: creditData['isRecurring'],
+          amount: creditData['amount'],
+        );
+
+        await FirebaseFirestore.instance.collection("credits").doc(newCredit.id).set(newCredit.toMap());
+      }
     }
 
-    log("Copie des transactions récurrentes terminée pour le mois en cours.");
+    // Mettre à jour le champ `lastProcessedMonth` pour le mois actuel
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+      'lastProcessedMonth': currentMonth,
+    });
+
+    log("Copie des transactions récurrentes terminée pour le mois : $currentMonth");
   }
 }
+
 
 Future<void> copyRecurringTransactions(
     String previousBudgetId, String newBudgetId) async {
