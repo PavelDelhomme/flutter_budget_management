@@ -1,6 +1,6 @@
 import 'dart:developer';
-import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
+import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,14 +9,18 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../budget/budget_details_screen.dart';
 
-class TransactionsView extends StatefulWidget {
-  const TransactionsView({Key? key}) : super(key: key);
+class TransactionsReccuringView extends StatefulWidget {
+  const TransactionsReccuringView({Key? key}) : super(key: key);
 
   @override
-  _TransactionsViewState createState() => _TransactionsViewState();
+  _TransactionsReccuringViewSate createState() => _TransactionsReccuringViewSate();
 }
 
-class _TransactionsViewState extends State<TransactionsView> {
+class _TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
+  /*
+  Les transactions de crédit récurrrente soint afficher ici et permettre de supprimer la réccurence à partir du mois ou je veux supprimer la réccurence
+  Il faut donc juste avoir a décocher la récurrence et supprimer le caractère récuren ou la suppprimer pour le mois et alors cela supprimer pour les mois suivant
+   */
   DateTime selectedMonth = DateTime.now();
   double totalDebit = 0.0;
   double totalCredit = 0.0;
@@ -71,6 +75,48 @@ class _TransactionsViewState extends State<TransactionsView> {
       totalCredit = data['totalCredit'] ?? 0.0;
     });
   }
+
+  Future<void> _toggleRecurrence(DocumentSnapshot transaction) async {
+    bool isRecurring = transaction['isRecurring'];
+    String collection = transaction.reference.parent.id;
+
+    await FirebaseFirestore.instance
+        .collection(collection)
+        .doc(transaction.id)
+        .update({'isRecurring': !isRecurring});
+
+    setState(() {}); // Rafraîchir la vue
+  }
+
+
+  Future<void> _deleteTransactionAndFutureOccurrences(DocumentSnapshot transaction) async {
+    bool confirm = await _showDeleteConfirmation(context);
+    if (!confirm) return;
+
+    String collection = transaction.reference.parent.id;
+    DateTime transactionDate = (transaction['date'] as Timestamp).toDate();
+
+    await FirebaseFirestore.instance.collection(collection).doc(transaction.id).delete();
+
+    // Supprimer les occurrences futures de la transaction
+    final futureTransactions = await FirebaseFirestore.instance
+        .collection(collection)
+        .where('user_id', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+        .where('isRecurring', isEqualTo: true)
+        .where('date', isGreaterThan: Timestamp.fromDate(transactionDate))
+        .where('categorie_id', isEqualTo: transaction['categorie_id'])
+        .get();
+
+    for (var futureTransaction in futureTransactions.docs) {
+      await FirebaseFirestore.instance.collection(collection).doc(futureTransaction.id).delete();
+    }
+
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Transactions futures supprimées avec succès.")),
+    );
+  }
+
 
   @override
   void initState() {

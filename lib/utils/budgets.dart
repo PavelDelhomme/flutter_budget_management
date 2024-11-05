@@ -44,7 +44,6 @@ Future<void> copyRecurringTransactions(
       photos: List<String>.from(transactionData['photos'] ?? []),
       localisation: transactionData['localisation'],
       categorie_id: transactionData['categorie_id'],
-      isValidated: false,
     );
 
     await FirebaseFirestore.instance.collection("debits").doc(newTransaction.id).set(newTransaction.toMap());

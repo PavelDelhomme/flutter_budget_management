@@ -97,7 +97,6 @@ class Debit extends Transaction {
   GeoPoint localisation;
   String? categorie_id;
   //String? budget_id;
-  bool isValidated;
 
   Debit({
     required String id,
@@ -110,7 +109,6 @@ class Debit extends Transaction {
     required this.localisation,
     this.categorie_id,
     //this.budget_id,
-    this.isValidated = false,
   }) : super(
     id: id,
     user_id: user_id,
@@ -128,7 +126,6 @@ class Debit extends Transaction {
       'localisation': localisation,
       'categorie_id': categorie_id,
       //'budget_id': budget_id,
-      'isValidated': isValidated,
     });
     return map;
   }
@@ -152,7 +149,6 @@ class Debit extends Transaction {
       localisation: map['localisation'] ?? const GeoPoint(0, 0), // Valeur par défaut
       categorie_id: map['categorie_id'],
       //budget_id: map['budget_id'] ?? '', // Valeur par défaut
-      isValidated: map['isValidated'] ?? false,
     );
   }
 }
@@ -160,7 +156,6 @@ class Debit extends Transaction {
 // Classe Credit héritant de Transaction, n'ajoutant que le montant spécifique
 class Credit extends Transaction {
   //String? budget_id;
-  bool isValidated;
 
   Credit({
     required String id,
@@ -170,7 +165,6 @@ class Credit extends Transaction {
     required bool isRecurring,
     required double amount,
     //this.budget_id,
-    this.isValidated = false,
   }) : super(
     id: id,
     user_id: user_id,
@@ -185,7 +179,6 @@ class Credit extends Transaction {
     final map = super.toMap();
     map.addAll({
       //'budget_id': budget_id,
-      'isValidated': isValidated,
     });
     return map;
   }
@@ -199,7 +192,6 @@ class Credit extends Transaction {
       isRecurring: map['isRecurring'],
       amount: map['amount'],
       //budget_id: map['budget_id'],
-      isValidated: map['isValidated'] ?? false,
     );
   }
 }
