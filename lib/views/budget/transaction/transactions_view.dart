@@ -283,201 +283,119 @@ class _TransactionsViewState extends State<TransactionsView> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: FutureBuilder<Map<String, dynamic>>(
-          future: _getTransactionsForSelectedMonth(),
-          builder: (context, snapshot) {
-            // Utilisation de `checkSnapshot pour vérifier l'état du snapshot
-            Widget? checkResult = checkSnapshot(snapshot, errorMessage: "Erreur lors du chargement des transactions");
-            if (checkResult != null) return checkResult;
-
-
-            var data = snapshot.data!;
-            List<QueryDocumentSnapshot> transactions = data['transactions'] ?? [];
-            totalDebit = data['totalDebit'] ?? 0.0;
-            totalCredit = data['totalCredit'] ?? 0.0;
-
-            // transactions par jour
-            Map<String, List<QueryDocumentSnapshot>> transactionsByDays = {};
-
-            for (var transaction in transactions) {
-              DateTime date = (transaction['date'] as Timestamp).toDate();
-              String dayKey = DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(date);
-
-              if (!transactionsByDays.containsKey(dayKey)) {
-                transactionsByDays[dayKey] = [];
-              }
-              transactionsByDays[dayKey]!.add(transaction);
-            }
-
-            return Column(
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Card(
-                  margin: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: ListTile(
-                    title: Text(
-                      'Total Crédit : €${totalCredit.toStringAsFixed(2)}',
-                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(
-                      'Total Débit : €${totalDebit.toStringAsFixed(2)}',
-                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                    ),
-                    trailing: Text(
-                      'Économies : €${(totalCredit - totalDebit).toStringAsFixed(2)}',
-                      style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                ElevatedButton(
+                  onPressed: () => _toggleTransactionFilter("all"),
+                  child: const Text("Tous"),
                 ),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: ListView.builder(
+                ElevatedButton(
+                  onPressed: () => _toggleTransactionFilter("debits"),
+                  child: const Text("Débits"),
+                ),
+                ElevatedButton(
+                  onPressed: () => _toggleTransactionFilter("credits"),
+                  child: const Text("Crédits"),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Card(
+              margin: const EdgeInsets.symmetric(vertical: 8.0),
+              child: ListTile(
+                title: Text(
+                  'Total Crédit : €${totalCredit.toStringAsFixed(2)}',
+                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  'Total Débit : €${totalDebit.toStringAsFixed(2)}',
+                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+                trailing: Text(
+                  'Économies : €${(totalCredit - totalDebit).toStringAsFixed(2)}',
+                  style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: FutureBuilder<Map<String, dynamic>>(
+                future: _getTransactionsForSelectedMonth(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text("Erreur: ${snapshot.error}"));
+                  }
+
+                  var data = snapshot.data!;
+                  List<QueryDocumentSnapshot> transactions = data['transactions'] ?? [];
+                  transactions = transactions.where((transaction) {
+                    bool isDebit = transaction.reference.parent.id == 'debits';
+                    if (transactionFilter == "debits") return isDebit;
+                    if (transactionFilter == "credits") return !isDebit;
+                    return true;
+                  }).toList();
+
+                  Map<String, List<QueryDocumentSnapshot>> transactionsByDays = {};
+                  for (var transaction in transactions) {
+                    DateTime date = (transaction['date'] as Timestamp).toDate();
+                    String dayKey = DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(date);
+                    if (!transactionsByDays.containsKey(dayKey)) {
+                      transactionsByDays[dayKey] = [];
+                    }
+                    transactionsByDays[dayKey]!.add(transaction);
+                  }
+
+                  return ListView.builder(
                     itemCount: transactionsByDays.keys.length,
                     itemBuilder: (context, index) {
                       String dayKey = transactionsByDays.keys.elementAt(index);
                       var transactionsForDay = transactionsByDays[dayKey]!;
-
-                      // Calculer le montant total des transactions pour chaque jour
-                      double totalAmount = 0;
-                      for (var transaction in transactionsForDay) {
-                        if (transaction[''])
-                        double creditsTransactions =
-                        totalAmount += transaction['amount'];
-                      }
+                      double totalAmount = transactionsForDay.fold(0.0, (sum, item) => sum + (item['amount'] as num).toDouble());
 
                       return ExpansionTile(
                         title: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
-                              child: Text(
-                                dayKey,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              child: Text(dayKey, style: const TextStyle(fontWeight: FontWeight.bold)),
                             ),
-                            Text(
-                              'Total: €${totalAmount.toStringAsFixed(2)}',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
+                            Text('Total: €${totalAmount.toStringAsFixed(2)}'),
                           ],
                         ),
                         children: transactionsForDay.map((transaction) {
                           bool isDebit = transaction.reference.parent.id == 'debits';
                           String transactionType = isDebit ? 'Débit' : 'Crédit';
-
                           return FutureBuilder<String>(
-                            future: isDebit ? getCategoryName(transaction['categorie_id']) : Future.value("Sans catégorie"),
+                            future: getCategoryName(transaction['categorie_id']),
                             builder: (context, snapshot) {
                               String categoryName = snapshot.data ?? 'Sans catégorie';
-                              Color backgroundColor = Colors.greenAccent.withOpacity(0.2);
-
+                              Color backgroundColor = isDebit ? Colors.red.withOpacity(0.1) : Colors.green.withOpacity(0.1);
                               return Container(
                                 color: backgroundColor,
-                                child: Slidable(
-                                  key: Key(transaction.id),
-                                  startActionPane: ActionPane(
-                                    motion: const StretchMotion(),
+                                child: ListTile(
+                                  title: Row(
                                     children: [
-                                      SlidableAction(
-                                        onPressed: (context) {
-                                          _editTransaction(context, transaction);
-                                        },
-                                        backgroundColor: Colors.blue,
-                                        foregroundColor: Colors.white,
-                                        icon: Icons.edit,
-                                        label: 'Modifier',
+                                      Text(
+                                        '${transaction['amount'].toStringAsFixed(2)} €',
+                                        style: TextStyle(color: isDebit ? Colors.red : Colors.green, fontWeight: FontWeight.bold),
                                       ),
+                                      const SizedBox(width: 4),
+                                      Text(transactionType),
                                     ],
                                   ),
-                                  endActionPane: ActionPane(
-                                    motion: const StretchMotion(),
-                                    children: [
-                                      SlidableAction(
-                                        onPressed: (context) async {
-                                          bool confirm = await _showDeleteConfirmation(this.context);
-                                          if (confirm) {
-                                            _deleteTransaction(this.context, transaction);
-                                          }
-                                        },
-                                        backgroundColor: Colors.red,
-                                        foregroundColor: Colors.white,
-                                        icon: Icons.delete,
-                                        label: 'Supprimer',
-                                      ),
-                                    ],
-                                  ),
-                                  child: ListTile(
-                                    title: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        // Row en haut a gauche
-                                        Row(
-                                          children: [
-                                            Text(
-                                              isDebit ? '-' : '+', // Signe dynamique pour le montant
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                color: isDebit ? Colors.red : Colors.green,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              '${transaction['amount'].toStringAsFixed(2)} €',
-                                              style: TextStyle(
-                                                fontSize: 18,
-                                                color: isDebit ? Colors.red : Colors.green, // Couleur du montant
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        // En haut a droite
-                                        Text(transactionType),
-                                      ],
-                                    ),
-                                    subtitle: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        // Row en bas à gauche
-                                        Row(
-                                          children: [
-                                            Text(categoryName),
-                                            const SizedBox(width: 4),
-                                          ],
-                                        ),
-                                        // En bas à droite
-                                        Text(
-                                          transaction['notes'] ?? 'Aucune note',
-                                          style: const TextStyle(fontStyle: FontStyle.italic),
-                                        ),
-                                      ],
-                                    ),
-                                    /*
-                                    subtitle: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(categoryName),
-                                        Text(transaction['notes'] ?? 'Aucune note'),
-                                      ],
-                                    ),*/
-                                    onTap: () {
-                                      showModalBottomSheet(
-                                        context: context,
-                                        isScrollControlled: true,
-                                        shape: const RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
-                                        ),
-                                        builder: (context) {
-                                          return Padding(
-                                            padding: EdgeInsets.only(
-                                              bottom: MediaQuery.of(context).viewInsets.bottom,
-                                            ),
-                                            child: TransactionDetailsModal(transaction: transaction),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
+                                  subtitle: Text(categoryName),
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      builder: (context) => TransactionDetailsModal(transaction: transaction),
+                                    );
+                                  },
                                 ),
                               );
                             },
@@ -485,11 +403,11 @@ class _TransactionsViewState extends State<TransactionsView> {
                         }).toList(),
                       );
                     },
-                  ),
-                )
-              ],
-            );
-          },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
