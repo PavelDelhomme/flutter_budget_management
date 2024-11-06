@@ -13,100 +13,94 @@ class SummaryView extends StatefulWidget {
 }
 
 class _SummaryViewState extends State<SummaryView> {
-  double totalCredit = 0.0;
-  double totalDebit = 0.0;
-  double remainingAmount = 0.0;
-  double projectedRemainingAmount = 0.0;
-  double futureCredit = 0.0;
-  double futureDebit = 0.0;
+  //double totalCredit = 0.0;
+  //double totalDebit = 0.0;
+  //double remainingAmount = 0.0;
+  //double projectedRemainingAmount = 0.0;
+  //double futureCredit = 0.0;
+  //double futureDebit = 0.0;
   double totalSavings = 0.0;
 
-  @override
-  void initState() {
-    super.initState();
-    _calculateTotalSummary();
-  }
-
-
-
-  Future<void> _calculateTotalSummary() async {
+  Stream<Map<String, double>> _getSummaryStream() {
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final now = DateTime.now();
-
-      final budgetSnapshot = await fs.FirebaseFirestore.instance
-          .collection('budgets')
-          .where('user_id', isEqualTo: user.uid)
-          .where('month', isEqualTo: now.month)
-          .where('year', isEqualTo: now.year)
-          .get();
-
-      print("Budget Snapshot for ${now.month}/${now.year}: ${budgetSnapshot.docs}");
-
-      if (budgetSnapshot.docs.isNotEmpty) {
-        // Budget existe pour le mois
-        final budgetData = budgetSnapshot.docs.first.data();
-        setState(() {
-          totalDebit = (budgetData['total_debit'] as num?)?.toDouble() ?? 0.0;
-          totalCredit = (budgetData['total_credit'] as num?)?.toDouble() ?? 0.0;
-          remainingAmount = totalCredit - totalDebit;
-          //projectedRemainingAmount = remainingAmount + futureCredit - futureDebit + totalSavings;
-          projectedRemainingAmount = remainingAmount + totalSavings;
-        });
-      } else {
-        // Calcule des valeurs à aprtir des transactiosn
-        double debitTotal = 0.0;
-        double creditTotal = 0.0;
-
-        var debitQuery = await FirebaseFirestore.instance
-            .collection("debits")
-            .where("user_id", isEqualTo: user.uid)
-            .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime(now.year, now.month, 1)))
-            .where("date", isLessThan: Timestamp.fromDate(DateTime(now.year, now.month + 1, 1)))
-            .get();
-
-        var creditQuery = await FirebaseFirestore.instance
-            .collection("credits")
-            .where("user_id", isEqualTo: user.uid)
-            .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime(now.year, now.month, 1)))
-            .where("date", isLessThan: Timestamp.fromDate(DateTime(now.year, now.month + 1, 1)))
-            .get();
-
-        for (var doc in debitQuery.docs) {
-          debitTotal += (doc['amount'] as num).toDouble();
-        }
-
-        for (var doc in creditQuery.docs) {
-          creditTotal += (doc['amount'] as num).toDouble();
-        }
-
-        setState(() {
-          totalDebit = debitTotal;
-          totalCredit = creditTotal;
-          remainingAmount = totalCredit - totalDebit;
-          projectedRemainingAmount = remainingAmount + totalSavings;
-        });
-      }
+    if (user == null) {
+      return Stream.value({});
     }
+
+    final now = DateTime.now();
+    DateTime startOfMonth = DateTime(now.year, now.month, 1);
+    DateTime endOfMonth = DateTime(now.year, now.month + 1, 1);
+
+    // Stream des transactions "debits" et "credits"
+    final debitStream = FirebaseFirestore.instance
+          .collection("debits")
+          .where("user_id", isEqualTo: user.uid)
+          .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+          .where("date", isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
+          .snapshots();
+
+    final creditStream = FirebaseFirestore.instance
+        .collection("credits")
+        .where("user_id", isEqualTo: user.uid)
+        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .snapshots();
+
+    return debitStream.asyncMap((debitSnapshot) async {
+      double debitTotal = debitSnapshot.docs.fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
+      double creditTotal = 0.0;
+
+      await for (var creditSnapshot in creditStream) {
+        creditTotal = creditSnapshot.docs.fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
+        break;
+      }
+
+      double remainingAmount = creditTotal - debitTotal;
+      double projectedRemainingAmount = remainingAmount + totalSavings;
+
+      return {
+        'totalCredit': creditTotal,
+        'totalDebit': debitTotal,
+        'remainingAmount': remainingAmount,
+        'projectedRemainingAmount': projectedRemainingAmount,
+      };
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //appBar: AppBar(title: Text('Résumé au ${DateFormat('dd/MM/yyyy').format(DateTime.now())}')),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildBudgetCard("Total Crédits", totalCredit.toStringAsFixed(2), Colors.green),
-              _buildBudgetCard("Total Débits", totalDebit.toStringAsFixed(2), Colors.red),
-              _buildBudgetCard("Montant Restant", remainingAmount.toStringAsFixed(2), Colors.blue),
-              _buildBudgetCard("Montant Restant avec Économies", projectedRemainingAmount.toStringAsFixed(2), Colors.orange),
-            ],
-          ),
-        ),
+      body: StreamBuilder<Map<String, double>>(
+        stream: _getSummaryStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError || !snapshot.hasData) {
+            return const Center(child: Text("Erreur lors du chargement des données de résumé"));
+          }
+
+          final data = snapshot.data!;
+          double totalCredit = data['totalCredit'] ?? 0.0;
+          double totalDebit = data['totalDebit'] ?? 0.0;
+          double remainingAmount = data['remainingAmount'] ?? 0.0;
+          double projectedRemainingAmount = data['projectedRemainingAmount'] ?? 0.0;
+
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildBudgetCard("Total Crédits", totalCredit.toStringAsFixed(2), Colors.green),
+                  _buildBudgetCard("Total Débits", totalDebit.toStringAsFixed(2), Colors.red),
+                  _buildBudgetCard("Montant Restant", remainingAmount.toStringAsFixed(2), Colors.blue),
+                  _buildBudgetCard("Montant Restant avec Economies", projectedRemainingAmount.toStringAsFixed(2), Colors.orange),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -53,6 +53,19 @@ class CustomDrawer extends StatelessWidget {
       await _deleteDatas("budgets", userId);
       await _deleteDatas("categories", userId);
 
+      // Effacement du cache local
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      // Déconnexiond de l'utilisateur
+      await FirebaseAuth.instance.signOut();
+
+      // Redirection vers page de connexion
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const ConnexionView()),
+          (Route<dynamic> route) => false,
+      );
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Données utilisateur supprimées avec succès.")),
       );
