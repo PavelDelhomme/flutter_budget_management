@@ -166,9 +166,7 @@ class _TransactionsViewState extends State<TransactionsView> {
     }
   }
   Future<String> getCategoryName(String? categoryId) async {
-    if (categoryId == null || categoryId.isEmpty) {
-      return "Sans catégorie"; // Retourne "Sans catégorie" si l'id est absent
-    }
+    if (categoryId == null || categoryId.isEmpty) return "Sans catégorie";
 
     if (categoryMap.containsKey(categoryId)) {
       return categoryMap[categoryId]!;
@@ -189,14 +187,12 @@ class _TransactionsViewState extends State<TransactionsView> {
       _updateMonthlyTotals();
     });
   }
-
   void _nextMonth() {
     setState(() {
       selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + 1);
       _updateMonthlyTotals();
     });
   }
-
   void _toggleTransactionFilter(String filter) {
     setState(() {
       transactionFilter = filter;
