@@ -23,9 +23,31 @@ class _TransactionsViewState extends State<TransactionsView> {
   DateTime selectedMonth = DateTime.now();
   double totalDebit = 0.0;
   double totalCredit = 0.0;
-  String transactionFilter = "all";
+  String transactionFilter = "all"; // "all", "debits", "credits"
   Map<String, String> categoryMap = {}; // Stocker les noms des catégories
 
+  Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() async {
+    final creditsData = await _getCreditTransactionsForSelectedMonth();
+    final debitsData = await _getDebitTransactionsForSelectedMonth();
+
+    // Combinaison des transactions de crédits et de débits
+    List<QueryDocumentSnapshot> transactions = [
+      ...creditsData['transactions'],
+      ...debitsData['transactions']
+    ];
+
+    return {
+      'transactions': transactions,
+      'totalDebit': totalDebit,
+      'totalCredit': totalCredit,
+    };
+  }
+  Future<Map<String, dynamic>> _getCreditTransactionsForSelectedMonth() {
+    return _getTypeTransactionsForSelectedMonth('credits');
+  }
+  Future<Map<String, dynamic>> _getDebitTransactionsForSelectedMonth() {
+    return _getTypeTransactionsForSelectedMonth('debits');
+  }
   Future<Map<String, dynamic>> _getTypeTransactionsForSelectedMonth(String collection) async {
     final user = FirebaseAuth.instance.currentUser;
     DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
@@ -52,24 +74,7 @@ class _TransactionsViewState extends State<TransactionsView> {
     };
   }
 
-  Future<Map<String, dynamic>> _getCreditTransactionsForSelectedMonth() {
-    return _getTypeTransactionsForSelectedMonth('credits');
-  }
 
-
-  Future<Map<String, dynamic>> _getDebitTransactionsForSelectedMonth() {
-    return _getTypeTransactionsForSelectedMonth('debits');
-  }
-
-  Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() {
-    Map<String, dynamic> credits = _getCreditTransactionsForSelectedMonth() as Map<String, dynamic>;
-    Map<String, dynamic> debits = _getDebitTransactionsForSelectedMonth() as Map<String, dynamic>;
-    Future<Map<String, dynamic>> allTransactions = {} as Future<Map<String, dynamic>>;
-    allTransactions.addAll(credits);
-    allTransactions.addAll(debits);
-    return allTransactions;
-
-  }
   /*
   Future<Map<String, dynamic>> _getDebitTransactionsForSelectedMonth() async {
 
@@ -130,12 +135,10 @@ class _TransactionsViewState extends State<TransactionsView> {
   */
 
   void _updateMonthlyTotals() async {
-    final creditsData = await _getCreditTransactionsForSelectedMonth();
-    final debitsData = await _getDebitTransactionsForSelectedMonth();
-
+    final data = await _getTransactionsForSelectedMonth();
     setState(() {
-      totalCredit = creditsData['total'] ?? 0.0;
-      totalDebit = debitsData['total'] ?? 0.0;
+      totalCredit = data['totalCredit'] ?? 0.0;
+      totalDebit = data['totalDebit'] ?? 0.0;
     });
   }
 
@@ -194,6 +197,11 @@ class _TransactionsViewState extends State<TransactionsView> {
     });
   }
 
+  void _toggleTransactionFilter(String filter) {
+    setState(() {
+      transactionFilter = filter;
+    });
+  }
 
   void _editTransaction(BuildContext context, DocumentSnapshot transaction) async {
     final result = await Navigator.push(
@@ -257,14 +265,8 @@ class _TransactionsViewState extends State<TransactionsView> {
           child: Text(DateFormat.yMMMM('fr_FR').format(selectedMonth)),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: _previousMonth,
-          ),
-          IconButton(
-            icon: const Icon(Icons.arrow_forward),
-            onPressed: _nextMonth,
-          ),
+          IconButton(icon: const Icon(Icons.arrow_back), onPressed: _previousMonth),
+          IconButton(icon: const Icon(Icons.arrow_forward), onPressed: _nextMonth),
           // Buton pour accèder aux transactions récurrentes
           IconButton(
             icon: const Icon(Icons.repeat),
