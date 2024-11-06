@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:budget_management/models/good_models.dart';
 import 'package:intl/intl.dart';
 
+import '../../utils/general.dart';
+
 class SummaryView extends StatefulWidget {
   const SummaryView({Key? key}) : super(key: key);
 
@@ -73,12 +75,9 @@ class _SummaryViewState extends State<SummaryView> {
       body: StreamBuilder<Map<String, double>>(
         stream: _getSummaryStream(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(child: Text("Erreur lors du chargement des données de résumé"));
-          }
+          // Utilisez `checkSnapshot` pour vérifier l’état du snapshot
+          Widget? checkResult = checkSnapshot(snapshot, errorMessage: "Erreur lors du chargement des données de résumé");
+          if (checkResult != null) return checkResult;
 
           final data = snapshot.data!;
           double totalCredit = data['totalCredit'] ?? 0.0;

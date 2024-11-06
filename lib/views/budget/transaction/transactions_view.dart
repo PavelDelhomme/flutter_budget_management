@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:budget_management/utils/budgets.dart';
+import 'package:budget_management/utils/general.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
 import 'package:flutter/material.dart';
@@ -206,17 +207,10 @@ class _TransactionsViewState extends State<TransactionsView> {
         child: FutureBuilder<Map<String, dynamic>>(
           future: _getTransactionsForSelectedMonth(),
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+            // Utilisation de `checkSnapshot pour vérifier l'état du snapshot
+            Widget? checkResult = checkSnapshot(snapshot, errorMessage: "Erreur lors du chargement des transactions");
+            if (checkResult != null) return checkResult;
 
-            if (snapshot.hasError) {
-              return const Center(child: Text("Erreur lors du chargements des transactions"));
-            }
-
-            if (!snapshot.hasData || snapshot.data == null) {
-              return const Center(child: Text("Aucune transaction disponible."));
-            }
 
             var data = snapshot.data!;
             List<QueryDocumentSnapshot> transactions = data['transactions'] ?? [];
