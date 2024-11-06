@@ -1,3 +1,6 @@
+import 'dart:developer';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +26,42 @@ class CustomDrawer extends StatelessWidget {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => const ConnexionView()),
     );
+  }
+
+  Future<void> _deleteDatas(String collection, String userId) async {
+    await FirebaseFirestore.instance
+        .collection(collection)
+        .where("user_id", isEqualTo: userId)
+        .get()
+        .then((snapshot) {
+          for (var doc in snapshot.docs) {
+            doc.reference.delete();
+          }
+    });
+  }
+
+  Future<void> _deleteUserData(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final userId = user.uid;
+
+    try {
+      // Supprime les documents dans les collections debits, credits, budgets, et categories
+      await _deleteDatas("debits", userId);
+      await _deleteDatas("credits", userId);
+      await _deleteDatas("budgets", userId);
+      await _deleteDatas("categories", userId);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Données utilisateur supprimées avec succès.")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Erreur lors de la suppression des données...")),
+      );
+      log("Erreur lors de la suppressions des données : $e");
+    }
   }
 
   @override
@@ -73,6 +112,11 @@ class CustomDrawer extends StatelessWidget {
             text: 'Paramètres',
             destination: const SettingsView(),
             active: activeItem == 'settings',
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete),
+            title: const Text("Supprimer les données"),
+            onTap: () => _deleteUserData(context),
           ),
           ListTile(
             leading: const Icon(Icons.logout),
