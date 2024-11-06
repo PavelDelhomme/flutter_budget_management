@@ -28,7 +28,7 @@ class _BudgetViewState extends State<BudgetView> {
           ),
         ],
       ),
-      body: const TransactionsView()
+      body: null//const TransactionsView()
     );
   }
 }
