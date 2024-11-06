@@ -105,6 +105,7 @@ class _SummaryViewState extends State<SummaryView> {
         'totalDebit': debitTotal,
         'remainingAmount': remainingAmount,
         'projectedRemainingAmount': projectedRemainingAmount,
+        'savings': totalSavings,
       };
     });
   }
@@ -141,6 +142,7 @@ class _SummaryViewState extends State<SummaryView> {
           double totalDebit = data['totalDebit'] ?? 0.0;
           double remainingAmount = data['remainingAmount'] ?? 0.0;
           double projectedRemainingAmount = data['projectedRemainingAmount'] ?? 0.0;
+          double totalSavings = data['savings'] ?? 0.0;
 
           return SingleChildScrollView(
             child: Padding(
@@ -151,6 +153,7 @@ class _SummaryViewState extends State<SummaryView> {
                   _buildBudgetCard("Total Crédits", totalCredit.toStringAsFixed(2), Colors.green),
                   _buildBudgetCard("Total Débits", totalDebit.toStringAsFixed(2), Colors.red),
                   _buildBudgetCard("Montant Restant", remainingAmount.toStringAsFixed(2), Colors.blue),
+                  _buildBudgetCard("Economies déjà acquises", totalSavings.toStringAsFixed(2), Colors.grey),
                   _buildBudgetCard("Montant Restant avec Economies", projectedRemainingAmount.toStringAsFixed(2), Colors.orange),
                 ],
               ),

@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../budget/budget_details_screen.dart';
 
@@ -24,13 +23,12 @@ class _TransactionsViewState extends State<TransactionsView> {
   double totalDebit = 0.0;
   double totalCredit = 0.0;
   String transactionFilter = "all"; // "all", "debits", "credits"
-  Map<String, String> categoryMap = {}; // Stocker les noms des catégories
+  Map<String, String> categoryMap = {}; // Store category names
 
   Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() async {
     final creditsData = await _getCreditTransactionsForSelectedMonth();
     final debitsData = await _getDebitTransactionsForSelectedMonth();
 
-    // Combinaison des transactions de crédits et de débits
     List<QueryDocumentSnapshot> transactions = [
       ...creditsData['transactions'],
       ...debitsData['transactions']
@@ -38,16 +36,19 @@ class _TransactionsViewState extends State<TransactionsView> {
 
     return {
       'transactions': transactions,
-      'totalDebit': totalDebit,
-      'totalCredit': totalCredit,
+      'totalDebit': debitsData['total'],
+      'totalCredit': creditsData['total'],
     };
   }
+
   Future<Map<String, dynamic>> _getCreditTransactionsForSelectedMonth() {
     return _getTypeTransactionsForSelectedMonth('credits');
   }
+
   Future<Map<String, dynamic>> _getDebitTransactionsForSelectedMonth() {
     return _getTypeTransactionsForSelectedMonth('debits');
   }
+
   Future<Map<String, dynamic>> _getTypeTransactionsForSelectedMonth(String collection) async {
     final user = FirebaseAuth.instance.currentUser;
     DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
@@ -62,7 +63,6 @@ class _TransactionsViewState extends State<TransactionsView> {
         .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
         .get();
 
-    // Calcul des totaux et ajout des transactions récupérées
     for (var doc in transactionsQuery.docs) {
       total += (doc['amount'] as num).toDouble();
       transactions.add(doc);
@@ -73,66 +73,6 @@ class _TransactionsViewState extends State<TransactionsView> {
       'total': total,
     };
   }
-
-
-  /*
-  Future<Map<String, dynamic>> _getDebitTransactionsForSelectedMonth() async {
-
-    final user = FirebaseAuth.instance.currentUser;
-    DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
-    DateTime endOfMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
-
-    List<QueryDocumentSnapshot> transactions = [];
-
-    var debitQuery = await FirebaseFirestore.instance
-        .collection("debits")
-        .where("user_id", isEqualTo: user?.uid)
-        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
-        .get();
-  }
-
-  Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() async {
-    final user = FirebaseAuth.instance.currentUser;
-    DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
-    DateTime endOfMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
-
-    List<QueryDocumentSnapshot> transactions = [];
-    double debitTotal = 0.0;
-    double creditTotal = 0.0;
-
-    // Charger les transactions de débit et crédit du mois sélectionné
-    var debitQuery = await FirebaseFirestore.instance
-        .collection("debits")
-        .where("user_id", isEqualTo: user?.uid)
-        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
-        .get();
-
-    var creditQuery = await FirebaseFirestore.instance
-        .collection("credits")
-        .where("user_id", isEqualTo: user?.uid)
-        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
-        .get();
-
-    // Calcul des totaux et ajout des transactions récupérées
-    for (var doc in debitQuery.docs) {
-      debitTotal += (doc['amount'] as num).toDouble();
-      transactions.add(doc);
-    }
-    for (var doc in creditQuery.docs) {
-      creditTotal += (doc['amount'] as num).toDouble();
-      transactions.add(doc);
-    }
-
-    return {
-      'transactions': transactions,
-      'totalDebit': debitTotal,
-      'totalCredit': creditTotal,
-    };
-  }
-  */
 
   void _updateMonthlyTotals() async {
     final data = await _getTransactionsForSelectedMonth();
@@ -165,6 +105,7 @@ class _TransactionsViewState extends State<TransactionsView> {
       });
     }
   }
+
   Future<String> getCategoryName(String? categoryId) async {
     if (categoryId == null || categoryId.isEmpty) return "Sans catégorie";
 
@@ -174,42 +115,32 @@ class _TransactionsViewState extends State<TransactionsView> {
       var categorySnapshot = await FirebaseFirestore.instance.collection("categories").doc(categoryId).get();
       if (categorySnapshot.exists) {
         String categoryName = categorySnapshot['name'];
-        categoryMap[categoryId] = categoryName; // Cache le nom pour les prochaines utilisations
+        categoryMap[categoryId] = categoryName; // Cache the name for future use
         return categoryName;
       } else {
         return "Sans catégorie";
       }
     }
   }
+
   void _previousMonth() {
     setState(() {
       selectedMonth = DateTime(selectedMonth.year, selectedMonth.month - 1);
       _updateMonthlyTotals();
     });
   }
+
   void _nextMonth() {
     setState(() {
       selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + 1);
       _updateMonthlyTotals();
     });
   }
+
   void _toggleTransactionFilter(String filter) {
     setState(() {
       transactionFilter = filter;
     });
-  }
-
-  void _editTransaction(BuildContext context, DocumentSnapshot transaction) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TransactionFormScreen(transaction: transaction),
-      ),
-    );
-
-    if (result == true) {
-      setState(() {});
-    }
   }
 
   void _addNewTransaction(BuildContext context) async {
@@ -233,10 +164,8 @@ class _TransactionsViewState extends State<TransactionsView> {
     String collection = isDebit ? 'debits' : 'credits';
     double amount = transaction['amount'] as double;
 
-    // Supprimer la transaction de la collection appropriée
     await FirebaseFirestore.instance.collection(collection).doc(transaction.id).delete();
 
-    // Mettre  à jour le budget après suppression
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       await updateBudgetAfterTransactionDeletion(user.uid, amount, isDebit: isDebit);
@@ -263,7 +192,6 @@ class _TransactionsViewState extends State<TransactionsView> {
         actions: [
           IconButton(icon: const Icon(Icons.arrow_back), onPressed: _previousMonth),
           IconButton(icon: const Icon(Icons.arrow_forward), onPressed: _nextMonth),
-          // Buton pour accèder aux transactions récurrentes
           IconButton(
             icon: const Icon(Icons.repeat),
             onPressed: () {
@@ -337,66 +265,31 @@ class _TransactionsViewState extends State<TransactionsView> {
                     return true;
                   }).toList();
 
-                  Map<String, List<QueryDocumentSnapshot>> transactionsByDays = {};
-                  for (var transaction in transactions) {
-                    DateTime date = (transaction['date'] as Timestamp).toDate();
-                    String dayKey = DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(date);
-                    if (!transactionsByDays.containsKey(dayKey)) {
-                      transactionsByDays[dayKey] = [];
-                    }
-                    transactionsByDays[dayKey]!.add(transaction);
-                  }
-
                   return ListView.builder(
-                    itemCount: transactionsByDays.keys.length,
+                    itemCount: transactions.length,
                     itemBuilder: (context, index) {
-                      String dayKey = transactionsByDays.keys.elementAt(index);
-                      var transactionsForDay = transactionsByDays[dayKey]!;
-                      double totalAmount = transactionsForDay.fold(0.0, (sum, item) => sum + (item['amount'] as num).toDouble());
+                      var transaction = transactions[index];
+                      bool isDebit = transaction.reference.parent.id == 'debits';
+                      String transactionType = isDebit ? 'Débit' : 'Crédit';
 
-                      return ExpansionTile(
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(dayKey, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      return FutureBuilder<String>(
+                        future: getCategoryName((transaction.data() as Map<String, dynamic>?)?.containsKey('categorie_id') == true ? transaction['categorie_id'] : null),
+                        builder: (context, snapshot) {
+                          String categoryName = snapshot.data ?? 'Sans catégorie';
+                          return ListTile(
+                            title: Text(
+                              '${transaction['amount'].toStringAsFixed(2)} €',
+                              style: TextStyle(color: isDebit ? Colors.red : Colors.green),
                             ),
-                            Text('Total: €${totalAmount.toStringAsFixed(2)}'),
-                          ],
-                        ),
-                        children: transactionsForDay.map((transaction) {
-                          bool isDebit = transaction.reference.parent.id == 'debits';
-                          String transactionType = isDebit ? 'Débit' : 'Crédit';
-                          return FutureBuilder<String>(
-                            future: getCategoryName(transaction['categorie_id']),
-                            builder: (context, snapshot) {
-                              String categoryName = snapshot.data ?? 'Sans catégorie';
-                              Color backgroundColor = isDebit ? Colors.red.withOpacity(0.1) : Colors.green.withOpacity(0.1);
-                              return Container(
-                                color: backgroundColor,
-                                child: ListTile(
-                                  title: Row(
-                                    children: [
-                                      Text(
-                                        '${transaction['amount'].toStringAsFixed(2)} €',
-                                        style: TextStyle(color: isDebit ? Colors.red : Colors.green, fontWeight: FontWeight.bold),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(transactionType),
-                                    ],
-                                  ),
-                                  subtitle: Text(categoryName),
-                                  onTap: () {
-                                    showModalBottomSheet(
-                                      context: context,
-                                      builder: (context) => TransactionDetailsModal(transaction: transaction),
-                                    );
-                                  },
-                                ),
+                            subtitle: Text('$transactionType - $categoryName'),
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                builder: (context) => TransactionDetailsModal(transaction: transaction),
                               );
                             },
                           );
-                        }).toList(),
+                        },
                       );
                     },
                   );

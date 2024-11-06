@@ -280,18 +280,38 @@ class _TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
               children: [
                 Card(
                   margin: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: ListTile(
-                    title: Text(
-                      'Total Crédit : €${totalCredit.toStringAsFixed(2)}',
-                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(
-                      'Total Débit : €${totalDebit.toStringAsFixed(2)}',
-                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                    ),
-                    trailing: Text(
-                      'Économies : €${(totalCredit - totalDebit).toStringAsFixed(2)}',
-                      style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Transactions récurrentes',
+                          style: const TextStyle(color: Colors.purple, fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total Crédit : €${totalCredit.toStringAsFixed(2)}',
+                              style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Total Débit : €${totalDebit.toStringAsFixed(2)}',
+                              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: Text(
+                            'Économies : €${(totalCredit - totalDebit).toStringAsFixed(2)}',
+                            style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
