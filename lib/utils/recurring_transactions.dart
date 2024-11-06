@@ -33,8 +33,7 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
   String currentMonth = '${now.year}-${now.month.toString().padLeft(2, '0')}';
 
   // Vérifie si les transactions récurrentes pour ce mois ont déjà été traitées
-  final userDoc =
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+  final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
   String lastProcessedMonth = userDoc.data()?['lastProcessedMonth'] ?? '';
 
   if (lastProcessedMonth == currentMonth) {
@@ -105,6 +104,7 @@ Future<void> _copyRecurringTransactions(
         .where('date', isEqualTo: Timestamp.fromDate(newDate))
         .where('amount', isEqualTo: data['amount'])
         .where('categorie_id', isEqualTo: data['categorie_id'])
+        .where('notes', isEqualTo: data['notes']) // Ajouté pour renforcer la vérification
         .get()
         .then((snapshot) => snapshot.docs.isNotEmpty);
 

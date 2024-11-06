@@ -75,6 +75,33 @@ Future<void> updateBudetTotals(String userId, double amount, {required bool isDe
   }
 }
 
+Future<void> updateBudgetAfterTransactionDeletion(String userId, double amount, {required bool isDebit}) async {
+  final now = DateTime.now();
+  final budgetRef = FirebaseFirestore.instance
+      .collection("budgets")
+      .where("user_id", isEqualTo: userId)
+      .where("month", isEqualTo: now.month)
+      .where("year", isEqualTo: now.year)
+      .limit(1);
+
+  final budgetSnapshot = await budgetRef.get();
+
+  if (budgetSnapshot.docs.isNotEmpty) {
+    final budgetData = budgetSnapshot.docs.first;
+    final double totalDebit = (budgetData['total_debit'] as num?)?.toDouble() ?? 0.0;
+    final double totalCredit = (budgetData['total_credit'] as num?)?.toDouble() ?? 0.0;
+
+    // Soustraire le montant supprimé du bon total
+    final newTotalDebit = isDebit ? totalDebit - amount : totalDebit;
+    final newTotalCredit = isDebit ? totalCredit : totalCredit - amount;
+
+    await budgetData.reference.update({
+      'total_debit': newTotalDebit,
+      'total_credit': newTotalCredit,
+    });
+  }
+}
+
 Future<void> updateCategorySpending(String categoryId, double amount, {bool isDebit = true}) async {
   final categoryRef = await FirebaseFirestore.instance.collection('categories').doc(categoryId).get();
 

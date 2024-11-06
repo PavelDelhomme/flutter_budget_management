@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'package:budget_management/utils/budgets.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
 import 'package:flutter/material.dart';
@@ -160,9 +161,16 @@ class _TransactionsViewState extends State<TransactionsView> {
 
     bool isDebit = transaction.reference.parent.id == 'debits';
     String collection = isDebit ? 'debits' : 'credits';
+    double amount = transaction['amount'] as double;
 
     // Supprimer la transaction de la collection appropriée
     await FirebaseFirestore.instance.collection(collection).doc(transaction.id).delete();
+
+    // Mettre  à jour le budget après suppression
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await updateBudgetAfterTransactionDeletion(user.uid, amount, isDebit: isDebit);
+    }
 
     if (mounted) {
       setState(() {});
@@ -311,9 +319,9 @@ class _TransactionsViewState extends State<TransactionsView> {
                                     children: [
                                       SlidableAction(
                                         onPressed: (context) async {
-                                          bool confirm = await _showDeleteConfirmation(context);
+                                          bool confirm = await _showDeleteConfirmation(this.context);
                                           if (confirm) {
-                                            _deleteTransaction(context, transaction);
+                                            _deleteTransaction(this.context, transaction);
                                           }
                                         },
                                         backgroundColor: Colors.red,
@@ -393,6 +401,7 @@ class _TransactionsViewState extends State<TransactionsView> {
 
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
     return await showDialog(
+      context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Confirmer la suppression"),
@@ -408,7 +417,7 @@ class _TransactionsViewState extends State<TransactionsView> {
             ),
           ],
         );
-      }, context: context,
+      },
     ) ?? false;
   }
 }
