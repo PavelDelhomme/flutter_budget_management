@@ -22,6 +22,7 @@ class ConnexionViewState extends State<ConnexionView> {
   final _passwordFocusNode = FocusNode();
   final _auth = FirebaseAuth.instance;
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
 
   @override
   void initState() {
@@ -31,6 +32,8 @@ class ConnexionViewState extends State<ConnexionView> {
 
   @override
   void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
@@ -116,8 +119,20 @@ class ConnexionViewState extends State<ConnexionView> {
               TextFormField(
                 controller: _passwordController,
                 focusNode: _passwordFocusNode,
-                decoration: const InputDecoration(labelText: 'Mot de passe'),
-                obscureText: true,
+                obscureText: !_isPasswordVisible,
+                decoration: InputDecoration(
+                  labelText: 'Mot de passe',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                  ),
+                ),
                 textInputAction: TextInputAction.done,
                 onFieldSubmitted: (_) => _signIn,
                 validator: (value) {

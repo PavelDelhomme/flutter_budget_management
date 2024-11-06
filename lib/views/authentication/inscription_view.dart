@@ -14,23 +14,24 @@ class InscriptionView extends StatefulWidget {
 class InscriptionViewState extends State<InscriptionView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
+  final _confirmPasswordFocusNode = FocusNode();
   final _formKey = GlobalKey<FormState>();
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
   bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _emailFocusNode.requestFocus();
-  }
+  bool _isPasswordVisible = false;
 
   @override
   void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
+    _confirmPasswordFocusNode.dispose();
     super.dispose();
   }
 
@@ -40,8 +41,7 @@ class InscriptionViewState extends State<InscriptionView> {
         _isLoading = true;
       });
       try {
-        UserCredential userCredential = await _auth
-            .createUserWithEmailAndPassword(
+        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
@@ -54,11 +54,9 @@ class InscriptionViewState extends State<InscriptionView> {
 
         await _db.collection('users').doc(newUser.id).set(newUser.toMap());
 
-        // Ajouter des catégories par défaut pour l'utilisateur
         await createDefaultCategories(newUser.id);
 
         if (mounted) {
-          // Après l'inscription, rediriger vers l'écran principal
           Navigator.of(context).pushReplacementNamed("/home");
         }
       } on FirebaseAuthException catch (e) {
@@ -112,13 +110,41 @@ class InscriptionViewState extends State<InscriptionView> {
               TextFormField(
                 controller: _passwordController,
                 focusNode: _passwordFocusNode,
-                decoration: const InputDecoration(labelText: 'Mot de passe'),
-                obscureText: true,
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _signUp,
+                obscureText: !_isPasswordVisible,
+                decoration: InputDecoration(
+                  labelText: 'Mot de passe',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                  ),
+                ),
+                textInputAction: TextInputAction.next,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Veuillez entrer un mot de passe.';
+                  }
+                  if (value.length < 6) {
+                    return 'Le mot de passe doit comporter au moins 6 caractères.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16.0),
+              TextFormField(
+                controller: _confirmPasswordController,
+                focusNode: _confirmPasswordFocusNode,
+                obscureText: !_isPasswordVisible,
+                decoration: const InputDecoration(labelText: 'Confirmer le mot de passe'),
+                textInputAction: TextInputAction.done,
+                validator: (value) {
+                  if (value != _passwordController.text) {
+                    return 'Les mots de passe ne correspondent pas.';
                   }
                   return null;
                 },
