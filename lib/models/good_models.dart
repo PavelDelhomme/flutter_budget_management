@@ -204,6 +204,7 @@ class Budget {
   double total_debit;
   double total_credit;
   double remaining = 0.0;
+  double cumulativeRemaining = 0.0;
 
   Budget({
     required this.id,
@@ -213,6 +214,7 @@ class Budget {
     this.total_debit = 0.0,
     this.total_credit = 0.0,
     this.remaining = 0.0,
+    this.cumulativeRemaining = 0.0,
   });
 
   Map<String, dynamic> toMap() {
@@ -224,6 +226,7 @@ class Budget {
       'total_debit': total_debit,
       'total_credit': total_credit,
       'remaining': remaining,
+      'cumulativeRemaining': cumulativeRemaining,
     };
   }
 
@@ -236,6 +239,7 @@ class Budget {
       total_debit: (map['total_debit'] as num?)?.toDouble() ?? 0.0,
       total_credit: (map['total_debit'] as num?)?.toDouble() ?? 0.0,
       remaining: (map['remaining'] as num?)?.toDouble() ?? 0.0,
+      cumulativeRemaining: (map['cumulativeRemaining'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

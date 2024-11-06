@@ -3,6 +3,7 @@ import 'package:budget_management/utils/budgets.dart';
 import 'package:budget_management/utils/general.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
+import 'package:budget_management/views/budget/transaction/transactions_reccuring_view.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,7 +23,69 @@ class _TransactionsViewState extends State<TransactionsView> {
   DateTime selectedMonth = DateTime.now();
   double totalDebit = 0.0;
   double totalCredit = 0.0;
+  String transactionFilter = "all";
   Map<String, String> categoryMap = {}; // Stocker les noms des catégories
+
+  Future<Map<String, dynamic>> _getTypeTransactionsForSelectedMonth(String collection) async {
+    final user = FirebaseAuth.instance.currentUser;
+    DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
+    DateTime endOfMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
+    List<QueryDocumentSnapshot> transactions = [];
+    double total = 0.0;
+
+    var transactionsQuery = await FirebaseFirestore.instance
+        .collection(collection)
+        .where("user_id", isEqualTo: user?.uid)
+        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .get();
+
+    // Calcul des totaux et ajout des transactions récupérées
+    for (var doc in transactionsQuery.docs) {
+      total += (doc['amount'] as num).toDouble();
+      transactions.add(doc);
+    }
+
+    return {
+      'transactions': transactions,
+      'total': total,
+    };
+  }
+
+  Future<Map<String, dynamic>> _getCreditTransactionsForSelectedMonth() {
+    return _getTypeTransactionsForSelectedMonth('credits');
+  }
+
+
+  Future<Map<String, dynamic>> _getDebitTransactionsForSelectedMonth() {
+    return _getTypeTransactionsForSelectedMonth('debits');
+  }
+
+  Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() {
+    Map<String, dynamic> credits = _getCreditTransactionsForSelectedMonth() as Map<String, dynamic>;
+    Map<String, dynamic> debits = _getDebitTransactionsForSelectedMonth() as Map<String, dynamic>;
+    Future<Map<String, dynamic>> allTransactions = {} as Future<Map<String, dynamic>>;
+    allTransactions.addAll(credits);
+    allTransactions.addAll(debits);
+    return allTransactions;
+
+  }
+  /*
+  Future<Map<String, dynamic>> _getDebitTransactionsForSelectedMonth() async {
+
+    final user = FirebaseAuth.instance.currentUser;
+    DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
+    DateTime endOfMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
+
+    List<QueryDocumentSnapshot> transactions = [];
+
+    var debitQuery = await FirebaseFirestore.instance
+        .collection("debits")
+        .where("user_id", isEqualTo: user?.uid)
+        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .get();
+  }
 
   Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -64,13 +127,15 @@ class _TransactionsViewState extends State<TransactionsView> {
       'totalCredit': creditTotal,
     };
   }
-
+  */
 
   void _updateMonthlyTotals() async {
-    final data = await _getTransactionsForSelectedMonth();
+    final creditsData = await _getCreditTransactionsForSelectedMonth();
+    final debitsData = await _getDebitTransactionsForSelectedMonth();
+
     setState(() {
-      totalDebit = data['totalDebit'] ?? 0.0;
-      totalCredit = data['totalCredit'] ?? 0.0;
+      totalCredit = creditsData['total'] ?? 0.0;
+      totalDebit = debitsData['total'] ?? 0.0;
     });
   }
 
@@ -200,6 +265,18 @@ class _TransactionsViewState extends State<TransactionsView> {
             icon: const Icon(Icons.arrow_forward),
             onPressed: _nextMonth,
           ),
+          // Buton pour accèder aux transactions récurrentes
+          IconButton(
+            icon: const Icon(Icons.repeat),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const TransactionsReccuringView(),
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: Padding(
@@ -260,6 +337,8 @@ class _TransactionsViewState extends State<TransactionsView> {
                       // Calculer le montant total des transactions pour chaque jour
                       double totalAmount = 0;
                       for (var transaction in transactionsForDay) {
+                        if (transaction[''])
+                        double creditsTransactions =
                         totalAmount += transaction['amount'];
                       }
 
@@ -329,20 +408,56 @@ class _TransactionsViewState extends State<TransactionsView> {
                                     title: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          '${transaction['amount'].toStringAsFixed(2)} €',
-                                          style: TextStyle(color: isDebit ? Colors.red : Colors.green),
+                                        // Row en haut a gauche
+                                        Row(
+                                          children: [
+                                            Text(
+                                              isDebit ? '-' : '+', // Signe dynamique pour le montant
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                color: isDebit ? Colors.red : Colors.green,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '${transaction['amount'].toStringAsFixed(2)} €',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                color: isDebit ? Colors.red : Colors.green, // Couleur du montant
+                                              ),
+                                            ),
+                                          ],
                                         ),
+                                        // En haut a droite
                                         Text(transactionType),
                                       ],
                                     ),
+                                    subtitle: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        // Row en bas à gauche
+                                        Row(
+                                          children: [
+                                            Text(categoryName),
+                                            const SizedBox(width: 4),
+                                          ],
+                                        ),
+                                        // En bas à droite
+                                        Text(
+                                          transaction['notes'] ?? 'Aucune note',
+                                          style: const TextStyle(fontStyle: FontStyle.italic),
+                                        ),
+                                      ],
+                                    ),
+                                    /*
                                     subtitle: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(categoryName),
                                         Text(transaction['notes'] ?? 'Aucune note'),
                                       ],
-                                    ),
+                                    ),*/
                                     onTap: () {
                                       showModalBottomSheet(
                                         context: context,

@@ -52,13 +52,16 @@ class CustomDrawer extends StatelessWidget {
       await _deleteDatas("credits", userId);
       await _deleteDatas("budgets", userId);
       await _deleteDatas("categories", userId);
+      await _deleteDatas("users", userId);
+      await _deleteDatas("collection", userId);
 
       // Effacement du cache local
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
-      // Déconnexiond de l'utilisateur
+      // Déconnexion de l'utilisateur
       await FirebaseAuth.instance.signOut();
+      await FirebaseAuth.instance.currentUser?.delete();
 
       // Redirection vers page de connexion
       Navigator.of(context).pushAndRemoveUntil(

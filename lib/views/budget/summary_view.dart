@@ -15,13 +15,53 @@ class SummaryView extends StatefulWidget {
 }
 
 class _SummaryViewState extends State<SummaryView> {
-  //double totalCredit = 0.0;
-  //double totalDebit = 0.0;
-  //double remainingAmount = 0.0;
-  //double projectedRemainingAmount = 0.0;
-  //double futureCredit = 0.0;
-  //double futureDebit = 0.0;
   double totalSavings = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTotalSavings();
+  }
+
+  Future<void> _loadTotalSavings() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      totalSavings = await _getTotalSavingsFromPreviousMonths(user.uid);
+      setState(() {});
+    }
+  }
+
+  Stream<Map<String, double>> _getBudgetStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Stream.value({});
+    }
+
+    final now = DateTime.now();
+    final budgetStream = fs.FirebaseFirestore.instance
+          .collection("budgets")
+          .where("user_id", isEqualTo: user.uid)
+          .where("month", isEqualTo: now.month)
+          .where("year", isEqualTo: now.year)
+          .snapshots();
+
+    return budgetStream.map((snapshot) {
+      if (snapshot.docs.isEmpty) return {};
+
+      final budget = snapshot.docs.first;
+      double totalCredit = (budget['total_credit'] as num?)?.toDouble() ?? 0.0;
+      double totalDebit = (budget['total_debit'] as num?)?.toDouble() ?? 0.0;
+      double remainingAmount = (budget['remaining'] as num?)?.toDouble() ?? 0.0;
+      double cumulativeRemainingAmount = (budget['cumulativeRemaining'] as num?)?.toDouble() ?? 0.0;
+
+      return {
+        'totalCredit': totalCredit,
+        'totalDebit': totalDebit,
+        'remainingAmount': remainingAmount,
+        'cumulativeRemainingAmount': cumulativeRemainingAmount,
+      };
+    });
+  }
 
   Stream<Map<String, double>> _getSummaryStream() {
     final user = FirebaseAuth.instance.currentUser;
@@ -68,6 +108,24 @@ class _SummaryViewState extends State<SummaryView> {
       };
     });
   }
+  Future<double> _getTotalSavingsFromPreviousMonths(String userId) async {
+    final previousBudgets = await FirebaseFirestore.instance
+        .collection("budgets")
+        .where("user_id", isEqualTo: userId)
+        .where("month", isLessThan: DateTime.now().month)
+        .where("year", isEqualTo: DateTime.now().year)
+        .get();
+
+    double savingsSum = 0.0;
+    for (var budget in previousBudgets.docs) {
+      double remaining = (budget['total_credit'] as num).toDouble() - (budget['total_debit'] as num).toDouble();
+      if (remaining > 0) {
+        savingsSum += remaining;
+      }
+    }
+    return savingsSum;
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +133,6 @@ class _SummaryViewState extends State<SummaryView> {
       body: StreamBuilder<Map<String, double>>(
         stream: _getSummaryStream(),
         builder: (context, snapshot) {
-          // Utilisez `checkSnapshot` pour vérifier l’état du snapshot
           Widget? checkResult = checkSnapshot(snapshot, errorMessage: "Erreur lors du chargement des données de résumé");
           if (checkResult != null) return checkResult;
 

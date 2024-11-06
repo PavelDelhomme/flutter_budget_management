@@ -41,6 +41,7 @@ class _TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
         .where("user_id", isEqualTo: user?.uid)
         .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
         .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .where("isRecurring", isEqualTo: true)
         .get();
 
     var creditQuery = await FirebaseFirestore.instance
@@ -48,6 +49,7 @@ class _TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
         .where("user_id", isEqualTo: user?.uid)
         .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
         .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .where("isRecurring", isEqualTo: true)
         .get();
 
     // Calcul des totaux et ajout des transactions récupérées

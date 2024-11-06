@@ -22,8 +22,6 @@ class _SavingsPageState extends State<SavingsPage> {
     _calculateSavings();
   }
 
-  // Fonction pour calculer les économies par mois et les économies totales
-
   Future<void> _calculateSavings() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -38,8 +36,10 @@ class _SavingsPageState extends State<SavingsPage> {
       for (var doc in budgetsSnapshot.docs) {
         Budget budget = Budget.fromMap(doc.data());
         String monthKey = '${budget.year}-${budget.month.toString().padLeft(2, '0')}';
-        savingsPerMonth[monthKey] = budget.remaining;
-        totalSavings += budget.remaining;
+
+        double remaining = budget.remaining;
+        savingsPerMonth[monthKey] = remaining;
+        totalSavings += remaining;
       }
 
       setState(() {
@@ -53,7 +53,7 @@ class _SavingsPageState extends State<SavingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Résumé des Économies')),
-      drawer: const CustomDrawer(activeItem: 'savings'), // Ajoutez le CustomDrawer ici
+      drawer: const CustomDrawer(activeItem: 'savings'),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

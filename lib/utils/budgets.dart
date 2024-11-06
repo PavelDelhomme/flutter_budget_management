@@ -1,6 +1,7 @@
 import 'package:budget_management/utils/categories.dart';
 import 'package:budget_management/utils/transactions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../models/good_models.dart';
 
 import 'generate_ids.dart';
@@ -25,6 +26,50 @@ Future<void> handleMonthTransition({
   }
 }
 
+
+Future<void> updateMonthlyBudgetTotals(String userId, int month, int year) async {
+  final budgetRef = FirebaseFirestore.instance
+      .collection("budgets")
+      .where("user_id", isEqualTo: userId)
+      .where("month", isEqualTo: month)
+      .where('year', isEqualTo: year)
+      .limit(1);
+
+  final budgetSnapshot = await budgetRef.get();
+  if (budgetSnapshot.docs.isNotEmpty) {
+    final budgetDoc = budgetSnapshot.docs.first.reference;
+
+    final creditSnapshot = await FirebaseFirestore.instance
+        .collection("credits")
+        .where("user_id", isEqualTo: userId)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime(year, month, 1)))
+        .where('date', isLessThan: Timestamp.fromDate(DateTime(year, month + 1, 1)))
+        .get();
+
+
+    final debitSnapshot = await FirebaseFirestore.instance
+        .collection('debits')
+        .where('user_id', isEqualTo: userId)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime(year, month, 1)))
+        .where('date', isLessThan: Timestamp.fromDate(DateTime(year, month + 1, 1)))
+        .get();
+
+    double totalCredit = creditSnapshot.docs.fold(0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
+    double totalDebit = debitSnapshot.docs.fold(0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
+
+    // Calcul des montants restants
+    double remaining = totalCredit - totalDebit;
+    double cumulativeRemaining = remaining; // Ajustez en fonction de la logique cumulative
+
+    await budgetDoc.update({
+      'total_credit': totalCredit,
+      'total_debit': totalDebit,
+      'remaining': remaining,
+      'cumulativeRemaining': cumulativeRemaining,
+    });
+
+  }
+}
 
 // Copie des transactions récurrentes pour le nouveau mois
 Future<void> copyRecurringTransactions(
@@ -165,6 +210,64 @@ Future<void> updateCurrentMonthBudget(String userId, double amount, {required bo
       year: now.year,
       total_debit: isDebit ? amount : 0.0,
       total_credit: !isDebit ? amount : 0.0,
+    );
+    await FirebaseFirestore.instance.collection('budgets').doc(newBudget.id).set(newBudget.toMap());
+  }
+}
+
+
+Future<void> updatePreviousMonthBudget(String userId, DateTime date) async {
+  final previousMonth = DateTime(date.year, date.month -1 , 1);
+
+  final previousBudgetRef = FirebaseFirestore.instance
+      .collection('budgets')
+      .where('user_id', isEqualTo: userId)
+      .where('month', isEqualTo: previousMonth.month)
+      .where('year', isEqualTo: previousMonth.year)
+      .limit(1);
+
+
+  final previousBudgetSnapshot = await previousBudgetRef.get();
+
+  if (previousBudgetSnapshot.docs.isNotEmpty) {
+    final previousBudget = previousBudgetSnapshot.docs.first;
+    final totalDebit = (previousBudget['total_debit'] as num?)?.toDouble() ?? 0.0;
+    final totalCredit = (previousBudget['total_credit'] as num?)?.toDouble() ?? 0.0;
+
+    // Calcul des valeurs remaining et cumulativeRemaining
+    double remaining = totalCredit - totalDebit;
+    double cumulativeRemaining = (previousBudget['cumulativeRemaining'] as num?)?.toDouble() ?? 0.0;
+    cumulativeRemaining += remaining;
+
+    await previousBudget.reference.update({
+      'remaining': remaining,
+      'cumulativeRemaining': cumulativeRemaining,
+    });
+  }
+
+}
+
+
+Future<void> createOrUpdateMonthlyBudget(String userId, DateTime date) async {
+  final budgetRef = FirebaseFirestore.instance
+      .collection('budgets')
+      .where('user_id', isEqualTo: userId)
+      .where('month', isEqualTo: date.month)
+      .where('year', isEqualTo: date.year)
+      .limit(1);
+
+  final budgetSnapshot = await budgetRef.get();
+
+  if (budgetSnapshot.docs.isNotEmpty) {
+    // Si le budget existe, aucune action supplémentaire
+    return;
+  } else {
+    // Si le budget n'existe pas, création d'un nouveau document
+    final newBudget = Budget(
+      id: generateTransactionId(),
+      user_id: userId,
+      month: date.month,
+      year: date.year,
     );
     await FirebaseFirestore.instance.collection('budgets').doc(newBudget.id).set(newBudget.toMap());
   }

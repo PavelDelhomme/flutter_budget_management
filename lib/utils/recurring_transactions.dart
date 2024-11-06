@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/good_models.dart';
+import 'budgets.dart';
 import 'generate_ids.dart';
 
 /// Calcule la date du mois suivant, en tenant compte des années et de la fin du mois.
@@ -32,14 +33,20 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
   DateTime now = DateTime.now();
   String currentMonth = '${now.year}-${now.month.toString().padLeft(2, '0')}';
 
-  // Vérifie si les transactions récurrentes pour ce mois ont déjà été traitées
-  final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+  final userDocRef = FirebaseFirestore.instance.collection("users").doc(user.uid);
+  final userDoc = await userDocRef.get();
   String lastProcessedMonth = userDoc.data()?['lastProcessedMonth'] ?? '';
 
   if (lastProcessedMonth == currentMonth) {
     log("Les transactions récurrentes existent déjà pour le mois en cours.");
     return;
   }
+
+  // Met à jour le budget du mois précèdent avant de copier les transactions récurrentes
+  await updatePreviousMonthBudget(user.uid, now);
+
+  // Créer le budget pour le mois s'il n'existe pas
+  await createOrUpdateMonthlyBudget(user.uid, now);
 
   // Copie les transactions pour chaque type (débit et crédit)
   await _copyRecurringTransactions(
@@ -72,7 +79,7 @@ Future<void> copyRecurringTransactionsForNewMonth() async {
   );
 
   // Met à jour le champ `lastProcessedMonth` pour éviter les duplications futures
-  await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+  await userDocRef.update({
     'lastProcessedMonth': currentMonth,
   });
 
@@ -186,5 +193,39 @@ Future<void> _updateRecurringTransactions(
           .doc(newTransaction.id)
           .set(newTransaction.toMap());
     }
+  }
+}
+
+Future<void> addRetroactiveRecurringTransaction({
+  required String userId,
+  required String categoryId,
+  required DateTime startDate,
+  required double amount,
+  required bool isDebit,
+}) async {
+  DateTime date = startDate;
+  while (date.isBefore(DateTime.now())) {
+    final collection = isDebit ? 'debits' : 'credits';
+
+    bool transactionExists = await FirebaseFirestore.instance
+        .collection(collection)
+        .where('user_id', isEqualTo: userId)
+        .where('isRecurring', isEqualTo: true)
+        .where('date', isEqualTo: Timestamp.fromDate(date))
+        .where('amount', isEqualTo: amount)
+        .where('categorie_id', isEqualTo: categoryId)
+        .get()
+        .then((snapshot) => snapshot.docs.isNotEmpty);
+
+    if (!transactionExists) {
+      await FirebaseFirestore.instance.collection(collection).add({
+        'user_id': userId,
+        'date': date,
+        'amount': amount,
+        'isRecurring': true,
+        'categorie_id': categoryId,
+      });
+    }
+    date = DateTime(date.year, date.month + 1, 1); // Avancer au mois suivant
   }
 }
