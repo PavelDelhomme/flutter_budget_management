@@ -260,6 +260,13 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   Future<void> _saveTransaction() async {
+    if (_amountController.text.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: const Text("Veuillez saisir un montant pour ajouter la transaction"))
+      );
+      return;
+    }
+
     if (_isDebit && (_selectedCategory == null || _selectedCategory!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Veuillez sélectionner une catégorie pour un débit."))
