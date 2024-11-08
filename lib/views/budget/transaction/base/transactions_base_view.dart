@@ -290,13 +290,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                   firstDate: DateTime(DateTime.now().year - 1),
                   lastDate: DateTime(DateTime.now().year + 1),
                   locale: const Locale("fr", "FR"),
-                  selectableDayPredicate: (day) {
-                    // Coloration des jours avec transactions
-                    if (debitDays.containsKey(day) || creditDays.containsKey(day)) {
-                      return true; // Marque ces jours comme cliquables
-                    }
-                    return false;
-                  },
+                  selectableDayPredicate: (day) => debitDays.containsKey(day) || creditDays.containsKey(day),
                   builder: (context, child) {
                     return Theme(
                       data: Theme.of(context).copyWith(
