@@ -1,9 +1,8 @@
 import 'package:budget_management/utils/categories.dart';
-import 'package:budget_management/utils/transactions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
-import '../models/good_models.dart';
 
+import '../models/budget_model.dart';
+import '../models/transaction_model.dart';
 import 'generate_ids.dart';
 
 Future<void> handleMonthTransition({
