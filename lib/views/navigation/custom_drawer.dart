@@ -17,7 +17,6 @@ class CustomDrawer extends StatelessWidget {
 
   Future<void> _signOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
-    // todo suppression button de effacement des donnénes.
     // Effacement du cache local
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.clear();
@@ -25,58 +24,6 @@ class CustomDrawer extends StatelessWidget {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => const ConnexionView()),
     );
-  }
-
-  Future<void> _deleteDatas(String collection, String userId) async {
-    await FirebaseFirestore.instance
-        .collection(collection)
-        .where("user_id", isEqualTo: userId)
-        .get()
-        .then((snapshot) {
-          for (var doc in snapshot.docs) {
-            doc.reference.delete();
-          }
-    });
-  }
-
-  Future<void> _deleteUserData(BuildContext context) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final userId = user.uid;
-
-    try {
-      // Supprime les documents dans les collections debits, credits, budgets, et categories
-      await _deleteDatas("debits", userId);
-      await _deleteDatas("credits", userId);
-      await _deleteDatas("budgets", userId);
-      await _deleteDatas("categories", userId);
-      await _deleteDatas("users", userId);
-      await _deleteDatas("collection", userId);
-
-      // Effacement du cache local
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-
-      // Déconnexion de l'utilisateur
-      await FirebaseAuth.instance.signOut();
-      await FirebaseAuth.instance.currentUser?.delete();
-
-      // Redirection vers page de connexion
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const ConnexionView()),
-          (Route<dynamic> route) => false,
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Données utilisateur supprimées avec succès.")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Erreur lors de la suppression des données...")),
-      );
-      log("Erreur lors de la suppressions des données : $e");
-    }
   }
 
   @override
@@ -120,11 +67,6 @@ class CustomDrawer extends StatelessWidget {
             text: 'Paramètres',
             destination: const SettingsView(),
             active: activeItem == 'settings',
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete),
-            title: const Text("Supprimer les données"),
-            onTap: () => _deleteUserData(context),
           ),
           ListTile(
             leading: const Icon(Icons.logout),
