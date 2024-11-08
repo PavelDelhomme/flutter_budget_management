@@ -84,4 +84,3 @@ Future<List<Credit>> getCreditsForCategory(String userId) async {
       .map((doc) => Credit.fromMap(doc.data() as Map<String, dynamic>))
       .toList();
 }
-// todo création transactions enelever l'heure des transaction date Jour Mois Années
