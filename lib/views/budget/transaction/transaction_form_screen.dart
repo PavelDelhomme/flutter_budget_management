@@ -260,6 +260,13 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   Future<void> _saveTransaction() async {
+    if (_isDebit && (_selectedCategory == null || _selectedCategory!.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Veuillez sélectionner une catégorie pour un débit."))
+      );
+      return;
+    }
+
     final user = FirebaseAuth.instance.currentUser;
 
     if (user != null && _amountController.text.isNotEmpty) {
@@ -464,6 +471,47 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
     }
   }
 
+  Future<void> _replaceImage(File oldImage) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery); // todo faire la possiblité de remplacer mais de demander encore avec un dialog si c'est par une image de gallery ou une nouvelle photo
+
+    if (pickedFile != null) {
+      setState(() {
+        _receiptImages[_receiptImages.indexOf(oldImage)] = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<void> _showImageOptionsDialog(File image) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Options de l'image"),
+          content: Image.file(image, fit: BoxFit.cover),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _receiptImages.remove(image);
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text("Supprimer"),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _replaceImage(image);
+              },
+              child: const Text("Remplacer"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildTransactionForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -558,25 +606,30 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
               ),
               Wrap(
                 children: _receiptImages.map((image) {
-                  return Stack(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Image.file(image, width: 100, height: 100, fit: BoxFit.cover),
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _receiptImages.remove(image);
-                            });
-                          },
-                          child: Icon(Icons.close, color: Colors.red),
+                  return GestureDetector(
+                    onTap: () {
+                      _showImageOptionsDialog(image);
+                    },
+                    child: Stack(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Image.file(image, width: 100, height: 100, fit: BoxFit.cover),
                         ),
-                      ),
-                    ],
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _receiptImages.remove(image);
+                              });
+                            },
+                            child: const Icon(Icons.close, color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 }).toList(),
               ),

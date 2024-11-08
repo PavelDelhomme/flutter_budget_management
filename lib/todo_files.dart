@@ -23,7 +23,7 @@
 
 //limiter à 2 récus poiuor transactions avec petit croix pour supprimer individuellement
 //indique clairement que ont peux avoir que 2 recu
-//todo EN CROUS afficher message pour catégorie lors non selectionner form
+//todo EN COURS afficher message pour catégorie lors non selectionner form
 
 //modal detail afficher photos a la place de la carte
 
@@ -31,7 +31,7 @@
 //reactualiser liste transactions après formulaire + verification stoage firebase
 //transaction_form mettre type pour switche pour les crédit débit indiquer
 // jsute après le type je met la réccurrence
-//todo pouvoir cliquer sur la photos charger pour les voir en grands avec avpor crois
+//todo En COURS pouvoir cliquer sur la photos charger pour les voir en grands avec avpor crois
 
 
 //todo juste modification mot de passe niveau profil
