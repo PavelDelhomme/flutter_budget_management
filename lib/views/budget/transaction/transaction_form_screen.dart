@@ -103,13 +103,6 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
     }
   }
 
-  /*@override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Charger les catégories après que le context est complètement initialisé
-    _loadCategories();
-  }*/
-
   @override
   void dispose() {
     _amountController.dispose();
@@ -366,49 +359,6 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       await _loadCategories(); // Recharger les catégories pour inclure la nouvelle catégorie
     }
   }
-  /*
-  Future<double> _getTotalCredit(String userId) async {
-    final creditSnapshot = await FirebaseFirestore.instance
-        .collection('credits')
-        .where("user_id", isEqualTo: userId)
-        .get();
-
-    double totalCredit = 0.0;
-    for (var doc in creditSnapshot.docs) {
-      totalCredit += (doc.data()['amount'] as num).toDouble();
-    }
-    return totalCredit;
-  }*/
-  /*
-  Future<double> _getTotalDebit(String userId) async {
-    final debitSnapshot = await FirebaseFirestore.instance
-        .collection('debits')
-        .where("user_id", isEqualTo: userId)
-        .get();
-
-    double totalDebit = 0.0;
-    for (var doc in debitSnapshot.docs) {
-      totalDebit += (doc.data()['amount'] as num).toDouble();
-    }
-    return totalDebit;
-  }*/
-  /*
-  Future<void> _deductFromSavings(double amount, String userId) async {
-    final userSavingsRef = FirebaseFirestore.instance.collection('savings').doc(userId);
-    final userSavingsDoc = await userSavingsRef.get();
-
-    if (userSavingsDoc.exists) {
-      double currentSavings = (userSavingsDoc.data()?['amount'] as num).toDouble();
-      double newSavings = currentSavings - amount;
-      await userSavingsRef.update({'amount': newSavings});
-    }
-  }
-  */
-  // todo au niveau switch ajouter label type
-// todo préciser ajout de deux photos avec croix pour supprimer la photos
-// todo plutot que la carte mettre les photos et juste afficher l'adresse actuel de l'utiliateur quad il clqieu pour récupérrer l'afrese
-
-// todo création transactions enelever l'heure des transaction date Jour Mois Années
 
   Widget _buildAdditionalFields() {
     return Column(
@@ -470,8 +420,15 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
 
 
   Future<void> _pickImage() async {
+    if (_receiptImages.length >= 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Vous ne pouvez ajourter que 2 reçus.")), // todo plutot afficher uniquement un messager directement sur la page pour luis indiquer cela enfaite
+      );
+      return;
+    }
+
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery); //todo faire la demande a l'utilisateur via un petit modal s'il veux récupérer l'image soit depuis la gallery ou prendre directement une photo
 
     if (pickedFile != null) {
       setState(() {

@@ -2,7 +2,7 @@ import 'dart:developer';
 
 import 'package:budget_management/utils/budgets.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
-import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
+import 'package:budget_management/views/budget/transaction/ancien_detail/transaction_details_modal.dart';
 import 'package:budget_management/views/budget/transaction/transactions_reccuring_view.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 import '../../budget/budget_details_screen.dart';
+import '../transaction_details_view.dart';
 
 class TransactionsView extends StatefulWidget {
   const TransactionsView({Key? key}) : super(key: key);
@@ -310,8 +311,7 @@ class _TransactionsViewState extends State<TransactionsView> {
                             onTap: () {
                               showModalBottomSheet(
                                 context: context,
-                                builder: (context) => TransactionDetailsModal(
-                                    transaction: transaction),
+                                builder: (context) => TransactionDetailsView(transaction: transaction),
                               );
                             },
                           );

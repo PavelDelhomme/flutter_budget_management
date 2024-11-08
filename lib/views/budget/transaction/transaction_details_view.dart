@@ -123,7 +123,7 @@ class TransactionDetailsView extends StatelessWidget {
 
     final bool isDebit = transaction.reference.parent.id == 'débits';
     final amount = data['amount'] ?? 0.0;
-    final date = DateFormat.yMMMMd().format((data['date'] as Timestamp).toDate());
+    final date = DateFormat.yMMMMd('fr_FR').format((data['date'] as Timestamp).toDate());
     final notes = data['notes'] ?? '';
     final bool isRecurring = data['isRecurring'] ?? false;
 

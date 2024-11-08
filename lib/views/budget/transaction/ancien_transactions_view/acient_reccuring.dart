@@ -1,12 +1,14 @@
 import 'dart:developer';
 
-import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
+import 'package:budget_management/views/budget/transaction/ancien_detail/transaction_details_modal.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+
+import '../transaction_details_view.dart';
 
 class TransactionsReccuringView extends StatefulWidget {
   const TransactionsReccuringView({super.key});
@@ -466,14 +468,12 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
                                         ),
                                         builder: (context) {
                                           return Padding(
-                                            padding: EdgeInsets.only(
-                                              bottom: MediaQuery.of(context)
-                                                  .viewInsets
-                                                  .bottom,
-                                            ),
-                                            child: TransactionDetailsModal(
-                                                transaction: transaction),
+                                            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                                            child: TransactionDetailsView(transaction: transaction)
                                           );
+                                            //TransactionDetailsModal(
+                                                //transaction: transaction),
+                                          //);
                                         },
                                       );
                                     },

@@ -7,22 +7,22 @@
 // todo transaction_fomr_screen plutot que la carte mettre les photos et juste afficher l'adresse actuel de l'utiliateur quad il clqieu pour récupérrer l'afrese
 
 
-//todo transactions_base_view.dart : suppression ligne de navigation
-//todo transactions_base_view.dart : affichr calendrier avec selection de la date des transction a afficher
-// todo transactions_base_view.dart : afficher la date genre 8 Novembre 2024 enfaite du coup juste pas de previous month et nextmonth
+//transactions_base_view.dart : suppression ligne de navigation
+//transactions_base_view.dart : affichr calendrier avec selection de la date des transction a afficher
+//transactions_base_view.dart : afficher la date genre 8 Novembre 2024 enfaite du coup juste pas de previous month et nextmonth
 
 
 // carte de même taille dans summaruy view prendre tout la largeur de l'écran
 // Todo liste de transactions : DAte du jour pour button
-// Todo avoir calendrier dans liste des transactions qui permet d'avoir la liste des transaction et affichr les 31 jour du moi de l'nané situé acutelemnt
-// Todo jour actuel en surbrillance
+// avoir calendrier dans liste des transactions qui permet d'avoir la liste des transaction et affichr les 31 jour du moi de l'nané situé acutelemnt
+// jour actuel en surbrillance
 // Todo clique transaction -> jour actuel par défaut qui est afficher  donc les tyransaciton de ce jour
-// TOdo cliqe sur date == selection calendrier mensuel.
+// cliqe sur date == selection calendrier mensuel.
 // todo Widget calendrier simple même que dans transaction_form_screen.dart avec affichage en francais
 //todo limitier la transaction a la date et pas l'heure non nécessaire
 
-//todo limiter à 2 récus poiuor transactions avec petit croix pour supprimer individuellement
-// todo indique clairement que ont peux avoir que 2 recu
+//limiter à 2 récus poiuor transactions avec petit croix pour supprimer individuellement
+//indique clairement que ont peux avoir que 2 recu
 //todo afficher message pour catégorie lors non selectionner form
 
 //todo modal detail afficher photos a la place de la carte
@@ -52,4 +52,4 @@
 
 //avoir tout les rublrique a la même taille. dans summary
 
-//todo la date d el'application dois être Jour Mois Années en Français globalement.
+//la date d el'application dois être Jour Mois Années en Français globalement.
