@@ -47,10 +47,13 @@ class _TransactionsViewState extends State<TransactionsView> {
     return _getTypeTransactionsForSelectedMonth('debits');
   }
 
-  Future<Map<String, dynamic>> _getTypeTransactionsForSelectedMonth(String collection) async {
+  Future<Map<String, dynamic>> _getTypeTransactionsForSelectedMonth(
+      String collection) async {
     final user = FirebaseAuth.instance.currentUser;
-    DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
-    DateTime endOfMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
+    DateTime startOfMonth =
+        DateTime(selectedMonth.year, selectedMonth.month, 1);
+    DateTime endOfMonth =
+        DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
     List<QueryDocumentSnapshot> transactions = [];
     double total = 0.0;
 
@@ -110,7 +113,10 @@ class _TransactionsViewState extends State<TransactionsView> {
     if (categoryMap.containsKey(categoryId)) {
       return categoryMap[categoryId]!;
     } else {
-      var categorySnapshot = await FirebaseFirestore.instance.collection("categories").doc(categoryId).get();
+      var categorySnapshot = await FirebaseFirestore.instance
+          .collection("categories")
+          .doc(categoryId)
+          .get();
       if (categorySnapshot.exists) {
         String categoryName = categorySnapshot['name'];
         categoryMap[categoryId] = categoryName; // Cache the name for future use
@@ -154,7 +160,8 @@ class _TransactionsViewState extends State<TransactionsView> {
     }
   }
 
-  void _deleteTransaction(BuildContext context, DocumentSnapshot transaction) async {
+  void _deleteTransaction(
+      BuildContext context, DocumentSnapshot transaction) async {
     bool confirm = await _showDeleteConfirmation(context);
     if (!confirm) return;
 
@@ -162,11 +169,15 @@ class _TransactionsViewState extends State<TransactionsView> {
     String collection = isDebit ? 'debits' : 'credits';
     double amount = transaction['amount'] as double;
 
-    await FirebaseFirestore.instance.collection(collection).doc(transaction.id).delete();
+    await FirebaseFirestore.instance
+        .collection(collection)
+        .doc(transaction.id)
+        .delete();
 
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await updateBudgetAfterTransactionDeletion(user.uid, amount, isDebit: isDebit);
+      await updateBudgetAfterTransactionDeletion(user.uid, amount,
+          isDebit: isDebit);
     }
 
     if (mounted) {
@@ -188,8 +199,10 @@ class _TransactionsViewState extends State<TransactionsView> {
           child: Text(DateFormat.yMMMM('fr_FR').format(selectedMonth)),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.arrow_back), onPressed: _previousMonth),
-          IconButton(icon: const Icon(Icons.arrow_forward), onPressed: _nextMonth),
+          IconButton(
+              icon: const Icon(Icons.arrow_back), onPressed: _previousMonth),
+          IconButton(
+              icon: const Icon(Icons.arrow_forward), onPressed: _nextMonth),
           IconButton(
             icon: const Icon(Icons.repeat),
             onPressed: () {
@@ -230,15 +243,18 @@ class _TransactionsViewState extends State<TransactionsView> {
               child: ListTile(
                 title: Text(
                   'Total Crédit : €${totalCredit.toStringAsFixed(2)}',
-                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.green, fontWeight: FontWeight.bold),
                 ),
                 subtitle: Text(
                   'Total Débit : €${totalDebit.toStringAsFixed(2)}',
-                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.red, fontWeight: FontWeight.bold),
                 ),
                 trailing: Text(
                   'Économies : €${(totalCredit - totalDebit).toStringAsFixed(2)}',
-                  style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.blue, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -255,7 +271,8 @@ class _TransactionsViewState extends State<TransactionsView> {
                   }
 
                   var data = snapshot.data!;
-                  List<QueryDocumentSnapshot> transactions = data['transactions'] ?? [];
+                  List<QueryDocumentSnapshot> transactions =
+                      data['transactions'] ?? [];
                   transactions = transactions.where((transaction) {
                     bool isDebit = transaction.reference.parent.id == 'debits';
                     if (transactionFilter == "debits") return isDebit;
@@ -267,23 +284,32 @@ class _TransactionsViewState extends State<TransactionsView> {
                     itemCount: transactions.length,
                     itemBuilder: (context, index) {
                       var transaction = transactions[index];
-                      bool isDebit = transaction.reference.parent.id == 'debits';
+                      bool isDebit =
+                          transaction.reference.parent.id == 'debits';
                       String transactionType = isDebit ? 'Débit' : 'Crédit';
 
                       return FutureBuilder<String>(
-                        future: getCategoryName((transaction.data() as Map<String, dynamic>?)?.containsKey('categorie_id') == true ? transaction['categorie_id'] : null),
+                        future: getCategoryName(
+                            (transaction.data() as Map<String, dynamic>?)
+                                        ?.containsKey('categorie_id') ==
+                                    true
+                                ? transaction['categorie_id']
+                                : null),
                         builder: (context, snapshot) {
-                          String categoryName = snapshot.data ?? 'Sans catégorie';
+                          String categoryName =
+                              snapshot.data ?? 'Sans catégorie';
                           return ListTile(
                             title: Text(
                               '${transaction['amount'].toStringAsFixed(2)} €',
-                              style: TextStyle(color: isDebit ? Colors.red : Colors.green),
+                              style: TextStyle(
+                                  color: isDebit ? Colors.red : Colors.green),
                             ),
                             subtitle: Text('$transactionType - $categoryName'),
                             onTap: () {
                               showModalBottomSheet(
                                 context: context,
-                                builder: (context) => TransactionDetailsModal(transaction: transaction),
+                                builder: (context) => TransactionDetailsModal(
+                                    transaction: transaction),
                               );
                             },
                           );
@@ -317,23 +343,25 @@ class _TransactionsViewState extends State<TransactionsView> {
 
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
     return await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Confirmer la suppression"),
-          content: const Text("Êtes-vous sûr de vouloir supprimer cette transaction ?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text("Annuler"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text("Supprimer"),
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Confirmer la suppression"),
+              content: const Text(
+                  "Êtes-vous sûr de vouloir supprimer cette transaction ?"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text("Annuler"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text("Supprimer"),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 }

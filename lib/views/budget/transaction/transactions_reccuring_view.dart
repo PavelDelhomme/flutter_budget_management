@@ -12,7 +12,8 @@ class TransactionsReccuringView extends StatefulWidget {
   const TransactionsReccuringView({super.key});
 
   @override
-  TransactionsReccuringViewSate createState() => TransactionsReccuringViewSate();
+  TransactionsReccuringViewSate createState() =>
+      TransactionsReccuringViewSate();
 }
 
 class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
@@ -27,8 +28,10 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
 
   Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() async {
     final user = FirebaseAuth.instance.currentUser;
-    DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
-    DateTime endOfMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
+    DateTime startOfMonth =
+        DateTime(selectedMonth.year, selectedMonth.month, 1);
+    DateTime endOfMonth =
+        DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
 
     List<QueryDocumentSnapshot> transactions = [];
     double debitTotal = 0.0;
@@ -68,7 +71,6 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
     };
   }
 
-
   void _updateMonthlyTotals() async {
     final data = await _getTransactionsForSelectedMonth();
     setState(() {
@@ -89,15 +91,18 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
     setState(() {}); // Rafraîchir la vue
   }
 
-
-  Future<void> _deleteTransactionAndFutureOccurrences(DocumentSnapshot transaction) async {
+  Future<void> _deleteTransactionAndFutureOccurrences(
+      DocumentSnapshot transaction) async {
     bool confirm = await _showDeleteConfirmation(context);
     if (!confirm) return;
 
     String collection = transaction.reference.parent.id;
     DateTime transactionDate = (transaction['date'] as Timestamp).toDate();
 
-    await FirebaseFirestore.instance.collection(collection).doc(transaction.id).delete();
+    await FirebaseFirestore.instance
+        .collection(collection)
+        .doc(transaction.id)
+        .delete();
 
     // Supprimer les occurrences futures de la transaction
     final futureTransactions = await FirebaseFirestore.instance
@@ -109,15 +114,18 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
         .get();
 
     for (var futureTransaction in futureTransactions.docs) {
-      await FirebaseFirestore.instance.collection(collection).doc(futureTransaction.id).delete();
+      await FirebaseFirestore.instance
+          .collection(collection)
+          .doc(futureTransaction.id)
+          .delete();
     }
 
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Transactions futures supprimées avec succès.")),
+      const SnackBar(
+          content: Text("Transactions futures supprimées avec succès.")),
     );
   }
-
 
   @override
   void initState() {
@@ -142,6 +150,7 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
       });
     }
   }
+
   Future<String> getCategoryName(String? categoryId) async {
     if (categoryId == null || categoryId.isEmpty) {
       return "Sans catégorie"; // Retourne "Sans catégorie" si l'id est absent
@@ -150,16 +159,21 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
     if (categoryMap.containsKey(categoryId)) {
       return categoryMap[categoryId]!;
     } else {
-      var categorySnapshot = await FirebaseFirestore.instance.collection("categories").doc(categoryId).get();
+      var categorySnapshot = await FirebaseFirestore.instance
+          .collection("categories")
+          .doc(categoryId)
+          .get();
       if (categorySnapshot.exists) {
         String categoryName = categorySnapshot['name'];
-        categoryMap[categoryId] = categoryName; // Cache le nom pour les prochaines utilisations
+        categoryMap[categoryId] =
+            categoryName; // Cache le nom pour les prochaines utilisations
         return categoryName;
       } else {
         return "Sans catégorie";
       }
     }
   }
+
   void _previousMonth() {
     setState(() {
       selectedMonth = DateTime(selectedMonth.year, selectedMonth.month - 1);
@@ -174,8 +188,8 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
     });
   }
 
-
-  void _editTransaction(BuildContext context, DocumentSnapshot transaction) async {
+  void _editTransaction(
+      BuildContext context, DocumentSnapshot transaction) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -201,7 +215,8 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
     }
   }
 
-  void _deleteTransaction(BuildContext context, DocumentSnapshot transaction) async {
+  void _deleteTransaction(
+      BuildContext context, DocumentSnapshot transaction) async {
     bool confirm = await _showDeleteConfirmation(context);
     if (!confirm) return;
 
@@ -209,7 +224,10 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
     String collection = isDebit ? 'debits' : 'credits';
 
     // Supprimer la transaction de la collection appropriée
-    await FirebaseFirestore.instance.collection(collection).doc(transaction.id).delete();
+    await FirebaseFirestore.instance
+        .collection(collection)
+        .doc(transaction.id)
+        .delete();
 
     if (mounted) {
       setState(() {});
@@ -250,15 +268,18 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
             }
 
             if (snapshot.hasError) {
-              return const Center(child: Text("Erreur lors du chargements des transactions"));
+              return const Center(
+                  child: Text("Erreur lors du chargements des transactions"));
             }
 
             if (!snapshot.hasData || snapshot.data == null) {
-              return const Center(child: Text("Aucune transaction disponible."));
+              return const Center(
+                  child: Text("Aucune transaction disponible."));
             }
 
             var data = snapshot.data!;
-            List<QueryDocumentSnapshot> transactions = data['transactions'] ?? [];
+            List<QueryDocumentSnapshot> transactions =
+                data['transactions'] ?? [];
             totalDebit = data['totalDebit'] ?? 0.0;
             totalCredit = data['totalCredit'] ?? 0.0;
 
@@ -267,7 +288,8 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
 
             for (var transaction in transactions) {
               DateTime date = (transaction['date'] as Timestamp).toDate();
-              String dayKey = DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(date);
+              String dayKey =
+                  DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(date);
 
               if (!transactionsByDays.containsKey(dayKey)) {
                 transactionsByDays[dayKey] = [];
@@ -286,7 +308,10 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
                       children: [
                         Text(
                           'Transactions récurrentes',
-                          style: const TextStyle(color: Colors.purple, fontWeight: FontWeight.bold, fontSize: 18),
+                          style: const TextStyle(
+                              color: Colors.purple,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18),
                         ),
                         const SizedBox(height: 10),
                         Row(
@@ -294,11 +319,15 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
                           children: [
                             Text(
                               'Total Crédit : €${totalCredit.toStringAsFixed(2)}',
-                              style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold),
                             ),
                             Text(
                               'Total Débit : €${totalDebit.toStringAsFixed(2)}',
-                              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -307,7 +336,9 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
                           alignment: Alignment.bottomRight,
                           child: Text(
                             'Économies : €${(totalCredit - totalDebit).toStringAsFixed(2)}',
-                            style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -335,25 +366,32 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
                             Expanded(
                               child: Text(
                                 dayKey,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Text(
                               'Total: €${totalAmount.toStringAsFixed(2)}',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
                         children: transactionsForDay.map((transaction) {
-                          bool isDebit = transaction.reference.parent.id == 'debits';
+                          bool isDebit =
+                              transaction.reference.parent.id == 'debits';
                           String transactionType = isDebit ? 'Débit' : 'Crédit';
 
                           return FutureBuilder<String>(
-                            future: isDebit ? getCategoryName(transaction['categorie_id']) : Future.value("Sans catégorie"),
+                            future: isDebit
+                                ? getCategoryName(transaction['categorie_id'])
+                                : Future.value("Sans catégorie"),
                             builder: (context, snapshot) {
-                              String categoryName = snapshot.data ?? 'Sans catégorie';
-                              Color backgroundColor = Colors.greenAccent.withOpacity(0.2);
+                              String categoryName =
+                                  snapshot.data ?? 'Sans catégorie';
+                              Color backgroundColor =
+                                  Colors.greenAccent.withOpacity(0.2);
 
                               return Container(
                                 color: backgroundColor,
@@ -364,7 +402,8 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
                                     children: [
                                       SlidableAction(
                                         onPressed: (context) {
-                                          _editTransaction(context, transaction);
+                                          _editTransaction(
+                                              context, transaction);
                                         },
                                         backgroundColor: Colors.blue,
                                         foregroundColor: Colors.white,
@@ -378,9 +417,12 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
                                     children: [
                                       SlidableAction(
                                         onPressed: (context) async {
-                                          bool confirm = await _showDeleteConfirmation(context);
+                                          bool confirm =
+                                              await _showDeleteConfirmation(
+                                                  context);
                                           if (confirm) {
-                                            _deleteTransaction(context, transaction);
+                                            _deleteTransaction(
+                                                context, transaction);
                                           }
                                         },
                                         backgroundColor: Colors.red,
@@ -392,20 +434,26 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
                                   ),
                                   child: ListTile(
                                     title: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
                                           '${transaction['amount'].toStringAsFixed(2)} €',
-                                          style: TextStyle(color: isDebit ? Colors.red : Colors.green),
+                                          style: TextStyle(
+                                              color: isDebit
+                                                  ? Colors.red
+                                                  : Colors.green),
                                         ),
                                         Text(transactionType),
                                       ],
                                     ),
                                     subtitle: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(categoryName),
-                                        Text(transaction['notes'] ?? 'Aucune note'),
+                                        Text(transaction['notes'] ??
+                                            'Aucune note'),
                                       ],
                                     ),
                                     onTap: () {
@@ -413,14 +461,18 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
                                         context: context,
                                         isScrollControlled: true,
                                         shape: const RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+                                          borderRadius: BorderRadius.vertical(
+                                              top: Radius.circular(20.0)),
                                         ),
                                         builder: (context) {
                                           return Padding(
                                             padding: EdgeInsets.only(
-                                              bottom: MediaQuery.of(context).viewInsets.bottom,
+                                              bottom: MediaQuery.of(context)
+                                                  .viewInsets
+                                                  .bottom,
                                             ),
-                                            child: TransactionDetailsModal(transaction: transaction),
+                                            child: TransactionDetailsModal(
+                                                transaction: transaction),
                                           );
                                         },
                                       );
@@ -460,22 +512,25 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
 
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
     return await showDialog(
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Confirmer la suppression"),
-          content: const Text("Êtes-vous sûr de vouloir supprimer cette transaction ?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text("Annuler"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text("Supprimer"),
-            ),
-          ],
-        );
-      }, context: context,
-    ) ?? false;
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Confirmer la suppression"),
+              content: const Text(
+                  "Êtes-vous sûr de vouloir supprimer cette transaction ?"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text("Annuler"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text("Supprimer"),
+                ),
+              ],
+            );
+          },
+          context: context,
+        ) ??
+        false;
   }
 }

@@ -14,14 +14,17 @@ class TransactionDetailsModal extends StatelessWidget {
 
   Future<String> _getAddressFromLatLng(LatLng location) async {
     try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
-      return placemarks.isNotEmpty ? placemarks.first.street ?? 'Adresse inconnue' : 'Adresse inconnue';
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(location.latitude, location.longitude);
+      return placemarks.isNotEmpty
+          ? placemarks.first.street ?? 'Adresse inconnue'
+          : 'Adresse inconnue';
     } catch (e) {
       return 'Adresse inconnue';
     }
   }
 
-  Future<String>getCategoryName(String categoryId) async {
+  Future<String> getCategoryName(String categoryId) async {
     try {
       DocumentSnapshot categorySnapshot = await FirebaseFirestore.instance
           .collection("categories")
@@ -46,14 +49,16 @@ class TransactionDetailsModal extends StatelessWidget {
 
     if (data == null) {
       return const Center(
-        child: Text('Erreur : Aucune donnée disponible pour cette transaction.'),
+        child:
+            Text('Erreur : Aucune donnée disponible pour cette transaction.'),
       );
     }
 
     // Vérifie si la transaction est un débit ou un crédit
     final bool isDebit = transaction.reference.parent.id == 'debits';
     final amount = data['amount'] ?? 0.0;
-    final date = DateFormat.yMMMMd().format((data['date'] as Timestamp).toDate());
+    final date =
+        DateFormat.yMMMMd().format((data['date'] as Timestamp).toDate());
     final notes = data['notes'] ?? '';
     final isRecurring = data['isRecurring'] ?? false;
 
@@ -64,7 +69,8 @@ class TransactionDetailsModal extends StatelessWidget {
 
     final String? categoryId = isDebit ? data['categorie_id'] : null;
     final LatLng? location = data['localisation'] != null
-        ? LatLng((data['localisation'] as GeoPoint).latitude, (data['localisation'] as GeoPoint).longitude)
+        ? LatLng((data['localisation'] as GeoPoint).latitude,
+            (data['localisation'] as GeoPoint).longitude)
         : null;
 
     return Container(
@@ -97,24 +103,29 @@ class TransactionDetailsModal extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text('Montant : €${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18)),
+          Text('Montant : €${amount.toStringAsFixed(2)}',
+              style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),
           if (categoryId != null)
             FutureBuilder<String>(
               future: getCategoryName(categoryId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Text('Chargement de la catégorie...', style: TextStyle(fontSize: 18));
+                  return const Text('Chargement de la catégorie...',
+                      style: TextStyle(fontSize: 18));
                 } else if (snapshot.hasError || !snapshot.hasData) {
-                  return const Text('Catégorie inconnue', style: TextStyle(fontSize: 18));
+                  return const Text('Catégorie inconnue',
+                      style: TextStyle(fontSize: 18));
                 }
-                return Text('Catégorie : ${snapshot.data}', style: const TextStyle(fontSize: 18));
+                return Text('Catégorie : ${snapshot.data}',
+                    style: const TextStyle(fontSize: 18));
               },
             ),
           const SizedBox(height: 10),
           Text('Notes : $notes', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 10),
-          Text('Transaction récurrente : ${isRecurring ? 'Oui' : 'Non'}', style: const TextStyle(fontSize: 18)),
+          Text('Transaction récurrente : ${isRecurring ? 'Oui' : 'Non'}',
+              style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 20),
 
           // Utilisation de FutureBuilder pour afficher l'adresse si la transaction est un débit
@@ -123,11 +134,14 @@ class TransactionDetailsModal extends StatelessWidget {
               future: _getAddressFromLatLng(location),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Text('Chargement de l\'adresse...', style: TextStyle(fontSize: 18));
+                  return const Text('Chargement de l\'adresse...',
+                      style: TextStyle(fontSize: 18));
                 } else if (snapshot.hasError || !snapshot.hasData) {
-                  return const Text('Adresse inconnue', style: TextStyle(fontSize: 18));
+                  return const Text('Adresse inconnue',
+                      style: TextStyle(fontSize: 18));
                 }
-                return Text('Adresse : ${snapshot.data}', style: const TextStyle(fontSize: 18));
+                return Text('Adresse : ${snapshot.data}',
+                    style: const TextStyle(fontSize: 18));
               },
             ),
 
@@ -142,7 +156,8 @@ class TransactionDetailsModal extends StatelessWidget {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.budget.budget_management',
                   ),
                   MarkerLayer(
@@ -167,7 +182,9 @@ class TransactionDetailsModal extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Reçus :", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text("Reçus :",
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
@@ -189,10 +206,13 @@ class TransactionDetailsModal extends StatelessWidget {
                           fit: BoxFit.cover,
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
-                            return const Center(child: CircularProgressIndicator());
+                            return const Center(
+                                child: CircularProgressIndicator());
                           },
                           errorBuilder: (context, error, stackTrace) {
-                            return const Center(child: Icon(Icons.error, color: Colors.red, size: 50));
+                            return const Center(
+                                child: Icon(Icons.error,
+                                    color: Colors.red, size: 50));
                           },
                         ),
                       ),

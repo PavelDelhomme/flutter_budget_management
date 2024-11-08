@@ -27,7 +27,10 @@ Future<void> addDebitTransaction({
     categorie_id: categoryId,
   );
 
-  await FirebaseFirestore.instance.collection('debits').doc(transactionId).set(debit.toMap());
+  await FirebaseFirestore.instance
+      .collection('debits')
+      .doc(transactionId)
+      .set(debit.toMap());
   await updateCurrentMonthBudget(userId, amount, isDebit: true);
 }
 
@@ -49,12 +52,16 @@ Future<void> addCreditTransaction({
     amount: amount,
   );
 
-  await FirebaseFirestore.instance.collection('credits').doc(transactionId).set(credit.toMap());
+  await FirebaseFirestore.instance
+      .collection('credits')
+      .doc(transactionId)
+      .set(credit.toMap());
   await updateCurrentMonthBudget(userId, amount, isDebit: false);
 }
 
 /// Récupère les transactions de type Débit par catégorie pour un utilisateur donné.
-Future<List<Debit>> getDebitsForCategory(String userId, String categoryId) async {
+Future<List<Debit>> getDebitsForCategory(
+    String userId, String categoryId) async {
   final snapshot = await FirebaseFirestore.instance
       .collection("debits")
       .where("user_id", isEqualTo: userId)

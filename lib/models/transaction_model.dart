@@ -35,6 +35,7 @@ class Debit extends Transaction {
   List<String>? photos;
   GeoPoint localisation;
   String? categorie_id;
+
   //String? budget_id;
 
   Debit({
@@ -49,13 +50,13 @@ class Debit extends Transaction {
     this.categorie_id,
     //this.budget_id,
   }) : super(
-    id: id,
-    user_id: user_id,
-    date: date,
-    notes: notes,
-    isRecurring: isRecurring,
-    amount: amount,
-  );
+          id: id,
+          user_id: user_id,
+          date: date,
+          notes: notes,
+          isRecurring: isRecurring,
+          amount: amount,
+        );
 
   @override
   Map<String, dynamic> toMap() {
@@ -85,7 +86,8 @@ class Debit extends Transaction {
       isRecurring: map['isRecurring'] ?? false,
       amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
       photos: List<String>.from(map['photos'] ?? []),
-      localisation: map['localisation'] ?? const GeoPoint(0, 0), // Valeur par défaut
+      localisation: map['localisation'] ?? const GeoPoint(0, 0),
+      // Valeur par défaut
       categorie_id: map['categorie_id'],
       //budget_id: map['budget_id'] ?? '', // Valeur par défaut
     );
@@ -105,13 +107,13 @@ class Credit extends Transaction {
     required double amount,
     //this.budget_id,
   }) : super(
-    id: id,
-    user_id: user_id,
-    date: date,
-    notes: notes,
-    isRecurring: isRecurring,
-    amount: amount,
-  );
+          id: id,
+          user_id: user_id,
+          date: date,
+          notes: notes,
+          isRecurring: isRecurring,
+          amount: amount,
+        );
 
   @override
   Map<String, dynamic> toMap() {

@@ -21,8 +21,10 @@ class TransactionsViewState extends State<TransactionsView> {
 
   Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() async {
     final user = FirebaseAuth.instance.currentUser;
-    DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
-    DateTime endOfMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
+    DateTime startOfMonth =
+        DateTime(selectedMonth.year, selectedMonth.month, 1);
+    DateTime endOfMonth =
+        DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
 
     List<QueryDocumentSnapshot> transactions = [];
     double debitTotal = 0.0;
@@ -60,7 +62,6 @@ class TransactionsViewState extends State<TransactionsView> {
     };
   }
 
-
   void _updateMonthlyTotals() async {
     final data = await _getTransactionsForSelectedMonth();
     setState(() {
@@ -92,6 +93,7 @@ class TransactionsViewState extends State<TransactionsView> {
       });
     }
   }
+
   Future<String> getCategoryName(String? categoryId) async {
     if (categoryId == null || categoryId.isEmpty) {
       return "Sans catégorie"; // Retourne "Sans catégorie" si l'id est absent
@@ -100,16 +102,21 @@ class TransactionsViewState extends State<TransactionsView> {
     if (categoryMap.containsKey(categoryId)) {
       return categoryMap[categoryId]!;
     } else {
-      var categorySnapshot = await FirebaseFirestore.instance.collection("categories").doc(categoryId).get();
+      var categorySnapshot = await FirebaseFirestore.instance
+          .collection("categories")
+          .doc(categoryId)
+          .get();
       if (categorySnapshot.exists) {
         String categoryName = categorySnapshot['name'];
-        categoryMap[categoryId] = categoryName; // Cache le nom pour les prochaines utilisations
+        categoryMap[categoryId] =
+            categoryName; // Cache le nom pour les prochaines utilisations
         return categoryName;
       } else {
         return "Sans catégorie";
       }
     }
   }
+
   /*
   void _previousMonth() {
     setState(() {
@@ -189,7 +196,8 @@ class TransactionsViewState extends State<TransactionsView> {
         future: _getTransactionsForSelectedMonth(),
         builder: (context, snapshot) {
           // Utilisez `checkSnapshot` pour vérifier l’état du snapshot
-          Widget? checkResult = checkSnapshot(snapshot, errorMessage: "Erreur lors du chargement des transactions");
+          Widget? checkResult = checkSnapshot(snapshot,
+              errorMessage: "Erreur lors du chargement des transactions");
           if (checkResult != null) return checkResult;
 
           // Si checkSnapshot ne retourne rien, nous pouvons afficher les données
@@ -203,7 +211,8 @@ class TransactionsViewState extends State<TransactionsView> {
 
           for (var transaction in transactions) {
             DateTime date = (transaction['date'] as Timestamp).toDate();
-            String dayKey = DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(date);
+            String dayKey =
+                DateFormat('EEEE dd MMMM yyyy', 'fr_FR').format(date);
 
             if (!transactionsByDays.containsKey(dayKey)) {
               transactionsByDays[dayKey] = [];
@@ -218,15 +227,18 @@ class TransactionsViewState extends State<TransactionsView> {
                 child: ListTile(
                   title: Text(
                     'Total Crédit : €${totalCredit.toStringAsFixed(2)}',
-                    style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.green, fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
                     'Total Débit : €${totalDebit.toStringAsFixed(2)}',
-                    style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.red, fontWeight: FontWeight.bold),
                   ),
                   trailing: Text(
                     'Économies : €${(totalCredit - totalDebit).toStringAsFixed(2)}',
-                    style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.blue, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -250,7 +262,8 @@ class TransactionsViewState extends State<TransactionsView> {
                           Expanded(
                             child: Text(
                               dayKey,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -261,7 +274,8 @@ class TransactionsViewState extends State<TransactionsView> {
                         ],
                       ),
                       children: transactionsForDay.map((transaction) {
-                        bool isDebit = transaction.reference.parent.id == 'debits';
+                        bool isDebit =
+                            transaction.reference.parent.id == 'debits';
                         String transactionType = isDebit ? 'Débit' : 'Crédit';
 
                         return ListTile(
@@ -270,7 +284,8 @@ class TransactionsViewState extends State<TransactionsView> {
                             children: [
                               Text(
                                 '${transaction['amount'].toStringAsFixed(2)} €',
-                                style: TextStyle(color: isDebit ? Colors.red : Colors.green),
+                                style: TextStyle(
+                                    color: isDebit ? Colors.red : Colors.green),
                               ),
                               Text(transactionType),
                             ],
@@ -300,23 +315,25 @@ class TransactionsViewState extends State<TransactionsView> {
 
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
     return await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Confirmer la suppression"),
-          content: const Text("Êtes-vous sûr de vouloir supprimer cette transaction ?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text("Annuler"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text("Supprimer"),
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Confirmer la suppression"),
+              content: const Text(
+                  "Êtes-vous sûr de vouloir supprimer cette transaction ?"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text("Annuler"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text("Supprimer"),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 }
