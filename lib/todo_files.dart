@@ -1,10 +1,7 @@
-/*
-   todo Ajout Charts dans la page de résumé
-   todo Ajout de l'affichage des derniers transactions importante réalisé
-   todo Ajoute de l'affichage des prochaine transaction prévu d'ici peu réccurente
-   todo  Suppression de budgets_detail_view.dart et budget_view.dart car non utiliser
+// todo Ajout Charts dans la page de résumé
+// todo Ajout de l'affichage des derniers transactions importante réalisé
+// todo Ajoute de l'affichage des prochaine transaction prévu d'ici peu réccurente
 
-*/
 // todo transaction_fomr_screen au niveau switch ajouter label type
 // todo transaction_fomr_screen préciser ajout de deux photos avec croix pour supprimer la photos
 // todo transaction_fomr_screen plutot que la carte mettre les photos et juste afficher l'adresse actuel de l'utiliateur quad il clqieu pour récupérrer l'afrese
@@ -36,20 +33,15 @@
 // todo jsute après le type je met la réccurrence
 //todo pouvoir cliquer sur la photos charger pour les voir en grands avec avpor crois
 
-//todo enlever navigation fleche list transaction et avoir juste la date du jour et le calendrier en cliquant sur la date du jour
-// enlever date
 
 //todo juste modification mot de passe niveau profil
 
 
 
-// todo jour courant
-// todo affichr calendrier
 // todo suppression ligne de navigation
 // todo création transactions enelever l'heure des transaction date Jour Mois Années
 // todo au niveau switch ajouter label type
 // todo préciser ajout de deux photos avec croix pour supprimer la photos
-// todo fenetre a part dans la date des transcation
 // todo plutot que la carte mettre les photos
 // todo aggrandir photos lors du clique
 
