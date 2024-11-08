@@ -2,7 +2,6 @@ import 'dart:developer';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:geolocator/geolocator.dart';
 import '../home/home_view.dart';
 import 'inscription_view.dart';
 
