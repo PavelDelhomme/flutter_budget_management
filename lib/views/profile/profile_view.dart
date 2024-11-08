@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import '../navigation/custom_drawer.dart';
 
 class ProfileView extends StatefulWidget {
-  const ProfileView({Key? key}) : super(key: key);
+  const ProfileView({super.key});
 
   @override
-  _ProfileViewState createState() => _ProfileViewState();
+  ProfileViewState createState() => ProfileViewState();
 }
 
-class _ProfileViewState extends State<ProfileView> {
+class ProfileViewState extends State<ProfileView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   User? user = FirebaseAuth.instance.currentUser;

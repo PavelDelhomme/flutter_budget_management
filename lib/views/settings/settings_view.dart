@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import '../navigation/custom_drawer.dart';
 
 class SettingsView extends StatefulWidget {
-  const SettingsView({Key? key}) : super(key: key);
+  const SettingsView({super.key});
 
   @override
-  _SettingsViewState createState() => _SettingsViewState();
+  SettingsViewState createState() => SettingsViewState();
 }
 
-class _SettingsViewState extends State<SettingsView> {
+class SettingsViewState extends State<SettingsView> {
   bool _notificationsEnabled = false;
   double _reminderTime = 10.0;
 
