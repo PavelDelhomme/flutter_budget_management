@@ -1,6 +1,5 @@
 import 'package:budget_management/views/budget/transaction/transaction_details_view.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
-import 'package:budget_management/views/budget/transaction/ancien_detail/transaction_details_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -25,76 +24,55 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
   String transactionFilter = "all"; // "all", "debits", "credits"
   Map<String, String> categoryMap = {};
 
-  Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() async {
+  Stream<Map<String, dynamic>> _getTransactionsForSelectedMonth() {
     final user = FirebaseAuth.instance.currentUser;
     DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
     DateTime endOfMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
 
-    List<QueryDocumentSnapshot> transactions = [];
-    double debitTotal = 0.0;
-    double creditTotal = 0.0;
-
-    var debitQuery = FirebaseFirestore.instance
+    var debitStream = FirebaseFirestore.instance
         .collection("debits")
         .where("user_id", isEqualTo: user?.uid)
         .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .where("date", isLessThan: Timestamp.fromDate(endOfMonth));
+        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .snapshots();
 
-    var creditQuery = FirebaseFirestore.instance
+    var creditStream = FirebaseFirestore.instance
         .collection("credits")
         .where("user_id", isEqualTo: user?.uid)
         .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .where("date", isLessThan: Timestamp.fromDate(endOfMonth));
+        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .snapshots();
 
-    if (widget.showRecurring) {
-      debitQuery = debitQuery.where("isRecurring", isEqualTo: true);
-      creditQuery = creditQuery.where("isRecurring", isEqualTo: true);
-    }
+    return debitStream.asyncMap((debitSnapshot) async {
+      final creditSnapshot = await creditStream.first;
 
-    var debitSnapshot = await debitQuery.get();
-    var creditSnapshot = await creditQuery.get();
+      double debitTotal = debitSnapshot.docs
+          .fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
+      double creditTotal = creditSnapshot.docs
+          .fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
 
-    for (var doc in debitSnapshot.docs) {
-      debitTotal += (doc['amount'] as num).toDouble();
-      transactions.add(doc);
-    }
-    for (var doc in creditSnapshot.docs) {
-      creditTotal += (doc['amount'] as num).toDouble();
-      transactions.add(doc);
-    }
+      List<QueryDocumentSnapshot> transactions = [
+        ...debitSnapshot.docs,
+        ...creditSnapshot.docs,
+      ];
 
-    return {
-      'transactions': transactions,
-      'totalDebit': debitTotal,
-      'totalCredit': creditTotal,
-    };
-  }
-
-  void _updateMonthlyTotals() async {
-    final data = await _getTransactionsForSelectedMonth();
-    setState(() {
-      totalDebit = data['totalDebit'] ?? 0.0;
-      totalCredit = data['totalCredit'] ?? 0.0;
+      return {
+        'transactions': transactions,
+        'totalDebit': debitTotal,
+        'totalCredit': creditTotal,
+      };
     });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _updateMonthlyTotals();
   }
 
   void _previousMonth() {
     setState(() {
       selectedMonth = DateTime(selectedMonth.year, selectedMonth.month - 1);
-      _updateMonthlyTotals();
     });
   }
 
   void _nextMonth() {
     setState(() {
       selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + 1);
-      _updateMonthlyTotals();
     });
   }
 
@@ -118,15 +96,13 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
           .get();
       if (categorySnapshot.exists) {
         String categoryName = categorySnapshot['name'];
-        categoryMap[categoryId] =
-            categoryName; // Cache le nom pour les prochaines utilisations
+        categoryMap[categoryId] = categoryName; // Cache le nom pour les prochaines utilisations
         return categoryName;
       } else {
         return "Sans catégorie";
       }
     }
   }
-
 
   void _editTransaction(BuildContext context, DocumentSnapshot transaction) async {
     final result = await Navigator.push(
@@ -137,7 +113,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
     );
 
     if (result == true) {
-      setState(() {});
+      setState(() {}); // Rafraîchit l'interface après l'édition
     }
   }
 
@@ -150,7 +126,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
     );
 
     if (result == true) {
-      setState(() {});
+      setState(() {}); // Rafraîchit l'interface après l'ajout
     }
   }
 
@@ -164,20 +140,19 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
       if (deleteAll) {
         DateTime transactionDate = (transaction['date'] as Timestamp).toDate();
         await FirebaseFirestore.instance
-              .collection(transaction.reference.parent.id)
-              .where('user_id', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
-              .where('isRecurring', isEqualTo: true)
-              .where('date', isGreaterThan: Timestamp.fromDate(transactionDate))
-              .get()
-              .then((snapshot) async {
-                for (var doc in snapshot.docs) {
-                  await doc.reference.delete();
-                }
-              });
-        }
+            .collection(transaction.reference.parent.id)
+            .where('user_id', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+            .where('isRecurring', isEqualTo: true)
+            .where('date', isGreaterThan: Timestamp.fromDate(transactionDate))
+            .get()
+            .then((snapshot) async {
+          for (var doc in snapshot.docs) {
+            await doc.reference.delete();
+          }
+        });
+      }
     }
     await FirebaseFirestore.instance.collection(transaction.reference.parent.id).doc(transaction.id).delete();
-    _updateMonthlyTotals();
   }
 
   Future<bool> _showDeleteAllOccurrencesDialog(BuildContext context) async {
@@ -198,8 +173,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
           ],
         );
       },
-    ) ??
-    false;
+    ) ?? false;
   }
 
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
@@ -221,8 +195,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
           ],
         );
       },
-    ) ??
-    false;
+    ) ?? false;
   }
 
   @override
@@ -241,7 +214,6 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
             if (pickedDate != null) {
               setState(() {
                 selectedMonth = DateTime(pickedDate.year, pickedDate.month, pickedDate.day);
-                _updateMonthlyTotals();
               });
             }
           },
@@ -267,102 +239,106 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                   child: const Text("Débits"),
                 ),
                 ElevatedButton(
-                  onPressed: () => _toggleTransactionFilter("all"),
+                  onPressed: () => _toggleTransactionFilter("credits"),
                   child: const Text("Crédits"),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            Card(
-              child: ListTile(
-                title: Text(
-                  'Total Crédit : €${totalCredit.toStringAsFixed(2)}',
-                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  'Total Débit : €${totalDebit.toStringAsFixed(2)}',
-                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                ),
-                trailing: Text(
-                  'Économies : €${(totalCredit - totalDebit).toStringAsFixed(2)}',
-                  style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: FutureBuilder<Map<String, dynamic>>(
-                future: _getTransactionsForSelectedMonth(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text("Erreur: ${snapshot.error}"));
-                  }
+            StreamBuilder<Map<String, dynamic>>(
+              stream: _getTransactionsForSelectedMonth(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text("Erreur: ${snapshot.error}"));
+                }
 
-                  var data = snapshot.data!;
-                  List<QueryDocumentSnapshot> transactions =
-                      data['transactions'] ?? [];
-                  transactions = transactions.where((transaction) {
-                    bool isDebit = transaction.reference.parent.id == 'debits';
-                    if (transactionFilter == "debits") return isDebit;
-                    if (transactionFilter == "credits") return !isDebit;
-                    return true;
-                  }).toList();
+                var data = snapshot.data ?? {};
+                totalDebit = data['totalDebit'] ?? 0.0;
+                totalCredit = data['totalCredit'] ?? 0.0;
 
-                  return ListView.builder(
-                    itemCount: transactions.length,
-                    itemBuilder: (context, index) {
-                      var transaction = transactions[index];
-                      bool isDebit = transaction.reference.parent.id == 'debits';
-                      String transactionType = isDebit ? 'Débit' : 'Crédit';
+                List<QueryDocumentSnapshot> transactions = data['transactions'] ?? [];
+                transactions = transactions.where((transaction) {
+                  bool isDebit = transaction.reference.parent.id == 'debits';
+                  if (transactionFilter == "debits") return isDebit;
+                  if (transactionFilter == "credits") return !isDebit;
+                  return true;
+                }).toList();
 
-                      return Dismissible(
-                        key: Key(transaction.id),
-                        onDismissed: (direction) {
-                          _deleteTransaction(context, transaction);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("$transactionType supprimée")),
-                          );
-                        },
-                        background: Container(color: Colors.red),
+                return Expanded(
+                  child: Column(
+                    children: [
+                      Card(
                         child: ListTile(
                           title: Text(
-                            '${transaction['amount'].toStringAsFixed(2)} €',
-                            style: TextStyle(color: isDebit ? Colors.red : Colors.green),
+                            'Total Crédit : €${totalCredit.toStringAsFixed(2)}',
+                            style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                           ),
-                          subtitle: FutureBuilder<String>(
-                            future: getCategoryName((transaction.data() as Map<String, dynamic>).containsKey('categorie_id') ? transaction['categorie_id'] : null),
-                            builder: (context, snapshot) {
-                              String categoryName = snapshot.data ?? 'Sans catégorie';
-                              return Text('$transactionType - $categoryName');
-                            },
+                          subtitle: Text(
+                            'Total Débit : €${totalDebit.toStringAsFixed(2)}',
+                            style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                           ),
-                          onTap: () {
-                            showModalBottomSheet(
-                              context: context,
-                              //builder: (context) => TransactionDetailsModal(transaction: transaction),
-                              builder: (context) => TransactionDetailsView(transaction: transaction),
+                          trailing: Text(
+                            'Économies : €${(totalCredit - totalDebit).toStringAsFixed(2)}',
+                            style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: transactions.length,
+                          itemBuilder: (context, index) {
+                            var transaction = transactions[index];
+                            bool isDebit = transaction.reference.parent.id == 'debits';
+                            String transactionType = isDebit ? 'Débit' : 'Crédit';
+
+                            return Dismissible(
+                              key: Key(transaction.id),
+                              onDismissed: (direction) {
+                                _deleteTransaction(context, transaction);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("$transactionType supprimée")),
+                                );
+                              },
+                              background: Container(color: Colors.red),
+                              child: ListTile(
+                                title: Text(
+                                  '${transaction['amount'].toStringAsFixed(2)} €',
+                                  style: TextStyle(color: isDebit ? Colors.red : Colors.green),
+                                ),
+                                subtitle: FutureBuilder<String>(
+                                  future: getCategoryName((transaction.data() as Map<String, dynamic>).containsKey('categorie_id') ? transaction['categorie_id'] : null),
+                                  builder: (context, snapshot) {
+                                    String categoryName = snapshot.data ?? 'Sans catégorie';
+                                    return Text('$transactionType - $categoryName');
+                                  },
+                                ),
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => TransactionDetailsView(transaction: transaction),
+                                    ),
+                                  );
+                                },
+                              ),
                             );
                           },
                         ),
-                      );
-                    },
-                  );
-                },
-              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const TransactionFormScreen(),
-          ),
-        ),
+        onPressed: () => _addNewTransaction(context),
         child: const Icon(Icons.add),
       ),
     );

@@ -170,7 +170,9 @@ class TransactionDetailsView extends StatelessWidget {
                     return Text('Catégorie : ${snapshot.data}',
                         style: const TextStyle(fontSize: 18));
                   },
-                ),
+                )
+              else
+                const Text('Type : Revenus', style: TextStyle(fontSize: 18)),
               const SizedBox(height: 10),
               Text('Notes : $notes', style: const TextStyle(fontSize: 18)),
               const SizedBox(height: 10),

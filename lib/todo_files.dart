@@ -28,7 +28,7 @@
 //modal detail afficher photos a la place de la carte
 
 
-//todo reactualiser liste transactions après formulaire + verification stoage firebase
+//reactualiser liste transactions après formulaire + verification stoage firebase
 //transaction_form mettre type pour switche pour les crédit débit indiquer
 // jsute après le type je met la réccurrence
 //todo pouvoir cliquer sur la photos charger pour les voir en grands avec avpor crois
@@ -38,7 +38,7 @@
 
 
 
-// todo suppression ligne de navigation
+// suppression ligne de navigation
 // todo création transactions enelever l'heure des transaction date Jour Mois Années
 // todo au niveau switch ajouter label type
 // todo préciser ajout de deux photos avec croix pour supprimer la photos
