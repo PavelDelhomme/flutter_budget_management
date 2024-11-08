@@ -12,7 +12,7 @@
 // todo transactions_base_view.dart : afficher la date genre 8 Novembre 2024 enfaite du coup juste pas de previous month et nextmonth
 
 
-// Todo carte de même taille dans summaruy view prendre tout la largeur de l'écran
+// carte de même taille dans summaruy view prendre tout la largeur de l'écran
 // Todo liste de transactions : DAte du jour pour button
 // Todo avoir calendrier dans liste des transactions qui permet d'avoir la liste des transaction et affichr les 31 jour du moi de l'nané situé acutelemnt
 // Todo jour actuel en surbrillance
