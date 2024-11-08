@@ -50,6 +50,6 @@
 // todo suppression champs adresse email.
 
 
-//todo avoir tout les rublrique a la même taille. dans summary
+//avoir tout les rublrique a la même taille. dans summary
 
 //todo la date d el'application dois être Jour Mois Années en Français globalement.

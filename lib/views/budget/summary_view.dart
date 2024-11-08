@@ -180,18 +180,15 @@ class SummaryViewState extends State<SummaryView> {
     return Card(
       elevation: 3.0,
       margin: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Padding(
+      child: Container(
+        width: double.infinity, // Prend tout la largeur diponible
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8.0),
-            Text("€$amount",
-                style: TextStyle(
-                    fontSize: 20, color: color, fontWeight: FontWeight.bold)),
+            Text("€$amount", style: TextStyle(fontSize: 20, color: color, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
