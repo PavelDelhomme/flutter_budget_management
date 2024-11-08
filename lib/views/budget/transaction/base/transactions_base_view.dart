@@ -20,6 +20,7 @@ class TransactionsBaseView extends StatefulWidget {
 class _TransactionsBaseViewState extends State<TransactionsBaseView> {
   DateTime selectedMonth = DateTime.now();
   DateTime selectedDate = DateTime.now();
+  bool isViewingMonth = false; // Etat pour la vue mensuelle
   double totalDebit = 0.0;
   double totalCredit = 0.0;
   String transactionFilter = "all"; // "all", "debits", "credits"
@@ -32,6 +33,11 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
     super.initState();
     _getDaysWithTransactions(); // Charge les jours avec des transactions
   }
+
+  Stream<Map<String, dynamic>> _getTransactions() {
+    return isViewingMonth ? _getTransactionsForSelectedMonth() : _getTransactionsForSelectedDate();
+  }
+
 
   Stream<Map<String, dynamic>> _getTransactionsForSelectedDate() {
     final user = FirebaseAuth.instance.currentUser;
@@ -72,7 +78,43 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
       };
     });
   }
+  // Vue mensuelle
+  Stream<Map<String, dynamic>> _getTransactionsForSelectedMonth() {
+    final user = FirebaseAuth.instance.currentUser;
+    DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
+    DateTime endOfMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
 
+    var debitStream = FirebaseFirestore.instance
+        .collection("debits")
+        .where('user_id', isEqualTo: user?.uid)
+        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .snapshots();
+
+    var creditStream = FirebaseFirestore.instance
+        .collection("credits")
+        .where('user_id', isEqualTo: user?.uid)
+        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .snapshots();
+
+    return  debitStream.asyncMap((debitSnapshot) async {
+      final creditSnapshot = await creditStream.first;
+
+      double debitTotal = debitSnapshot.docs.fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
+      double creditTotal = creditSnapshot.docs.fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
+
+      List<QueryDocumentSnapshot> transactions = [
+        ...debitSnapshot.docs,
+        ...creditSnapshot.docs,
+      ];
+      return {
+        'transactions': transactions,
+        'totalDebit': debitTotal,
+        'totalCredit': creditTotal,
+      };
+    });
+  }
   // Charge les jours avec des transactions de débit ou de crédit
   Future<void> _getDaysWithTransactions() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -99,45 +141,6 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
     });
   }
 
-  Stream<Map<String, dynamic>> _getTransactionsForSelectedMonth() {
-    final user = FirebaseAuth.instance.currentUser;
-    DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
-    DateTime endOfMonth = DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
-
-    var debitStream = FirebaseFirestore.instance
-        .collection("debits")
-        .where("user_id", isEqualTo: user?.uid)
-        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
-        .snapshots();
-
-    var creditStream = FirebaseFirestore.instance
-        .collection("credits")
-        .where("user_id", isEqualTo: user?.uid)
-        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
-        .snapshots();
-
-    return debitStream.asyncMap((debitSnapshot) async {
-      final creditSnapshot = await creditStream.first;
-
-      double debitTotal = debitSnapshot.docs
-          .fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
-      double creditTotal = creditSnapshot.docs
-          .fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
-
-      List<QueryDocumentSnapshot> transactions = [
-        ...debitSnapshot.docs,
-        ...creditSnapshot.docs,
-      ];
-
-      return {
-        'transactions': transactions,
-        'totalDebit': debitTotal,
-        'totalCredit': creditTotal,
-      };
-    });
-  }
 
   void _previousMonth() {
     setState(() {
@@ -277,44 +280,55 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: GestureDetector(
-          onTap: () async {
-            DateTime? pickedDate = await showDatePicker(
-              context: context,
-              initialDate: selectedDate,
-              firstDate: DateTime(DateTime.now().year - 1),
-              lastDate: DateTime(DateTime.now().year + 1),
-              locale: const Locale("fr", "FR"),
-              selectableDayPredicate: (day) {
-                // Montre les badges pour les jours ayant des transactions de débits ou de crédit
-                return true;
-              },
-              builder: (context, child) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: ColorScheme.light(
-                      primary: Colors.blue,
-                    ),
-                    textButtonTheme: TextButtonThemeData(
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.black,
+        title: Row(
+          children: [
+            GestureDetector(
+              onTap: () async {
+                DateTime? pickedDate = await showDatePicker(
+                  context: context,
+                  initialDate: selectedDate,
+                  firstDate: DateTime(DateTime.now().year - 1),
+                  lastDate: DateTime(DateTime.now().year + 1),
+                  locale: const Locale("fr", "FR"),
+                  selectableDayPredicate: (day) {
+                    // Coloration des jours avec transactions
+                    if (debitDays.containsKey(day) || creditDays.containsKey(day)) {
+                      return true; // Marque ces jours comme cliquables
+                    }
+                    return false;
+                  },
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: ColorScheme.light(
+                          primary: Colors.blue,
+                        ),
                       ),
-                    ),
-                  ),
-                  child: child ?? SizedBox(),
+                      child: child ?? SizedBox(),
+                    );
+                  },
                 );
+                if (pickedDate != null) {
+                  setState(() {
+                    selectedDate = pickedDate;
+                    isViewingMonth = false; // Basculer en vue journalière
+                  });
+                }
               },
-            );
-            if (pickedDate != null) {
-              setState(() {
-                selectedMonth = pickedDate;
-              });
-            }
-          },
-          child: Text(
-            DateFormat.yMMMMd('fr_FR').format(selectedMonth),
-            style: const TextStyle(fontSize: 18),
-          ),
+              child: Text(
+                DateFormat.yMMMMd('fr_FR').format(selectedDate),
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+            IconButton(
+              icon: Icon(isViewingMonth ? Icons.calendar_view_day : Icons.calendar_view_month),
+              onPressed: () {
+                setState(() {
+                  isViewingMonth = !isViewingMonth;
+                });
+              },
+            ),
+          ],
         ),
       ),
       body: Padding(
@@ -340,7 +354,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
             ),
             const SizedBox(height: 20),
             StreamBuilder<Map<String, dynamic>>(
-              stream: _getTransactionsForSelectedMonth(),
+              stream: _getTransactions(), // Utilise les transactions du jour
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());

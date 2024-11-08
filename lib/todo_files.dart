@@ -16,10 +16,10 @@
 // liste de transactions : DAte du jour pour button
 // avoir calendrier dans liste des transactions qui permet d'avoir la liste des transaction et affichr les 31 jour du moi de l'nané situé acutelemnt
 // jour actuel en surbrillance
-// Todo clique transaction -> jour actuel par défaut qui est afficher  donc les tyransaciton de ce jour et le calendrier avec badges et la gestion des transactions pour les dates spécifiques.
+// clique transaction -> jour actuel par défaut qui est afficher  donc les tyransaciton de ce jour et le calendrier avec badges et la gestion des transactions pour les dates spécifiques.
 // cliqe sur date == selection calendrier mensuel.
-// todo Widget calendrier simple même que dans transaction_form_screen.dart avec affichage en francais
-//todo limitier la transaction a la date et pas l'heure non nécessaire
+//  Widget calendrier simple même que dans transaction_form_screen.dart avec affichage en francais
+// limitier la transaction a la date et pas l'heure non nécessaire
 
 //limiter à 2 récus poiuor transactions avec petit croix pour supprimer individuellement
 //indique clairement que ont peux avoir que 2 recu
