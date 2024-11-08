@@ -322,6 +322,11 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                 });
               },
             ),
+            // Affichage de la vue actuelle
+            Text(
+              isViewingMonth ? " (Mois)" : " (Jour)",
+              style: const TextStyle(color: Colors.grey),
+            ),
           ],
         ),
       ),
