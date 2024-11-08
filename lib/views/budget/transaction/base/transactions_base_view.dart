@@ -1,5 +1,6 @@
+import 'package:budget_management/views/budget/transaction/transaction_details_view.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
-import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
+import 'package:budget_management/views/budget/transaction/ancien_detail/transaction_details_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -229,18 +230,26 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
     return Scaffold(
       appBar: AppBar(
         title: GestureDetector(
-          onTap: () {},
-          child: Text(selectedMonth.toString()),
-          // todo suppression ligne de navigation
-          // todo affichr calendrier avec selection de la date des transction a afficher
-          // todo afficher la date genre 8 Novembre 2024 enfaite du coup juste pas de previous month et nextmonth
+          onTap: () async {
+            DateTime? pickedDate = await showDatePicker(
+              context: context,
+              initialDate: selectedMonth,
+              firstDate: DateTime(DateTime.now().year - 1),
+              lastDate: DateTime(DateTime.now().year + 1),
+              locale: const Locale("fr", "FR"),
+            );
+            if (pickedDate != null) {
+              setState(() {
+                selectedMonth = DateTime(pickedDate.year, pickedDate.month, pickedDate.day);
+                _updateMonthlyTotals();
+              });
+            }
+          },
+          child: Text(
+            DateFormat.yMMMMd('fr_FR').format(selectedMonth),
+            style: const TextStyle(fontSize: 18),
+          ),
         ),
-        actions: [
-          IconButton(
-              icon: const Icon(Icons.arrow_back), onPressed: _previousMonth),
-          IconButton(
-              icon: const Icon(Icons.arrow_forward), onPressed: _nextMonth),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -324,7 +333,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                             style: TextStyle(color: isDebit ? Colors.red : Colors.green),
                           ),
                           subtitle: FutureBuilder<String>(
-                            future: getCategoryName(transaction['categorie_id']),
+                            future: getCategoryName(transaction.data().containsKey('categorie_id') ? transaction['categorie_id'] : null),
                             builder: (context, snapshot) {
                               String categoryName = snapshot.data ?? 'Sans catégorie';
                               return Text('$transactionType - $categoryName');
@@ -333,7 +342,8 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                           onTap: () {
                             showModalBottomSheet(
                               context: context,
-                              builder: (context) => TransactionDetailsModal(transaction: transaction),
+                              //builder: (context) => TransactionDetailsModal(transaction: transaction),
+                              builder: (context) => TransactionDetailsView(transaction: transaction),
                             );
                           },
                         ),
