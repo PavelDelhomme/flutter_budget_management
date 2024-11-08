@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:budget_management/utils/budgets.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
@@ -194,7 +196,7 @@ class _TransactionsViewState extends State<TransactionsView> {
       appBar: AppBar(
         title: GestureDetector(
           onTap: () {
-            _showMonthDetails(context);
+            log("Clique sur le mois");
           },
           child: Text(DateFormat.yMMMM('fr_FR').format(selectedMonth)),
         ),
@@ -336,7 +338,7 @@ class _TransactionsViewState extends State<TransactionsView> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BudgetDetailsScreen(selectedMonth: selectedMonth),
+        builder: (context) => BudgetMonthDetailsScreen(selectedMonth: selectedMonth),
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:flutter/material.dart';
@@ -243,7 +245,7 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
       appBar: AppBar(
         title: GestureDetector(
           onTap: () {
-            _showMonthDetails(context);
+            log("Clique sur le mois");
           },
           child: Text(DateFormat.yMMMM('fr_FR').format(selectedMonth)),
         ),
@@ -501,14 +503,6 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
     );
   }
 
-  void _showMonthDetails(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BudgetDetailsScreen(selectedMonth: selectedMonth),
-      ),
-    );
-  }
 
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
     return await showDialog(

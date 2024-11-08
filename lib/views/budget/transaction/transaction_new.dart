@@ -308,7 +308,7 @@ class TransactionsViewState extends State<TransactionsView> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BudgetDetailsScreen(selectedMonth: selectedMonth),
+        builder: (context) => BudgetMonthDetailsScreen(selectedMonth: selectedMonth),
       ),
     );
   }

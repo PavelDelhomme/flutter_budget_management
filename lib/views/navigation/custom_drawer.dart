@@ -6,7 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../authentication/connexion_view.dart';
 import '../home/home_view.dart';
-import '../budget/budget/budget_view.dart';
 import '../profile/profile_view.dart';
 import '../settings/settings_view.dart';
 import '../budget/saving/savings_page.dart';
@@ -100,13 +99,6 @@ class CustomDrawer extends StatelessWidget {
             text: 'Accueil',
             destination: const HomeView(),
             active: activeItem == 'home',
-          ),
-          _buildDrawerItem(
-            context,
-            icon: Icons.attach_money,
-            text: 'Budgets',
-            destination: const BudgetView(),
-            active: activeItem == 'budgets',
           ),
           _buildDrawerItem(
             context,
