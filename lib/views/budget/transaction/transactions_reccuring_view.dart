@@ -8,8 +8,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
-import '../budget/budget_details_screen.dart';
-
 class TransactionsReccuringView extends StatefulWidget {
   const TransactionsReccuringView({super.key});
 
