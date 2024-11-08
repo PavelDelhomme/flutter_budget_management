@@ -402,17 +402,6 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
                 },
                 hint: const Text("Sélectionner une catégorie."),
               ),
-              ElevatedButton(
-                  onPressed: _pickImage, child: const Text("Ajouter des reçus")),
-              if (_receiptImages.isNotEmpty)
-                Wrap(
-                  children: _receiptImages.map((image) {
-                    return Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Image.file(image, width: 100, height: 100, fit: BoxFit.cover),
-                    );
-                  }).toList(),
-                ),
               if (_currentAdress != null) Text("Adresse : $_currentAdress"),
               _buildMap(),
               ElevatedButton(
@@ -472,8 +461,36 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   Future<void> _replaceImage(File oldImage) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Remplacer l'image"),
+          content: const Text("Choisissez une option"),
+          actions: <Widget>[
+            TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await _selectNewImageForReplace(oldImage, ImageSource.camera);
+                },
+                child: const Text("Prendre une photo"),
+            ),
+            TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await _selectNewImageForReplace(oldImage, ImageSource.gallery);
+                },
+                child: const Text("Depuis la galerie"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _selectNewImageForReplace(File oldImage, ImageSource source) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery); // todo faire la possiblité de remplacer mais de demander encore avec un dialog si c'est par une image de gallery ou une nouvelle photo
+    final pickedFile = await picker.pickImage(source: source);
 
     if (pickedFile != null) {
       setState(() {
