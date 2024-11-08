@@ -1,17 +1,16 @@
-import 'package:budget_management/views/budget/transaction/transactions_view.dart';
 import 'package:flutter/material.dart';
 
 import '../../navigation/custom_drawer.dart';
 
 class BudgetView extends StatefulWidget {
-  const BudgetView({Key? key}) : super(key: key);
+  const BudgetView({super.key});
 
   @override
-  _BudgetViewState createState() => _BudgetViewState();
+  BudgetViewState createState() => BudgetViewState();
 }
 
 
-class _BudgetViewState extends State<BudgetView> {
+class BudgetViewState extends State<BudgetView> {
 
   @override
   Widget build(BuildContext context) {
