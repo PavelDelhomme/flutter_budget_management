@@ -333,7 +333,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                             style: TextStyle(color: isDebit ? Colors.red : Colors.green),
                           ),
                           subtitle: FutureBuilder<String>(
-                            future: getCategoryName(transaction.data().containsKey('categorie_id') ? transaction['categorie_id'] : null),
+                            future: getCategoryName((transaction.data() as Map<String, dynamic>).containsKey('categorie_id') ? transaction['categorie_id'] : null),
                             builder: (context, snapshot) {
                               String categoryName = snapshot.data ?? 'Sans catégorie';
                               return Text('$transactionType - $categoryName');
