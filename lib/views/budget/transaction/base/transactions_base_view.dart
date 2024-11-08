@@ -19,10 +19,85 @@ class TransactionsBaseView extends StatefulWidget {
 
 class _TransactionsBaseViewState extends State<TransactionsBaseView> {
   DateTime selectedMonth = DateTime.now();
+  DateTime selectedDate = DateTime.now();
   double totalDebit = 0.0;
   double totalCredit = 0.0;
   String transactionFilter = "all"; // "all", "debits", "credits"
   Map<String, String> categoryMap = {};
+  Map<DateTime, bool> debitDays = {};
+  Map<DateTime, bool> creditDays = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _getDaysWithTransactions(); // Charge les jours avec des transactions
+  }
+
+  Stream<Map<String, dynamic>> _getTransactionsForSelectedDate() {
+    final user = FirebaseAuth.instance.currentUser;
+    DateTime startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    DateTime endOfDay = startOfDay.add(Duration(days: 1));
+
+    var debitStream = FirebaseFirestore.instance
+        .collection("debits")
+        .where("user_id", isEqualTo: user?.uid)
+        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where("date", isLessThan: Timestamp.fromDate(endOfDay))
+        .snapshots();
+
+    var creditStream = FirebaseFirestore.instance
+        .collection("credits")
+        .where("user_id", isEqualTo: user?.uid)
+        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where("date", isLessThan: Timestamp.fromDate(endOfDay))
+        .snapshots();
+
+    return debitStream.asyncMap((debitSnapshot) async {
+      final creditSnapshot = await creditStream.first;
+
+      double debitTotal = debitSnapshot.docs
+          .fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
+      double creditTotal = creditSnapshot.docs
+          .fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
+
+      List<QueryDocumentSnapshot> transactions = [
+        ...debitSnapshot.docs,
+        ...creditSnapshot.docs,
+      ];
+
+      return {
+        'transactions': transactions,
+        'totalDebit': debitTotal,
+        'totalCredit': creditTotal,
+      };
+    });
+  }
+
+  // Charge les jours avec des transactions de débit ou de crédit
+  Future<void> _getDaysWithTransactions() async {
+    final user = FirebaseAuth.instance.currentUser;
+    DateTime startOfMonth = DateTime(selectedDate.year, selectedDate.month, 1);
+    DateTime endOfMonth = DateTime(selectedDate.year, selectedDate.month + 1, 0);
+
+    var debitSnapshot = await FirebaseFirestore.instance
+        .collection("debits")
+        .where("user_id", isEqualTo: user?.uid)
+        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .get();
+
+    var creditSnapshot = await FirebaseFirestore.instance
+        .collection("credits")
+        .where("user_id", isEqualTo: user?.uid)
+        .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .get();
+
+    setState(() {
+      debitDays = {for (var doc in debitSnapshot.docs) (doc['date'] as Timestamp).toDate(): true};
+      creditDays = {for (var doc in creditSnapshot.docs) (doc['date'] as Timestamp).toDate(): true};
+    });
+  }
 
   Stream<Map<String, dynamic>> _getTransactionsForSelectedMonth() {
     final user = FirebaseAuth.instance.currentUser;
@@ -206,14 +281,33 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
           onTap: () async {
             DateTime? pickedDate = await showDatePicker(
               context: context,
-              initialDate: selectedMonth,
+              initialDate: selectedDate,
               firstDate: DateTime(DateTime.now().year - 1),
               lastDate: DateTime(DateTime.now().year + 1),
               locale: const Locale("fr", "FR"),
+              selectableDayPredicate: (day) {
+                // Montre les badges pour les jours ayant des transactions de débits ou de crédit
+                return true;
+              },
+              builder: (context, child) {
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: ColorScheme.light(
+                      primary: Colors.blue,
+                    ),
+                    textButtonTheme: TextButtonThemeData(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.black,
+                      ),
+                    ),
+                  ),
+                  child: child ?? SizedBox(),
+                );
+              },
             );
             if (pickedDate != null) {
               setState(() {
-                selectedMonth = DateTime(pickedDate.year, pickedDate.month, pickedDate.day);
+                selectedMonth = pickedDate;
               });
             }
           },
