@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Classe parent Transaction pour les champs communs
+// todo création transactions enelever l'heure des transaction date Jour Mois Années
+
 class Transaction {
   String id;
   String user_id;

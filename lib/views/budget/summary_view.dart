@@ -132,6 +132,7 @@ class SummaryViewState extends State<SummaryView> {
 
   @override
   Widget build(BuildContext context) {
+    //todo avoir tout les rublrique a la même taille.
     return Scaffold(
       body: StreamBuilder<Map<String, double>>(
         stream: _getSummaryStream(),

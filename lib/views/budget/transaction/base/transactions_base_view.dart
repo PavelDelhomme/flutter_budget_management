@@ -3,15 +3,14 @@ import 'package:budget_management/views/budget/transaction/transaction_details_m
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 class TransactionsBaseView extends StatefulWidget {
   final bool showRecurring; // Indique si l'on affiche uniquement les récurrentes
-  final String title;
 
   const TransactionsBaseView({
     Key? key,
     required this.showRecurring,
-    required this.title,
   }) : super(key: key);
 
   @override
@@ -22,7 +21,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
   DateTime selectedMonth = DateTime.now();
   double totalDebit = 0.0;
   double totalCredit = 0.0;
-  //String transactionFilter = "all"; // "all", "debits", "credits"
+  String transactionFilter = "all"; // "all", "debits", "credits"
   Map<String, String> categoryMap = {};
 
   Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() async {
@@ -95,6 +94,12 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
     setState(() {
       selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + 1);
       _updateMonthlyTotals();
+    });
+  }
+
+  void _toggleTransactionFilter(String filter) {
+    setState(() {
+      transactionFilter = filter;
     });
   }
 
@@ -225,7 +230,10 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
       appBar: AppBar(
         title: GestureDetector(
           onTap: () {},
-          child: Text(widget.title),
+          child: Text(selectedMonth.toString()),
+          // todo suppression ligne de navigation
+          // todo affichr calendrier avec selection de la date des transction a afficher
+          // todo afficher la date genre 8 Novembre 2024 enfaite du coup juste pas de previous month et nextmonth
         ),
         actions: [
           IconButton(
@@ -238,6 +246,24 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ElevatedButton(
+                  onPressed: () => _toggleTransactionFilter("all"),
+                  child: const Text("Tous"),
+                ),
+                ElevatedButton(
+                  onPressed: () => _toggleTransactionFilter("debits"),
+                  child: const Text("Débits"),
+                ),
+                ElevatedButton(
+                  onPressed: () => _toggleTransactionFilter("all"),
+                  child: const Text("Crédits"),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
             Card(
               child: ListTile(
                 title: Text(
@@ -269,6 +295,13 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                   var data = snapshot.data!;
                   List<QueryDocumentSnapshot> transactions =
                       data['transactions'] ?? [];
+                  transactions = transactions.where((transaction) {
+                    bool isDebit = transaction.reference.parent.id == 'debits';
+                    if (transactionFilter == "debits") return isDebit;
+                    if (transactionFilter == "credits") return !isDebit;
+                    return true;
+                  }).toList();
+
                   return ListView.builder(
                     itemCount: transactions.length,
                     itemBuilder: (context, index) {
@@ -276,18 +309,34 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                       bool isDebit = transaction.reference.parent.id == 'debits';
                       String transactionType = isDebit ? 'Débit' : 'Crédit';
 
-                      return ListTile(
-                        title: Text(
-                          '${transaction['amount'].toStringAsFixed(2)} €',
-                          style: TextStyle(color: isDebit ? Colors.red : Colors.green),
-                        ),
-                        subtitle: Text(transactionType),
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            builder: (context) => TransactionDetailsModal(transaction: transaction),
+                      return Dismissible(
+                        key: Key(transaction.id),
+                        onDismissed: (direction) {
+                          _deleteTransaction(context, transaction);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("$transactionType supprimée")),
                           );
                         },
+                        background: Container(color: Colors.red),
+                        child: ListTile(
+                          title: Text(
+                            '${transaction['amount'].toStringAsFixed(2)} €',
+                            style: TextStyle(color: isDebit ? Colors.red : Colors.green),
+                          ),
+                          subtitle: FutureBuilder<String>(
+                            future: getCategoryName(transaction['categorie_id']),
+                            builder: (context, snapshot) {
+                              String categoryName = snapshot.data ?? 'Sans catégorie';
+                              return Text('$transactionType - $categoryName');
+                            },
+                          ),
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              builder: (context) => TransactionDetailsModal(transaction: transaction),
+                            );
+                          },
+                        ),
                       );
                     },
                   );
@@ -298,7 +347,12 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _addNewTransaction(context),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const TransactionFormScreen(),
+          ),
+        ),
         child: const Icon(Icons.add),
       ),
     );

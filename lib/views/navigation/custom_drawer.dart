@@ -17,7 +17,7 @@ class CustomDrawer extends StatelessWidget {
 
   Future<void> _signOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
-
+    // todo suppression button de effacement des donnénes.
     // Effacement du cache local
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.clear();

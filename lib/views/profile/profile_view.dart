@@ -30,6 +30,10 @@ class ProfileViewState extends State<ProfileView> {
     super.dispose();
   }
 
+  //Todo demander l'authentification a nouveau pour pouvoir faire juste un button mettre  ajour le mot de passe
+  // todo déclancher popup pour qu'il seconnecter en donnant adresse mail et nouveau mot d epasse
+  // todo suppression champs adresse email.
+
   Future<void> _updateEmail() async {
     if (user != null && _emailController.text.isNotEmpty) {
       try {

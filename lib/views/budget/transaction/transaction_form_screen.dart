@@ -404,6 +404,12 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
     }
   }
   */
+  // todo au niveau switch ajouter label type
+// todo préciser ajout de deux photos avec croix pour supprimer la photos
+// todo plutot que la carte mettre les photos et juste afficher l'adresse actuel de l'utiliateur quad il clqieu pour récupérrer l'afrese
+
+// todo création transactions enelever l'heure des transaction date Jour Mois Années
+
   Widget _buildAdditionalFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
