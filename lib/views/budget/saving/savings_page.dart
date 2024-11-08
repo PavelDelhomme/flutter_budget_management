@@ -1,18 +1,17 @@
-import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:budget_management/models/good_models.dart';
 
+import '../../../models/budget_model.dart';
 import '../../navigation/custom_drawer.dart';
 
 class SavingsPage extends StatefulWidget {
   @override
-  _SavingsPageState createState() => _SavingsPageState();
+  SavingsPageState createState() => SavingsPageState();
 }
 
-class _SavingsPageState extends State<SavingsPage> {
+class SavingsPageState extends State<SavingsPage> {
   double totalSavings = 0.0;
   Map<String, double> monthlySavings = {};
 

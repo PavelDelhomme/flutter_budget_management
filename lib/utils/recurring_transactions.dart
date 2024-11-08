@@ -1,7 +1,7 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/good_models.dart';
+import '../models/transaction_model.dart';
 import 'budgets.dart';
 import 'generate_ids.dart';
 

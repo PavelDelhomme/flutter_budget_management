@@ -27,13 +27,13 @@ import '../../../utils/transactions.dart';
 class TransactionFormScreen extends StatefulWidget {
   final DocumentSnapshot? transaction;
 
-  const TransactionFormScreen({Key? key, this.transaction}) : super(key: key);
+  const TransactionFormScreen({super.key, this.transaction});
 
   @override
-  _TransactionFormScreenState createState() => _TransactionFormScreenState();
+  TransactionFormScreenState createState() => TransactionFormScreenState();
 }
 
-class _TransactionFormScreenState extends State<TransactionFormScreen> {
+class TransactionFormScreenState extends State<TransactionFormScreen> {
   // Categories
   String? _selectedCategory;
   List<String> _categories = [];
@@ -46,14 +46,14 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   bool _isRecurring = false;
   bool _isDebit = true;
   LatLng? _userLocation;
-  List<File> _receiptImages = [];
+  final List<File> _receiptImages = [];
   List<String> _existingReceiptUrls = [];
 
   // Map
   final MapController _mapController = MapController();
-  LatLng _defaultLocation = LatLng(48.8566, 2.3522); // Defaut paris
+  final LatLng _defaultLocation = const LatLng(48.8566, 2.3522); // Defaut paris
   String? _currentAdress;
-  double _zoom = 16.0;
+  final double _zoom = 16.0;
 
   @override
   void initState() {
@@ -158,7 +158,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   Widget _buildTileLayer() {
     return TileLayer(
       urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      subdomains: ['a', 'b', 'c'],
+      subdomains: const ['a', 'b', 'c'],
       userAgentPackageName: 'com.budget.budget_management',
     );
   }
@@ -366,7 +366,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       await _loadCategories(); // Recharger les catégories pour inclure la nouvelle catégorie
     }
   }
-
+  /*
   Future<double> _getTotalCredit(String userId) async {
     final creditSnapshot = await FirebaseFirestore.instance
         .collection('credits')
@@ -378,7 +378,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       totalCredit += (doc.data()['amount'] as num).toDouble();
     }
     return totalCredit;
-  }
+  }*/
+  /*
   Future<double> _getTotalDebit(String userId) async {
     final debitSnapshot = await FirebaseFirestore.instance
         .collection('debits')
@@ -390,7 +391,8 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       totalDebit += (doc.data()['amount'] as num).toDouble();
     }
     return totalDebit;
-  }
+  }*/
+  /*
   Future<void> _deductFromSavings(double amount, String userId) async {
     final userSavingsRef = FirebaseFirestore.instance.collection('savings').doc(userId);
     final userSavingsDoc = await userSavingsRef.get();
@@ -401,7 +403,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       await userSavingsRef.update({'amount': newSavings});
     }
   }
-
+  */
   Widget _buildAdditionalFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,9 +423,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                   );
                 }).toList()
                   ..add(
-                    DropdownMenuItem<String>(
+                    const DropdownMenuItem<String>(
                       value: "Nouvelle catégorie",
-                      child: const Text("Créer une nouvelle catégorie"),
+                      child: Text("Créer une nouvelle catégorie"),
                     ),
                   ),
                 onChanged: (newValue) {

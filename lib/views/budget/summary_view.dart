@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:budget_management/models/good_models.dart';
+import 'package:budget_management/models/categorie_model.dart';
 import 'package:intl/intl.dart';
 
 import '../../utils/general.dart';

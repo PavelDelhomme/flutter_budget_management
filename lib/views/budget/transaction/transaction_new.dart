@@ -1,24 +1,21 @@
-import 'dart:developer';
 import 'package:budget_management/utils/budgets.dart';
 import 'package:budget_management/utils/general.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
-import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../budget/budget_details_screen.dart';
 
 class TransactionsView extends StatefulWidget {
-  const TransactionsView({Key? key}) : super(key: key);
+  const TransactionsView({super.key});
 
   @override
-  _TransactionsViewState createState() => _TransactionsViewState();
+  TransactionsViewState createState() => TransactionsViewState();
 }
 
-class _TransactionsViewState extends State<TransactionsView> {
+class TransactionsViewState extends State<TransactionsView> {
   DateTime selectedMonth = DateTime.now();
   double totalDebit = 0.0;
   double totalCredit = 0.0;
@@ -115,6 +112,7 @@ class _TransactionsViewState extends State<TransactionsView> {
       }
     }
   }
+  /*
   void _previousMonth() {
     setState(() {
       selectedMonth = DateTime(selectedMonth.year, selectedMonth.month - 1);
@@ -181,6 +179,7 @@ class _TransactionsViewState extends State<TransactionsView> {
     }
   }
 
+  */
 
   @override
   Widget build(BuildContext context) {

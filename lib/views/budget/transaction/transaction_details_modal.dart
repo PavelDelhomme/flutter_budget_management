@@ -1,17 +1,16 @@
 import 'dart:developer';
 
-import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:geocoding/geocoding.dart'; // Pour la conversion des coordonnées en adresse
+import 'package:geocoding/geocoding.dart';
 
 class TransactionDetailsModal extends StatelessWidget {
   final DocumentSnapshot transaction;
 
-  const TransactionDetailsModal({Key? key, required this.transaction}) : super(key: key);
+  const TransactionDetailsModal({super.key, required this.transaction});
 
   Future<String> _getAddressFromLatLng(LatLng location) async {
     try {
@@ -81,7 +80,7 @@ class TransactionDetailsModal extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  "$date",
+                  date,
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -211,7 +210,7 @@ class TransactionDetailsModal extends StatelessWidget {
 class ImageScreen extends StatelessWidget {
   final String imageUrl;
 
-  const ImageScreen({Key? key, required this.imageUrl}) : super(key: key);
+  const ImageScreen({super.key, required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
