@@ -422,13 +422,40 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
   Future<void> _pickImage() async {
     if (_receiptImages.length >= 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Vous ne pouvez ajourter que 2 reçus.")), // todo plutot afficher uniquement un messager directement sur la page pour luis indiquer cela enfaite
+        const SnackBar(content: Text("Vous ne pouvez ajourter que 2 reçus.")),
       );
       return;
     }
 
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Ajouter une image"),
+          content: const Text("Choisissez une option"),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _selectImage(ImageSource.camera);
+              },
+              child: const Text("Prendre une photo"),
+            ),TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _selectImage(ImageSource.gallery);
+              },
+              child: const Text("Depuis la galerie"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _selectImage(ImageSource source) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery); //todo faire la demande a l'utilisateur via un petit modal s'il veux récupérer l'image soit depuis la gallery ou prendre directement une photo
+    final pickedFile = await picker.pickImage(source: source);
 
     if (pickedFile != null) {
       setState(() {
@@ -525,6 +552,34 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
               const SizedBox(height: 16.0),
               // afficher un formulaire en fonction du type
               _buildTransactionForm(),
+              ElevatedButton(
+                onPressed: _pickImage,
+                child: const Text("Ajouter des reçus (2 max)"),
+              ),
+              Wrap(
+                children: _receiptImages.map((image) {
+                  return Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Image.file(image, width: 100, height: 100, fit: BoxFit.cover),
+                      ),
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _receiptImages.remove(image);
+                            });
+                          },
+                          child: Icon(Icons.close, color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
               // Bouton pour enregistrer la transaction
               Center(
                 child: ElevatedButton(

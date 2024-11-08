@@ -2,9 +2,9 @@
 // todo Ajout de l'affichage des derniers transactions importante réalisé
 // todo Ajoute de l'affichage des prochaine transaction prévu d'ici peu réccurente
 
-// todo transaction_fomr_screen au niveau switch ajouter label type
-// todo transaction_fomr_screen préciser ajout de deux photos avec croix pour supprimer la photos
-// todo transaction_fomr_screen plutot que la carte mettre les photos et juste afficher l'adresse actuel de l'utiliateur quad il clqieu pour récupérrer l'afrese
+// transaction_fomr_screen au niveau switch ajouter label type
+// transaction_fomr_screen préciser ajout de deux photos avec croix pour supprimer la photos
+// transaction_fomr_screen plutot que la carte mettre les photos et juste afficher l'adresse actuel de l'utiliateur quad il clqieu pour récupérrer l'afrese
 
 
 //transactions_base_view.dart : suppression ligne de navigation
@@ -23,7 +23,7 @@
 
 //limiter à 2 récus poiuor transactions avec petit croix pour supprimer individuellement
 //indique clairement que ont peux avoir que 2 recu
-//todo afficher message pour catégorie lors non selectionner form
+//todo EN CROUS afficher message pour catégorie lors non selectionner form
 
 //modal detail afficher photos a la place de la carte
 
