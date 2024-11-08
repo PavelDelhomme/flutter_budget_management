@@ -5,6 +5,15 @@
    todo  Suppression de budgets_detail_view.dart et budget_view.dart car non utiliser
 
 */
+// todo transaction_fomr_screen au niveau switch ajouter label type
+// todo transaction_fomr_screen préciser ajout de deux photos avec croix pour supprimer la photos
+// todo transaction_fomr_screen plutot que la carte mettre les photos et juste afficher l'adresse actuel de l'utiliateur quad il clqieu pour récupérrer l'afrese
+
+
+//todo transactions_base_view.dart : suppression ligne de navigation
+//todo transactions_base_view.dart : affichr calendrier avec selection de la date des transction a afficher
+// todo transactions_base_view.dart : afficher la date genre 8 Novembre 2024 enfaite du coup juste pas de previous month et nextmonth
+
 
 // Todo carte de même taille dans summaruy view prendre tout la largeur de l'écran
 // Todo liste de transactions : DAte du jour pour button
