@@ -3,18 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
-import '../../navigation/custom_drawer.dart';
-
 class BudgetDetailsScreen extends StatefulWidget {
   final DateTime selectedMonth;
 
-  const BudgetDetailsScreen({Key? key, required this.selectedMonth}) : super(key: key);
+  const BudgetDetailsScreen({super.key, required this.selectedMonth});
 
   @override
-  _BudgetDetailsScreenState createState() => _BudgetDetailsScreenState();
+  BudgetDetailsScreenState createState() => BudgetDetailsScreenState();
 }
 
-class _BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
+class BudgetDetailsScreenState extends State<BudgetDetailsScreen> {
   Future<Map<String, List<Map<String, dynamic>>>> _getTransactionsByCategory() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return {};
