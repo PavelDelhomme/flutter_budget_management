@@ -1,6 +1,4 @@
-import 'dart:developer';
 import 'package:budget_management/utils/budgets.dart';
-import 'package:budget_management/utils/general.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
 import 'package:budget_management/views/budget/transaction/transactions_reccuring_view.dart';

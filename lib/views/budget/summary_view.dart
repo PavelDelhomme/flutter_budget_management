@@ -2,19 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:budget_management/models/categorie_model.dart';
-import 'package:intl/intl.dart';
 
 import '../../utils/general.dart';
 
 class SummaryView extends StatefulWidget {
-  const SummaryView({Key? key}) : super(key: key);
+  const SummaryView({super.key});
 
   @override
-  _SummaryViewState createState() => _SummaryViewState();
+  SummaryViewState createState() => SummaryViewState();
 }
 
-class _SummaryViewState extends State<SummaryView> {
+class SummaryViewState extends State<SummaryView> {
   double totalSavings = 0.0;
 
   @override

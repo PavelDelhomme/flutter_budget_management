@@ -7,6 +7,8 @@ import '../../../models/budget_model.dart';
 import '../../navigation/custom_drawer.dart';
 
 class SavingsPage extends StatefulWidget {
+  const SavingsPage({super.key});
+
   @override
   SavingsPageState createState() => SavingsPageState();
 }
