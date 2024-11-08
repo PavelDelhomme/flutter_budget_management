@@ -40,7 +40,7 @@
 
 // suppression ligne de navigation
 // todo création transactions enelever l'heure des transaction date Jour Mois Années
-// todo au niveau switch ajouter label type
+// au niveau switch ajouter label type
 // préciser ajout de deux photos avec croix pour supprimer la photos
 // todo plutot que la carte mettre les photos
 // todo aggrandir photos lors du clique

@@ -594,6 +594,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const Text("Type : "),
                   const Text("Crédit"),
                   Switch(
                     value: _isDebit,
