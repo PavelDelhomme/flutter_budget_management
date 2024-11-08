@@ -29,8 +29,8 @@
 
 
 //todo reactualiser liste transactions après formulaire + verification stoage firebase
-//todo transaction_form mettre type pour switche pour les crédit débit indiquer
-// todo jsute après le type je met la réccurrence
+//transaction_form mettre type pour switche pour les crédit débit indiquer
+// jsute après le type je met la réccurrence
 //todo pouvoir cliquer sur la photos charger pour les voir en grands avec avpor crois
 
 

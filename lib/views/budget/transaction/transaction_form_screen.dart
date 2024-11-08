@@ -473,20 +473,6 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
           decoration: const InputDecoration(hintText: "Ajouter des notes"),
         ),
         const SizedBox(height: 16.0),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text("Récurrent"),
-            Switch(
-              value: _isRecurring,
-              onChanged: (value) {
-                setState(() {
-                  _isRecurring = value;
-                });
-              },
-            ),
-          ],
-        ),
         _buildAdditionalFields(),
       ],
     );
@@ -522,7 +508,21 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
                   const Text("Débit")
                 ],
               ),
-
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Récurrent"),
+                  Switch(
+                    value: _isRecurring,
+                    onChanged: (value) {
+                      setState(() {
+                        _isRecurring = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16.0),
               // afficher un formulaire en fonction du type
               _buildTransactionForm(),
               // Bouton pour enregistrer la transaction
