@@ -1,7 +1,8 @@
+import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
+import 'package:budget_management/views/budget/transaction/transaction_details_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
 
 class TransactionsBaseView extends StatefulWidget {
   final bool showRecurring; // Indique si l'on affiche uniquement les récurrentes
@@ -21,7 +22,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
   DateTime selectedMonth = DateTime.now();
   double totalDebit = 0.0;
   double totalCredit = 0.0;
-  String transactionFilter = "all"; // "all", "debits", "credits"
+  //String transactionFilter = "all"; // "all", "debits", "credits"
   Map<String, String> categoryMap = {};
 
   Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() async {
@@ -97,6 +98,127 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
     });
   }
 
+  Future<String> getCategoryName(String? categoryId) async {
+    if (categoryId == null || categoryId.isEmpty) {
+      return "Sans catégorie";
+    }
+
+    if (categoryMap.containsKey(categoryId)) {
+      return categoryMap[categoryId]!;
+    } else {
+      var categorySnapshot = await FirebaseFirestore.instance
+          .collection("categories")
+          .doc(categoryId)
+          .get();
+      if (categorySnapshot.exists) {
+        String categoryName = categorySnapshot['name'];
+        categoryMap[categoryId] =
+            categoryName; // Cache le nom pour les prochaines utilisations
+        return categoryName;
+      } else {
+        return "Sans catégorie";
+      }
+    }
+  }
+
+
+  void _editTransaction(BuildContext context, DocumentSnapshot transaction) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TransactionFormScreen(transaction: transaction),
+      ),
+    );
+
+    if (result == true) {
+      setState(() {});
+    }
+  }
+
+  void _addNewTransaction(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TransactionFormScreen(),
+      ),
+    );
+
+    if (result == true) {
+      setState(() {});
+    }
+  }
+
+  void _deleteTransaction(BuildContext context, DocumentSnapshot transaction) async {
+    bool confirm = await _showDeleteConfirmation(context);
+    if (!confirm) return;
+
+    bool isRecurring = transaction['isRecurring'];
+    if (isRecurring) {
+      bool deleteAll = await _showDeleteAllOccurrencesDialog(context);
+      if (deleteAll) {
+        DateTime transactionDate = (transaction['date'] as Timestamp).toDate();
+        await FirebaseFirestore.instance
+              .collection(transaction.reference.parent.id)
+              .where('user_id', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+              .where('isRecurring', isEqualTo: true)
+              .where('date', isGreaterThan: Timestamp.fromDate(transactionDate))
+              .get()
+              .then((snapshot) async {
+                for (var doc in snapshot.docs) {
+                  await doc.reference.delete();
+                }
+              });
+        }
+    }
+    await FirebaseFirestore.instance.collection(transaction.reference.parent.id).doc(transaction.id).delete();
+    _updateMonthlyTotals();
+  }
+
+  Future<bool> _showDeleteAllOccurrencesDialog(BuildContext context) async {
+    return await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Voulez-vous supprimer toutes les occurrences futures de cette transaction ?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text("Non"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text("Oui"),
+            ),
+          ],
+        );
+      },
+    ) ??
+    false;
+  }
+
+  Future<bool> _showDeleteConfirmation(BuildContext context) async {
+    return await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirmer la suppression"),
+          content: const Text("Êtes-vous sûr de vouloir supprimer cette transaction ?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text("Annuler"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text("Supprimer"),
+            ),
+          ],
+        );
+      },
+    ) ??
+    false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -161,7 +283,10 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                         ),
                         subtitle: Text(transactionType),
                         onTap: () {
-                          // Ajoute ici le code pour l'affichage des détails de la transaction
+                          showModalBottomSheet(
+                            context: context,
+                            builder: (context) => TransactionDetailsModal(transaction: transaction),
+                          );
                         },
                       );
                     },
@@ -173,9 +298,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Ajoute ici la logique d'ajout d'une nouvelle transaction
-        },
+        onPressed: () => _addNewTransaction(context),
         child: const Icon(Icons.add),
       ),
     );

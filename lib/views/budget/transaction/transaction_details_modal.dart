@@ -44,7 +44,8 @@ class TransactionDetailsModal extends StatelessWidget {
     }
   }
 
-  Future<void> _toggleRecurrence(DocumentSnapshot transaction, bool makeRecurring) async {
+  Future<void> _toggleRecurrence(BuildContext context,
+      DocumentSnapshot transaction, bool makeRecurring) async {
     final userId = FirebaseAuth.instance.currentUser!.uid;
     final DateTime transactionDate = (transaction['date'] as Timestamp).toDate();
     final collection = transaction.reference.parent.id;
@@ -63,11 +64,47 @@ class TransactionDetailsModal extends StatelessWidget {
         isDebit: collection == 'debits',
       );
     } else {
+      bool confirmAllOccurrences = await _confirmToggleFutureOccurrences(context);
+      if (confirmAllOccurrences) {
+        await FirebaseFirestore.instance.collection(collection)
+            .where('user_id', isEqualTo: userId)
+            .where('isRecurring', isEqualTo: true)
+            .where('categorie_id', isEqualTo: categoryId)
+            .where('date', isGreaterThan: Timestamp.fromDate(transactionDate))
+            .get()
+            .then((snapshot) async {
+              for (var doc in snapshot.docs) {
+                await doc.reference.delete();
+              }
+        });
+      }
       await FirebaseFirestore.instance.collection(collection)
           .doc(transaction.id)
           .update({'isRecurring': false});
-      await _deleteTransactionAndFutureOccurrences(transaction);
     }
+  }
+
+  Future<bool> _confirmToggleFutureOccurrences(BuildContext context) async {
+    return await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Désactiver la récurrence"),
+          content: const Text("Voulez-vous désactiver la récurrence pour toutes les occurrences futures ?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text("Non"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text("Oui"),
+            ),
+          ],
+        );
+      },
+    ) ??
+    false;
   }
 
   @override
@@ -174,7 +211,7 @@ class TransactionDetailsModal extends StatelessWidget {
               Switch(
                 value: isRecurring,
                 onChanged: (value) async {
-                  await _toggleRecurrence(transaction, value);
+                  await _toggleRecurrence(context, transaction, value);
                   Navigator.of(context);
                 },
               )
