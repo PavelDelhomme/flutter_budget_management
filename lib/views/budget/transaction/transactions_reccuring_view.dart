@@ -91,7 +91,7 @@ class TransactionsReccuringViewSate extends State<TransactionsReccuringView> {
     setState(() {}); // Rafraîchir la vue
   }
 
-  Future<void> _deleteTransactionAndFutureOccurrences(
+  Future<void> deleteTransactionAndFutureOccurrences(
       DocumentSnapshot transaction) async {
     bool confirm = await _showDeleteConfirmation(context);
     if (!confirm) return;

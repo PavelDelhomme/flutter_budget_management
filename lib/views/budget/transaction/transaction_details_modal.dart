@@ -1,5 +1,7 @@
 import 'dart:developer';
 
+import 'package:budget_management/utils/recurring_transactions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
@@ -42,6 +44,32 @@ class TransactionDetailsModal extends StatelessWidget {
     }
   }
 
+  Future<void> _toggleRecurrence(DocumentSnapshot transaction, bool makeRecurring) async {
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+    final DateTime transactionDate = (transaction['date'] as Timestamp).toDate();
+    final collection = transaction.reference.parent.id;
+    final amount = transaction['amount'];
+    final categoryId = transaction['categorie_id'] ?? "";
+
+    if (makeRecurring) {
+      await FirebaseFirestore.instance.collection(collection)
+          .doc(transaction.id)
+          .update({'isRecurring': true});
+      await addRetroactiveRecurringTransaction(
+        userId: userId,
+        categoryId: categoryId,
+        startDate: transactionDate,
+        amount: amount,
+        isDebit: collection == 'debits',
+      );
+    } else {
+      await FirebaseFirestore.instance.collection(collection)
+          .doc(transaction.id)
+          .update({'isRecurring': false});
+      await _deleteTransactionAndFutureOccurrences(transaction);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Récupération des données de la transaction
@@ -60,7 +88,7 @@ class TransactionDetailsModal extends StatelessWidget {
     final date =
         DateFormat.yMMMMd().format((data['date'] as Timestamp).toDate());
     final notes = data['notes'] ?? '';
-    final isRecurring = data['isRecurring'] ?? false;
+    final bool isRecurring = data['isRecurring'] ?? false;
 
     // Pour les débits, récupère les photos, la localisation et la catégorie
     final List<String> receiptUrls = isDebit && data.containsKey('photos')
@@ -103,48 +131,77 @@ class TransactionDetailsModal extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text('Montant : €${amount.toStringAsFixed(2)}',
-              style: const TextStyle(fontSize: 18)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Montant : €${amount.toStringAsFixed(2)}',
+                  style: const TextStyle(fontSize: 18)),
+            ],
+          ),
           const SizedBox(height: 10),
           if (categoryId != null)
-            FutureBuilder<String>(
-              future: getCategoryName(categoryId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Text('Chargement de la catégorie...',
-                      style: TextStyle(fontSize: 18));
-                } else if (snapshot.hasError || !snapshot.hasData) {
-                  return const Text('Catégorie inconnue',
-                      style: TextStyle(fontSize: 18));
-                }
-                return Text('Catégorie : ${snapshot.data}',
-                    style: const TextStyle(fontSize: 18));
-              },
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                FutureBuilder<String>(
+                  future: getCategoryName(categoryId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Text('Chargement de la catégorie...',
+                          style: TextStyle(fontSize: 18));
+                    } else if (snapshot.hasError || !snapshot.hasData) {
+                      return const Text('Catégorie inconnue',
+                          style: TextStyle(fontSize: 18));
+                    }
+                    return Text('Catégorie : ${snapshot.data}',
+                        style: const TextStyle(fontSize: 18));
+                  },
+                ),
+              ],
             ),
           const SizedBox(height: 10),
-          Text('Notes : $notes', style: const TextStyle(fontSize: 18)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Notes : $notes', style: const TextStyle(fontSize: 18)),
+            ],
+          ),
           const SizedBox(height: 10),
-          Text('Transaction récurrente : ${isRecurring ? 'Oui' : 'Non'}',
-              style: const TextStyle(fontSize: 18)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Transaction récurrente :', style: TextStyle(fontSize: 18)),
+              Switch(
+                value: isRecurring,
+                onChanged: (value) async {
+                  await _toggleRecurrence(transaction, value);
+                  Navigator.of(context);
+                },
+              )
+            ],
+          ),
           const SizedBox(height: 20),
-
           // Utilisation de FutureBuilder pour afficher l'adresse si la transaction est un débit
           if (location != null && isDebit)
-            FutureBuilder<String>(
-              future: _getAddressFromLatLng(location),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Text('Chargement de l\'adresse...',
-                      style: TextStyle(fontSize: 18));
-                } else if (snapshot.hasError || !snapshot.hasData) {
-                  return const Text('Adresse inconnue',
-                      style: TextStyle(fontSize: 18));
-                }
-                return Text('Adresse : ${snapshot.data}',
-                    style: const TextStyle(fontSize: 18));
-              },
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                FutureBuilder<String>(
+                  future: _getAddressFromLatLng(location),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Text('Chargement de l\'adresse...',
+                          style: TextStyle(fontSize: 18));
+                    } else if (snapshot.hasError || !snapshot.hasData) {
+                      return const Text('Adresse inconnue',
+                          style: TextStyle(fontSize: 18));
+                    }
+                    return Text('Adresse : ${snapshot.data}',
+                        style: const TextStyle(fontSize: 18));
+                  },
+                ),
+              ],
             ),
-
           if (location != null && isDebit)
             SizedBox(
               height: 200,
