@@ -13,10 +13,10 @@
 
 
 // carte de même taille dans summaruy view prendre tout la largeur de l'écran
-// Todo liste de transactions : DAte du jour pour button
+// liste de transactions : DAte du jour pour button
 // avoir calendrier dans liste des transactions qui permet d'avoir la liste des transaction et affichr les 31 jour du moi de l'nané situé acutelemnt
 // jour actuel en surbrillance
-// Todo clique transaction -> jour actuel par défaut qui est afficher  donc les tyransaciton de ce jour
+// Todo clique transaction -> jour actuel par défaut qui est afficher  donc les tyransaciton de ce jour et le calendrier avec badges et la gestion des transactions pour les dates spécifiques.
 // cliqe sur date == selection calendrier mensuel.
 // todo Widget calendrier simple même que dans transaction_form_screen.dart avec affichage en francais
 //todo limitier la transaction a la date et pas l'heure non nécessaire
@@ -25,7 +25,7 @@
 //indique clairement que ont peux avoir que 2 recu
 //todo afficher message pour catégorie lors non selectionner form
 
-//todo modal detail afficher photos a la place de la carte
+//modal detail afficher photos a la place de la carte
 
 
 //todo reactualiser liste transactions après formulaire + verification stoage firebase
