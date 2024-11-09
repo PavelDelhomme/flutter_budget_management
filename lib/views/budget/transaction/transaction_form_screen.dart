@@ -97,15 +97,17 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
 
   Future<void> _loadCategories() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {  // Charger seulement si _isDebit est vrai
+    if (user != null) {
       final categoriesSnapshot = await FirebaseFirestore.instance
           .collection('categories')
           .where("userId", isEqualTo: user.uid)
-          .where("type", isEqualTo: _isDebit ? 'debit' : 'credit')  // Charger en fonction du type (débit ou crédit)
+          .where("type", isEqualTo: _isDebit ? 'debit' : 'credit')
           .get();
 
       setState(() {
         _categories = categoriesSnapshot.docs.map((doc) => doc['name'].toString()).toSet().toList();
+        _categoriesLoaded = true; // Important : assure que le formulaire est chargé
+        log("Categories loaded: $_categories");
       });
     }
   }
@@ -683,6 +685,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
           onChanged: (value) {
             setState(() {
               _isDebit = value;
+              _categoriesLoaded = false;
               _loadCategories(); // Reload categories on type change
             });
           },
