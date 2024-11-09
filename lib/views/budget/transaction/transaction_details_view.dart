@@ -126,15 +126,11 @@ class TransactionDetailsView extends StatelessWidget {
     final date = DateFormat.yMMMMd('fr_FR').format((data['date'] as Timestamp).toDate());
     final notes = data['notes'] ?? '';
     final bool isRecurring = data['isRecurring'] ?? false;
-
-    final List<String> receiptUrls = isDebit && data.containsKey('photos')
-        ? List<String>.from(data['photos'] ?? [])
-        : [];
-
+    final List<String> photos = isDebit && data.containsKey('photos') ? List<String>.from(data['photos'] ?? []) : [];
     final String? categoryId = isDebit ? data['categorie_id'] : null;
-    final LatLng? location = data['localisation'] != null
-        ? LatLng((data['localisation'] as GeoPoint).latitude, (data['localisation'] as GeoPoint).longitude)
-        : null;
+    final LatLng? location = data['localisation'] != null ? LatLng((data['localisation'] as GeoPoint).latitude, (data['localisation'] as GeoPoint).longitude) : null;
+    log("amount : $amount | categoryId : $categoryId | isDebit : $isDebit}");
+    String sign = isDebit ? '+' : '-';
 
     return Scaffold(
       appBar: AppBar(
@@ -152,14 +148,18 @@ class TransactionDetailsView extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Montant : €${amount.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 18),
+                'Montant : ${sign}€${amount.toStringAsFixed(2)}',
+                style: TextStyle(
+                    fontSize: 18,
+                  color: isDebit ? Colors.green : Colors.red,
+                ),
               ),
               const SizedBox(height: 10),
               if (categoryId != null)
                 FutureBuilder<String>(
                   future: _getCategoryName(categoryId),
                   builder: (context, snapshot) {
+                    log(categoryId);
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Text('Chargement de la catégorie...',
                           style: TextStyle(fontSize: 18));
@@ -191,7 +191,7 @@ class TransactionDetailsView extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              if (location != null && isDebit) ...[
+              if (location != null) ...[
                 FutureBuilder<String>(
                   future: _getAddressFromLatLng(location),
                   builder: (context, snapshot) {
@@ -208,7 +208,7 @@ class TransactionDetailsView extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 20),
-              if (receiptUrls.isNotEmpty)
+              if (photos.isNotEmpty)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -218,7 +218,7 @@ class TransactionDetailsView extends StatelessWidget {
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
-                      children: receiptUrls.map((url) {
+                      children: photos.map((url) {
                         return GestureDetector(
                           onTap: () {
                             Navigator.push(

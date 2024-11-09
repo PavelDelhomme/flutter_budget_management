@@ -118,6 +118,8 @@ Future<void> _copyRecurringTransactions(
         .then((snapshot) => snapshot.docs.isNotEmpty);
 
     if (!transactionExists) {
+      await FirebaseFirestore.instance.collection(collection).doc(doc.id).delete();
+
       final newTransaction = transactionBuilder(data, newDate);
       await FirebaseFirestore.instance
           .collection(collection)

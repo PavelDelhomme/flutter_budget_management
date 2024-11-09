@@ -36,6 +36,7 @@ class TransactionFormScreen extends StatefulWidget {
 class TransactionFormScreenState extends State<TransactionFormScreen> {
   // Categories
   String? _selectedCategory;
+  bool _categoriesLoaded = false;
   List<String> _categories = [];
   final FocusNode _categoryFocusNode = FocusNode();
 
@@ -46,8 +47,8 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
   bool _isRecurring = false;
   bool _isDebit = true;
   LatLng? _userLocation;
-  final List<File> _receiptImages = [];
-  List<String> _existingReceiptUrls = [];
+  final List<File> _photoFiles = [];
+  List<String> _existingPhotos = [];
 
   // Map
   final MapController _mapController = MapController();
@@ -65,20 +66,26 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       final transaction = widget.transaction!;
       log("Transaction reçue : ${transaction.data()}");
 
-      _isDebit = transaction['type'] ?? true;
+      _isDebit = transaction.reference.parent.id == 'debits';
       _notesController.text = transaction['notes'] ?? '';
       _amountController.text = transaction['amount']?.toString() ?? '';
-      _selectedCategory = transaction['category']?.toString().trim();
       _isRecurring = transaction['isRecurring'] ?? false;
       final Timestamp? date = transaction['date'] as Timestamp?;
       _dateController.text = date != null ? DateFormat('yMd').format(date.toDate()) : DateFormat('yMd').format(DateTime.now());
 
-      // Initialisation des reçus existants
-      _existingReceiptUrls = List<String>.from(transaction['receiptUrls'] ?? []);
       // Localisation, uniquement pour les débits
       if (_isDebit) {
-        final GeoPoint? location = transaction['location'] as GeoPoint?;
-        _userLocation = location != null ? LatLng(location.latitude, location.longitude) : _defaultLocation;
+        // Initialisation des reçus existants
+        _existingPhotos = List<String>.from(transaction['photos'] ?? []);
+        final GeoPoint? location = (transaction?.data() as Map<String, dynamic>?)?.containsKey('location')  == true
+            ? transaction!['location'] as GeoPoint?
+            : null;
+
+        _userLocation = location != null
+            ? LatLng(location.latitude, location.longitude)
+            : _defaultLocation;
+
+        _selectedCategory = transaction['categorie_id']?.toString().trim() ?? '';
       }
     } else {
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
@@ -90,7 +97,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
 
   Future<void> _loadCategories() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null && _isDebit) {  // Charger seulement si _isDebit est vrai
+    if (user != null) {  // Charger seulement si _isDebit est vrai
       final categoriesSnapshot = await FirebaseFirestore.instance
           .collection('categories')
           .where("userId", isEqualTo: user.uid)
@@ -187,7 +194,6 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
     );
   }
 
-
   Future<void> _selectDate() async {
     DateTime initialDate = DateTime.now();
     DateTime? selectedDate = await showDatePicker(
@@ -198,26 +204,12 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
     );
 
     if (selectedDate != null) {
-      TimeOfDay? selectedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(initialDate),
-      );
-
-      if (selectedTime != null) {
-        DateTime finalDateTime = DateTime(
-          selectedDate.year,
-          selectedDate.month,
-          selectedDate.day,
-          selectedTime.hour,
-          selectedTime.minute,
-        );
-
-        setState(() {
-          _dateController.text = DateFormat('yMd').add_jm().format(finalDateTime);
-        });
-      }
+      setState(() {
+        _dateController.text = DateFormat('EEEE d MMMM y', 'fr_FR').format(selectedDate);
+      });
     }
   }
+
   Future<void> _createNewCategory() async {
     final TextEditingController categoryController = TextEditingController();
 
@@ -260,7 +252,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   Future<void> _saveTransaction() async {
-    if (_amountController.text.isNotEmpty) {
+    if (_amountController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: const Text("Veuillez saisir un montant pour ajouter la transaction"))
       );
@@ -282,16 +274,16 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       final dateTransaction = _dateController.text.isNotEmpty ? DateFormat('yMd').parse(_dateController.text) : DateTime.now();
       final isReccuring = _isRecurring;
 
-      List<String> newReceiptUrls = [];
-      for (File image in _receiptImages) {
+      List<String> newPhotos = [];
+      for (File image in _photoFiles) {
         String? url = await uploadImage(image, user.uid);
         if (url != null) {
-          newReceiptUrls.add(url);
+          newPhotos.add(url);
         }
       }
 
       // Fusionner les images existantes et nouvelles
-      List<String> updatedReceiptUrls = [..._existingReceiptUrls, ...newReceiptUrls];
+      List<String> updatedPhotos = [..._existingPhotos, ...newPhotos];
 
       // Conversion de la localisation
       GeoPoint? geoPoint;
@@ -307,26 +299,52 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
           // Récupérer l'ID de la catégorie sélectionnée
           final categoryId = await _getCategoryId(user.uid, _selectedCategory!, 'debit');
 
-          // Transaction de type Débit
-          await addDebitTransaction(
-            categoryId: categoryId,
-            userId: user.uid,
-            date: dateTransaction,
-            amount: amount,
-            notes: notes,
-            receiptUrls: updatedReceiptUrls,
-            location: geoPoint,
-            isRecurring: isReccuring,
-          );
+          if (widget.transaction != null) {
+            await FirebaseFirestore.instance
+                .collection("debits")
+                .doc(widget.transaction!.id)
+                .update({
+              'amount': amount,
+              'notes': notes,
+              'date': Timestamp.fromDate(dateTransaction),
+              'isRecurring': isReccuring,
+              'photos': updatedPhotos,
+              'location': geoPoint,
+              'categorie_id': categoryId,
+            });
+          } else {
+            await addDebitTransaction(
+              userId: user.uid,
+              categoryId: categoryId,
+              date: dateTransaction,
+              amount: amount,
+              notes: notes,
+              photos: updatedPhotos,
+              location: geoPoint,
+              isRecurring: isReccuring,
+            );
+          }
         } else {
-          // Transaction de type Crédit
-          await addCreditTransaction(
-            userId: user.uid,
-            date: dateTransaction,
-            amount: amount,
-            notes: notes,
-            isRecurring: isReccuring,
-          );
+          // Gestion pour les crédits
+          if (widget.transaction != null) {
+            await FirebaseFirestore.instance
+                .collection('credits')
+                .doc(widget.transaction!.id)
+                .update({
+              'amount': amount,
+              'notes': notes,
+              'date': Timestamp.fromDate(dateTransaction),
+              'isRecurring': isReccuring,
+            });
+          } else {
+            await addCreditTransaction(
+                userId: user.uid,
+                date: dateTransaction,
+                amount: amount,
+                notes: notes,
+                isRecurring: isReccuring
+            );
+          }
         }
 
         if (mounted) {
@@ -374,6 +392,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
     }
   }
 
+  /*
   Widget _buildAdditionalFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,6 +402,40 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
+              ElevatedButton(
+                onPressed: _pickImage,
+                child: const Text("Ajouter des reçus (2 max)"),
+              ),
+              Wrap(
+                children: _photoFiles.map((image) {
+                  return GestureDetector(
+                    onTap: () {
+                      _showImageOptionsDialog(image);
+                    },
+                    child: Stack(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Image.file(image, width: 100, height: 100, fit: BoxFit.cover),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _photoFiles.remove(image);
+                              });
+                            },
+                            child: const Icon(Icons.close, color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
               DropdownButton<String>(
                 focusNode: _categoryFocusNode,
                 value: _selectedCategory,
@@ -419,11 +472,11 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
           ),
       ],
     );
-  }
+  }*/
 
 
   Future<void> _pickImage() async {
-    if (_receiptImages.length >= 2) {
+    if (_photoFiles.length >= 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Vous ne pouvez ajourter que 2 reçus.")),
       );
@@ -462,7 +515,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
 
     if (pickedFile != null) {
       setState(() {
-        _receiptImages.add(File(pickedFile.path));
+        _photoFiles.add(File(pickedFile.path));
       });
     }
   }
@@ -501,7 +554,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
 
     if (pickedFile != null) {
       setState(() {
-        _receiptImages[_receiptImages.indexOf(oldImage)] = File(pickedFile.path);
+        _photoFiles[_photoFiles.indexOf(oldImage)] = File(pickedFile.path);
       });
     }
   }
@@ -517,7 +570,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  _receiptImages.remove(image);
+                  _photoFiles.remove(image);
                 });
                 Navigator.of(context).pop();
               },
@@ -536,140 +589,156 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
     );
   }
 
+
   Widget _buildTransactionForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Montant"),
-        TextField(
-          controller: _amountController,
-          keyboardType: TextInputType.number,
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-          ],
-          onChanged: (value) {
-            _amountController.text = value.replaceAll(",", ".");
-            _amountController.selection = TextSelection.fromPosition(
-              TextPosition(offset: _amountController.text.length),
-            );
-          },
-          decoration: const InputDecoration(hintText: "Saisissez le montant"),
-        ),
+        _buildAmountField(),
         const SizedBox(height: 16.0),
-        const Text("Date de la transaction"),
-        TextField(
-          controller: _dateController,
-          readOnly: true,
-          onTap: _selectDate,
-          decoration: const InputDecoration(
-            hintText: "Sélectionner une date et une heure",
-          ),
-        ),
+        _buildDateField(),
         const SizedBox(height: 16.0),
-        const Text("Notes"),
-        TextField(
-          controller: _notesController,
-          decoration: const InputDecoration(hintText: "Ajouter des notes"),
-        ),
+        _buildNotesField(),
         const SizedBox(height: 16.0),
-        _buildAdditionalFields(),
+        if (_isDebit) _buildAdditionalFields(),
       ],
     );
   }
+
+  Widget _buildAmountField() {
+    return TextField(
+      controller: _amountController,
+      keyboardType: TextInputType.number,
+      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
+      decoration: const InputDecoration(hintText: "Enter amount"),
+    );
+  }
+
+  Widget _buildDateField() {
+    return TextField(
+      controller: _dateController,
+      readOnly: true,
+      onTap: _selectDate,
+      decoration: const InputDecoration(
+        hintText: "Select a date and time",
+      ),
+    );
+  }
+
+  Widget _buildNotesField() {
+    return TextField(
+      controller: _notesController,
+      decoration: const InputDecoration(hintText: "Add notes"),
+    );
+  }
+
+  Widget _buildAdditionalFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButton<String>(
+          focusNode: _categoryFocusNode,
+          value: _categories.contains(_selectedCategory) ? _selectedCategory : null,
+          items: _categories.map((categoryName) {
+            return DropdownMenuItem<String>(
+              value: categoryName,
+              child: Text(categoryName),
+            );
+          }).toList()
+            ..add(
+              const DropdownMenuItem<String>(
+                value: "New Category",
+                child: Text("Create a new category"),
+              ),
+            ),
+          onChanged: (newValue) {
+            if (newValue == 'New Category') {
+              _createNewCategory();
+            } else {
+              setState(() {
+                _selectedCategory = newValue;
+              });
+            }
+          },
+          hint: const Text("Select a category."),
+        ),
+        if (_currentAdress != null) Text("Address: $_currentAdress"),
+        _buildMap(),
+        ElevatedButton(
+          onPressed: _getCurrentLocation,
+          child: const Text("Get Current Location"),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTypeSwitch() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text("Type: "),
+        const Text("Credit"),
+        Switch(
+          value: _isDebit,
+          onChanged: (value) {
+            setState(() {
+              _isDebit = value;
+              _loadCategories(); // Reload categories on type change
+            });
+          },
+        ),
+        const Text("Debit")
+      ],
+    );
+  }
+
+  Widget _buildRecurringSwitch() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text("Recurring"),
+        Switch(
+          value: _isRecurring,
+          onChanged: (value) {
+            setState(() {
+              _isRecurring = value;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.transaction == null
-            ? 'Ajouter une transaction'
-            : 'Modifier la transaction'),
+        title: Text(widget.transaction == null ? 'Add Transaction' : 'Edit Transaction'),
       ),
-      body: Padding(
+      body: _categoriesLoaded
+          ? Padding(
         padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView( // Ajout du scroll
+        child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("Type : "),
-                  const Text("Crédit"),
-                  Switch(
-                    value: _isDebit,
-                    onChanged: (value) {
-                      setState(() {
-                        _isDebit = value;
-                        _loadCategories();  // Recharger les catégories lorsque le type change
-                      });
-                    },
-                  ),
-                  const Text("Débit")
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("Récurrent"),
-                  Switch(
-                    value: _isRecurring,
-                    onChanged: (value) {
-                      setState(() {
-                        _isRecurring = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
+              _buildTypeSwitch(),
               const SizedBox(height: 16.0),
-              // afficher un formulaire en fonction du type
               _buildTransactionForm(),
-              ElevatedButton(
-                onPressed: _pickImage,
-                child: const Text("Ajouter des reçus (2 max)"),
-              ),
-              Wrap(
-                children: _receiptImages.map((image) {
-                  return GestureDetector(
-                    onTap: () {
-                      _showImageOptionsDialog(image);
-                    },
-                    child: Stack(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Image.file(image, width: 100, height: 100, fit: BoxFit.cover),
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _receiptImages.remove(image);
-                              });
-                            },
-                            child: const Icon(Icons.close, color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              // Bouton pour enregistrer la transaction
+              const SizedBox(height: 16.0),
+              _buildRecurringSwitch(),
               Center(
                 child: ElevatedButton(
                   onPressed: _saveTransaction,
-                  child: Text(
-                      widget.transaction == null ? 'Ajouter' : 'Mettre à jour'),
+                  child: Text(widget.transaction == null ? 'Add' : 'Update'),
                 ),
               ),
             ],
           ),
         ),
-      ),
+      )
+          : const Center(child: CircularProgressIndicator()), // Loading indicator
     );
   }
 }

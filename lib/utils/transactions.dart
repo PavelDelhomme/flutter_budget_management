@@ -10,7 +10,7 @@ Future<void> addDebitTransaction({
   required DateTime date,
   required double amount,
   String? notes,
-  List<String>? receiptUrls,
+  List<String>? photos,
   GeoPoint? location,
   bool isRecurring = false,
 }) async {
@@ -22,7 +22,7 @@ Future<void> addDebitTransaction({
     notes: notes ?? '',
     isRecurring: isRecurring,
     amount: amount,
-    photos: receiptUrls,
+    photos: photos,
     localisation: location ?? const GeoPoint(0, 0),
     categorie_id: categoryId,
   );

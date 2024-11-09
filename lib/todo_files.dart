@@ -39,7 +39,7 @@
 
 
 // suppression ligne de navigation
-// todo création transactions enelever l'heure des transaction date Jour Mois Années
+// création transactions enelever l'heure des transaction date Jour Mois Années
 // au niveau switch ajouter label type
 // préciser ajout de deux photos avec croix pour supprimer la photos
 // todo plutot que la carte mettre les photos
@@ -49,7 +49,7 @@
 // todo déclancher popup pour qu'il seconnecter en donnant adresse mail et nouveau mot d epasse
 // todo suppression champs adresse email.
 
-
+// todo au chargement de l'application summary view doit forcément calculere en fonction de ce qu'il se trouve dans la base de données il ne le fait pas actuellement
 //avoir tout les rublrique a la même taille. dans summary
 
 //la date d el'application dois être Jour Mois Années en Français globalement.

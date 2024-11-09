@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:budget_management/views/budget/transaction/transaction_details_view.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:flutter/material.dart';
@@ -35,7 +37,9 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
   }
 
   Stream<Map<String, dynamic>> _getTransactions() {
-    return isViewingMonth ? _getTransactionsForSelectedMonth() : _getTransactionsForSelectedDate();
+    return isViewingMonth
+        ? _getTransactionsForSelectedMonth()
+        : _getTransactionsForSelectedDate();
   }
 
 
@@ -160,27 +164,44 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
     });
   }
 
-  Future<String> getCategoryName(String? categoryId) async {
-    if (categoryId == null || categoryId.isEmpty) {
-      return "Sans catégorie";
-    }
-
+  Future<String> getCategoryName(String categoryId) async {
     if (categoryMap.containsKey(categoryId)) {
       return categoryMap[categoryId]!;
     } else {
-      var categorySnapshot = await FirebaseFirestore.instance
-          .collection("categories")
-          .doc(categoryId)
-          .get();
-      if (categorySnapshot.exists) {
-        String categoryName = categorySnapshot['name'];
-        categoryMap[categoryId] = categoryName; // Cache le nom pour les prochaines utilisations
-        return categoryName;
+      try {
+        final categorySnapshot = await FirebaseFirestore.instance
+            .collection("categories")
+            .doc(categoryId)
+            .get();
+        if (categorySnapshot.exists) {
+          String categoryName = categorySnapshot['name'];
+          categoryMap[categoryId] = categoryName;
+          return categoryName;
+        }
+      } catch (e) {
+        log("Erreur lors de la récupération de la catégorie : $e");
+      }
+      return "Sans catégorie";
+    }
+  }
+
+  Future<String> getCategoryNameOrNotes(DocumentSnapshot transaction) async {
+    bool isDebit = transaction.reference.parent.id == 'debits';
+
+    if (isDebit) {
+      // Si c'est un débit, on suppose qu'il y a une catégorie ID
+      String? categoryId = transaction['categorie_id'];
+      if (categoryId != null) {
+        return await getCategoryName(categoryId);
       } else {
         return "Sans catégorie";
       }
+    } else {
+      // Si c'est un crédit et qu'il n'y a pas de catégorie, affiche les notes
+      return (transaction['notes'] ?? "Sans notes").toString();
     }
   }
+
 
   void _editTransaction(BuildContext context, DocumentSnapshot transaction) async {
     final result = await Navigator.push(
@@ -231,6 +252,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
       }
     }
     await FirebaseFirestore.instance.collection(transaction.reference.parent.id).doc(transaction.id).delete();
+    setState(() {}); // Forcer le rafraîchissement
   }
 
   Future<bool> _showDeleteAllOccurrencesDialog(BuildContext context) async {
@@ -400,38 +422,80 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                           itemBuilder: (context, index) {
                             var transaction = transactions[index];
                             bool isDebit = transaction.reference.parent.id == 'debits';
-                            String transactionType = isDebit ? 'Débit' : 'Crédit';
+                            double amount = transaction['amount'].toDouble();
+                            String sign = isDebit ? '-' : '+';
+                            DateTime transactionDate = (transaction['date'] as Timestamp).toDate();
+                            String formattedDate = DateFormat('d MMMM', 'fr_FR').format(transactionDate);
 
                             return Dismissible(
                               key: Key(transaction.id),
-                              onDismissed: (direction) {
-                                _deleteTransaction(context, transaction);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text("$transactionType supprimée")),
-                                );
+                              direction: DismissDirection.horizontal,
+                              // Swipe sur la droite pour supprimer
+                              background: Container(
+                                color: Colors.red,
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                alignment: Alignment.centerLeft,
+                                child: const Icon(Icons.delete, color: Colors.white),
+                              ),
+                              // Swipe sur la droite pour éditer
+                              secondaryBackground: Container(
+                                color: Colors.blue,
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                alignment: Alignment.centerRight,
+                                child: const Icon(Icons.edit, color: Colors.white),
+                              ),
+                              confirmDismiss: (direction) async {
+                                if (direction == DismissDirection.startToEnd) {
+                                  // Confirmer la suppression
+                                  _deleteTransaction(context, transaction);
+                                  return false; // Ne pas supprimer automatiquement car géré par _deleteTransaction
+                                } else if (direction == DismissDirection.endToStart) {
+                                  // Ouvre l'écran de modification
+                                  _editTransaction(context, transaction);
+                                  return false; // Ne supprime pas lors de l'édition
+                                }
+                                return false;
                               },
-                              background: Container(color: Colors.red),
-                              child: ListTile(
-                                title: Text(
-                                  '${transaction['amount'].toStringAsFixed(2)} €',
-                                  style: TextStyle(color: isDebit ? Colors.red : Colors.green),
+                              child: Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.0),
                                 ),
-                                subtitle: FutureBuilder<String>(
-                                  future: getCategoryName((transaction.data() as Map<String, dynamic>).containsKey('categorie_id') ? transaction['categorie_id'] : null),
-                                  builder: (context, snapshot) {
-                                    String categoryName = snapshot.data ?? 'Sans catégorie';
-                                    return Text('$transactionType - $categoryName');
+                                elevation: 4,
+                                margin: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                  leading: Text(
+                                    formattedDate,
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                  title: Text(
+                                    "$sign${amount.toStringAsFixed(2)} €",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDebit ? Colors.red : Colors.green,
+                                    ),
+                                  ),
+                                  subtitle: FutureBuilder<String>(
+                                    future: getCategoryNameOrNotes(transaction),
+                                    builder: (context, snapshot) {
+                                      String categoryName = snapshot.data ?? 'Sana catégorie';
+                                      return Text(
+                                        categoryName,
+                                        style: const TextStyle(fontSize: 14),
+                                      );
+                                    },
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => TransactionDetailsView(transaction: transaction),
+                                      ),
+                                    );
                                   },
                                 ),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => TransactionDetailsView(transaction: transaction),
-                                    ),
-                                  );
-                                },
-                              ),
+                              )
                             );
                           },
                         ),
