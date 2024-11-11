@@ -44,7 +44,7 @@
 // préciser ajout de deux photos avec croix pour supprimer la photos
 // todo plutot que la carte mettre les photos
 // todo aggrandir photos lors du clique
-
+//todo ajouter la possibilité de modifier la transaction avec un bouton en haut de l'affichage des détails de la transaction
 //Todo demander l'authentification a nouveau pour pouvoir faire juste un button mettre  ajour le mot de passe
 // todo déclancher popup pour qu'il seconnecter en donnant adresse mail et nouveau mot d epasse
 // todo suppression champs adresse email.
@@ -56,3 +56,4 @@
 //todo lorsque dans la liste des transaction on affiche uniquement les débits ou les crédit, il daut remplacer la petite carte sommaire pour n'affiche que Total crédit ou que Total débit et si c'est Tous alors afficher en plus les économies
 //todo lorsque on affiche en mode mois la liste des transactions afficher les économies mais par dans la vue en mode jour.
 
+//todo ajout du boutons de vue spécifique pour n'afficher que les transaction réccurente
