@@ -54,3 +54,5 @@
 
 //la date d el'application dois être Jour Mois Années en Français globalement.
 //todo lorsque dans la liste des transaction on affiche uniquement les débits ou les crédit, il daut remplacer la petite carte sommaire pour n'affiche que Total crédit ou que Total débit et si c'est Tous alors afficher en plus les économies
+//todo lorsque on affiche en mode mois la liste des transactions afficher les économies mais par dans la vue en mode jour.
+
