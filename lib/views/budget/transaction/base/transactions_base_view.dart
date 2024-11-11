@@ -75,6 +75,8 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
         ...creditSnapshot.docs,
       ];
 
+      transactions.sort((a, b) => (b['date'] as Timestamp).compareTo(a['date'] as Timestamp)); // Tri des transactions par date croissante
+
       return {
         'transactions': transactions,
         'totalDebit': debitTotal,
@@ -112,6 +114,8 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
         ...debitSnapshot.docs,
         ...creditSnapshot.docs,
       ];
+
+      transactions.sort((a,  b) => (b['date'] as Timestamp).compareTo(a['date'] as Timestamp)); // Tri des transactions par date décroissantes
       return {
         'transactions': transactions,
         'totalDebit': debitTotal,
