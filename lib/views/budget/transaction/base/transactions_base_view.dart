@@ -22,6 +22,7 @@ class TransactionsBaseView extends StatefulWidget {
 class _TransactionsBaseViewState extends State<TransactionsBaseView> {
   DateTime selectedMonth = DateTime.now();
   DateTime selectedDate = DateTime.now();
+  bool showOnlyRecurring = false;
   bool isViewingMonth = false; // Etat pour la vue mensuelle
   double totalDebit = 0.0;
   double totalCredit = 0.0;
@@ -74,6 +75,10 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
         ...debitSnapshot.docs,
         ...creditSnapshot.docs,
       ];
+
+      if (showOnlyRecurring) {
+        transactions = transactions.where((transaction) => transaction['isRecurring'] == true).toList();
+      }
 
       transactions.sort((a, b) => (b['date'] as Timestamp).compareTo(a['date'] as Timestamp)); // Tri des transactions par date croissante
 
@@ -353,6 +358,18 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
               isViewingMonth ? " (Mois)" : " (Jour)",
               style: const TextStyle(color: Colors.grey),
             ),
+            IconButton(
+              icon: Icon(
+                showOnlyRecurring ? Icons.repeat : Icons.repeat_on,
+                color: showOnlyRecurring ? Colors.blue : Colors.grey,
+              ),
+              onPressed: () {
+                setState(() {
+                  showOnlyRecurring = !showOnlyRecurring;
+                });
+              },
+              tooltip: showOnlyRecurring ? "Afficher toutes les transactions": "Afficher les transactions réccurentes",
+            )
           ],
         ),
       ),
