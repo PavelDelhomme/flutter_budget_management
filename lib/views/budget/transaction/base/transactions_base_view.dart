@@ -43,17 +43,18 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
         : _getTransactionsForSelectedDate();
   }
 
-
   Stream<Map<String, dynamic>> _getTransactionsForSelectedDate() {
     final user = FirebaseAuth.instance.currentUser;
     DateTime startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     DateTime endOfDay = startOfDay.add(Duration(days: 1));
 
+    // Applique le filtre `showOnlyRecurring` si activé
     var debitStream = FirebaseFirestore.instance
         .collection("debits")
         .where("user_id", isEqualTo: user?.uid)
         .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .where("date", isLessThan: Timestamp.fromDate(endOfDay))
+        .where("isRecurring", isEqualTo: showOnlyRecurring ? true : null)
         .snapshots();
 
     var creditStream = FirebaseFirestore.instance
@@ -61,6 +62,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
         .where("user_id", isEqualTo: user?.uid)
         .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .where("date", isLessThan: Timestamp.fromDate(endOfDay))
+        .where("isRecurring", isEqualTo: showOnlyRecurring ? true : null)
         .snapshots();
 
     return debitStream.asyncMap((debitSnapshot) async {
@@ -76,11 +78,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
         ...creditSnapshot.docs,
       ];
 
-      if (showOnlyRecurring) {
-        transactions = transactions.where((transaction) => transaction['isRecurring'] == true).toList();
-      }
-
-      transactions.sort((a, b) => (b['date'] as Timestamp).compareTo(a['date'] as Timestamp)); // Tri des transactions par date croissante
+      transactions.sort((a, b) => (b['date'] as Timestamp).compareTo(a['date'] as Timestamp)); // Tri par date croissante
 
       return {
         'transactions': transactions,
@@ -89,7 +87,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
       };
     });
   }
-  // Vue mensuelle
+
   Stream<Map<String, dynamic>> _getTransactionsForSelectedMonth() {
     final user = FirebaseAuth.instance.currentUser;
     DateTime startOfMonth = DateTime(selectedMonth.year, selectedMonth.month, 1);
@@ -100,6 +98,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
         .where('user_id', isEqualTo: user?.uid)
         .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
         .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .where("isRecurring", isEqualTo: showOnlyRecurring ? true : null)
         .snapshots();
 
     var creditStream = FirebaseFirestore.instance
@@ -107,9 +106,10 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
         .where('user_id', isEqualTo: user?.uid)
         .where("date", isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
         .where("date", isLessThan: Timestamp.fromDate(endOfMonth))
+        .where("isRecurring", isEqualTo: showOnlyRecurring ? true : null)
         .snapshots();
 
-    return  debitStream.asyncMap((debitSnapshot) async {
+    return debitStream.asyncMap((debitSnapshot) async {
       final creditSnapshot = await creditStream.first;
 
       double debitTotal = debitSnapshot.docs.fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
@@ -120,7 +120,8 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
         ...creditSnapshot.docs,
       ];
 
-      transactions.sort((a,  b) => (b['date'] as Timestamp).compareTo(a['date'] as Timestamp)); // Tri des transactions par date décroissantes
+      transactions.sort((a, b) => (b['date'] as Timestamp).compareTo(a['date'] as Timestamp)); // Tri par date décroissante
+
       return {
         'transactions': transactions,
         'totalDebit': debitTotal,
@@ -128,6 +129,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
       };
     });
   }
+
   // Charge les jours avec des transactions de débit ou de crédit
   Future<void> _getDaysWithTransactions() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -482,7 +484,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                                   borderRadius: BorderRadius.circular(12.0),
                                 ),
                                 elevation: 4,
-                                margin: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                                margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                                 child: ListTile(
                                   contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                                   leading: Text(
@@ -500,13 +502,20 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                                   subtitle: FutureBuilder<String>(
                                     future: getCategoryNameOrNotes(transaction),
                                     builder: (context, snapshot) {
-                                      String categoryName = snapshot.data ?? 'Sana catégorie';
+                                      String categoryName = snapshot.data ?? 'Sans catégorie';
                                       return Text(
                                         categoryName,
                                         style: const TextStyle(fontSize: 14),
                                       );
                                     },
                                   ),
+                                  trailing: transaction['isRecurring'] == true
+                                    ? Icon(
+                                        Icons.repeat,
+                                        color: Colors.green,
+                                        size: 24,
+                                      )
+                                    : null,
                                   onTap: () {
                                     Navigator.push(
                                       context,
