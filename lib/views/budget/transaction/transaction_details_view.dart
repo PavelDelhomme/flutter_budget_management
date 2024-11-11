@@ -1,8 +1,11 @@
 import 'dart:developer';
+import 'dart:io';
+import 'package:budget_management/services/utils_services/image_service.dart';
 import 'package:budget_management/utils/recurring_transactions.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
@@ -46,6 +49,81 @@ class TransactionDetailsView extends StatelessWidget {
     }
   }
 
+  Future<void> _replacePhoto(BuildContext context, String oldUrl) async {
+    final picker = ImagePicker();
+    final pickedFile = await showDialog<XFile?>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Choississez une option"),
+          actions: <Widget>[
+            TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop(await picker.pickImage(source: ImageSource.camera));
+                },
+                child: const Text("Prendre une photo"),
+            ),
+            TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop(await picker.pickImage(source: ImageSource.gallery));
+                },
+                child: Text("Depuis la gallery"),
+            ),
+          ],
+        );
+      }
+    );
+
+    if (pickedFile != null) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        // Uploadez la nouvelle image (à personnaliser en fonction de votre fonction de téléchargement)
+        final newUrl = await uploadImage(File(pickedFile.path), user.uid);
+        if (newUrl != null) {
+          // Mettez à jour Firestore en supprimant l'ancienne URL et ajoutant la nouvelle
+          await transaction.reference.update({
+            "photos": FieldValue.arrayRemove([oldUrl]),
+          });
+          await transaction.reference.update({
+            "photos": FieldValue.arrayUnion([newUrl]),
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Photo remplacée avec succès")),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _confirmAndRemovePhoto(BuildContext context, String url) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Confirmer la suppression"),
+          content: const Text("Êtes-vous sûr de vouloir supprimer cette photo ?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text("Annuler"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text("Supprimer"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _removePhoto(url);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Photo supprimée")),
+      );
+    }
+  }
+
   Future<void> _removePhoto(String url) async {
     try {
       await transaction.reference.update({
@@ -55,6 +133,47 @@ class TransactionDetailsView extends StatelessWidget {
       log("Erreur lors de la suppression de la photo : $e");
     }
   }
+  Future<void> _pickImageAndUpload(BuildContext context) async {
+    final picker = ImagePicker();
+    final pickedFile = await showDialog<XFile?>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Choississez une option"),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop(await picker.pickImage(source: ImageSource.camera));
+              },
+              child: const Text("Prendre une photo"),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop(await picker.pickImage(source: ImageSource.gallery));
+              },
+              child: const Text("Depuis la galerie"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (pickedFile != null) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final newUrl = await uploadImage(File(pickedFile.path), user.uid);
+        if (newUrl != null) {
+          await transaction.reference.update({
+            "photos": FieldValue.arrayUnion([newUrl]),
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Photo ajoutée avec succès")),
+          );
+        }
+      }
+    }
+  }
+
 
   Future<void> _toggleRecurrence(BuildContext context,
       DocumentSnapshot transaction, bool makeRecurring) async {
@@ -255,61 +374,75 @@ class TransactionDetailsView extends StatelessWidget {
               ],
               const SizedBox(height: 20),
               if (photos.isNotEmpty)
+                if (photos.length < 2)
+                  ElevatedButton(
+                    onPressed: () async {
+                      await _pickImageAndUpload(context);
+                    },
+                    child: const Text("Ajouter une photo (2 max)"),
+                  ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Reçus :", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      children: photos.map((url) {
-                        return Stack(
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ImageScreen(imageUrl: url),
-                                  ),
-                                );
-                              },
-                              child: SizedBox(
-                                height: 100,
-                                width: 100,
-                                child: Image.network(
-                                  url,
-                                  fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return const Center(child: CircularProgressIndicator());
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Center(
-                                      child: Icon(Icons.error, color: Colors.red, size: 50),
-                                    );
-                                  },
+
+                    // Si photos n'est pas vide, afficher les images
+                    if (photos.isNotEmpty)
+                      ...photos.map((url) => Stack(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ImageScreen(imageUrl: url),
                                 ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 4,
-                              right: 4,
-                              child: GestureDetector(
-                                onTap: () async {
-                                  await _removePhoto(url);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Photo supprimée")),
+                              );
+                            },
+                            child: SizedBox(
+                              height: 100,
+                              width: 100,
+                              child: Image.network(
+                                url,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(child: CircularProgressIndicator());
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Center(
+                                    child: Icon(Icons.error, color: Colors.red, size: 50),
                                   );
                                 },
-                                child: const Icon(Icons.close, color: Colors.red, size: 20),
                               ),
                             ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: GestureDetector(
+                              onTap: () => _confirmAndRemovePhoto(context, url),
+                              child: const Icon(Icons.close, color: Colors.red, size: 20),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 4,
+                            right: 4,
+                            child: GestureDetector(
+                              onTap: () => _replacePhoto(context, url),
+                              child: const Icon(Icons.refresh, color: Colors.blue, size: 20),
+                            ),
+                          ),
+                        ],
+                      )).toList(),
                   ],
+                ),
+              // Button pour ajouter une photo
+              if (photos.length < 2)
+                ElevatedButton(
+                  onPressed: () async {
+                    _pickImageAndUpload(context);
+                  },
+                  child: const Icon(Icons.add_a_photo),
                 ),
             ],
           ),

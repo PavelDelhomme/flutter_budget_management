@@ -109,14 +109,15 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
         _categories = categoriesSnapshot.docs.map((doc) => doc['name'].toString()).toSet().toList();
         _categoriesLoaded = true; // Important : assure que le formulaire est chargé
         // Si c'est une transaction existante, définir la catégorie sélectionnée
-        if (widget.transaction != null && _selectedCategory == null) {
+        if (widget.transaction != null) {
           final categoryId = widget.transaction!['categorie_id']?.toString();
-          if (categoryId != null) {
-            _selectedCategory = _categories.firstWhere(
-                  (category) => category == categoryId,
-              orElse: () => _categories.isNotEmpty ? _categories[0] : '',
-            );
+          if (categoryId != null && _categories.contains(categoryId)) {
+            _selectedCategory = categoryId;
+          } else if (_categories.isNotEmpty) {
+            _selectedCategory = _categories[0];
           }
+        } else if (_categories.isNotEmpty) {
+          _selectedCategory = _categories[0]; // Sélectionner la première catégorie par défaut pour une nouvelle transaction
         }
       });
     }
