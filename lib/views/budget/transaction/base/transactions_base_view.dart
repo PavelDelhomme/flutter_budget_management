@@ -423,13 +423,24 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                     children: [
                       Card(
                         child: ListTile(
-                          title: Text(
-                            'Total Crédit : €${totalCredit.toStringAsFixed(2)}',
-                            style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(
-                            'Total Débit : €${totalDebit.toStringAsFixed(2)}',
-                            style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              if (transactionFilter == "credits" || transactionFilter == "all")
+                                Expanded(
+                                  child: Text(
+                                    'Total Crédit : €${totalCredit.toStringAsFixed(2)}',
+                                    style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              if (transactionFilter == "debits" || transactionFilter == "all")
+                                Expanded(
+                                  child: Text(
+                                    'Total Débit : €${totalDebit.toStringAsFixed(2)}',
+                                    style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                            ],
                           ),
                           trailing: (isViewingMonth && !showOnlyRecurring && transactionFilter == "all")
                               ? Text(
