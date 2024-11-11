@@ -355,7 +355,6 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                 });
               },
             ),
-            // Affichage de la vue actuelle
             Text(
               isViewingMonth ? " (Mois)" : " (Jour)",
               style: const TextStyle(color: Colors.grey),
@@ -370,7 +369,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                   showOnlyRecurring = !showOnlyRecurring;
                 });
               },
-              tooltip: showOnlyRecurring ? "Afficher toutes les transactions": "Afficher les transactions réccurentes",
+              tooltip: showOnlyRecurring ? "Afficher toutes les transactions" : "Afficher les transactions récurrentes",
             )
           ],
         ),
@@ -398,7 +397,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
             ),
             const SizedBox(height: 20),
             StreamBuilder<Map<String, dynamic>>(
-              stream: _getTransactions(), // Utilise les transactions du jour
+              stream: _getTransactions(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -432,10 +431,12 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                             'Total Débit : €${totalDebit.toStringAsFixed(2)}',
                             style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                           ),
-                          trailing: Text(
+                          trailing: (isViewingMonth && !showOnlyRecurring && transactionFilter == "all")
+                              ? Text(
                             'Économies : €${(totalCredit - totalDebit).toStringAsFixed(2)}',
                             style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-                          ),
+                          )
+                              : null,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -453,14 +454,12 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                             return Dismissible(
                               key: Key(transaction.id),
                               direction: DismissDirection.horizontal,
-                              // Swipe sur la droite pour supprimer
                               background: Container(
                                 color: Colors.red,
                                 padding: const EdgeInsets.symmetric(horizontal: 20),
                                 alignment: Alignment.centerLeft,
                                 child: const Icon(Icons.delete, color: Colors.white),
                               ),
-                              // Swipe sur la droite pour éditer
                               secondaryBackground: Container(
                                 color: Colors.blue,
                                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -469,13 +468,11 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                               ),
                               confirmDismiss: (direction) async {
                                 if (direction == DismissDirection.startToEnd) {
-                                  // Confirmer la suppression
                                   _deleteTransaction(context, transaction);
-                                  return false; // Ne pas supprimer automatiquement car géré par _deleteTransaction
+                                  return false;
                                 } else if (direction == DismissDirection.endToStart) {
-                                  // Ouvre l'écran de modification
                                   _editTransaction(context, transaction);
-                                  return false; // Ne supprime pas lors de l'édition
+                                  return false;
                                 }
                                 return false;
                               },
@@ -510,12 +507,12 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                                     },
                                   ),
                                   trailing: transaction['isRecurring'] == true
-                                    ? Icon(
-                                        Icons.repeat,
-                                        color: Colors.green,
-                                        size: 24,
-                                      )
-                                    : null,
+                                      ? Icon(
+                                    Icons.repeat,
+                                    color: Colors.green,
+                                    size: 24,
+                                  )
+                                      : null,
                                   onTap: () {
                                     Navigator.push(
                                       context,
@@ -525,7 +522,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                                     );
                                   },
                                 ),
-                              )
+                              ),
                             );
                           },
                         ),
