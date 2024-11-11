@@ -172,26 +172,34 @@ class TransactionDetailsView extends StatelessWidget {
                     fontSize: 18,
                   color: isDebit ? Colors.green : Colors.red,
                 ),
-              ),
-              const SizedBox(height: 10),
+              ),const SizedBox(height: 10),
               if (categoryId != null)
                 FutureBuilder<String>(
                   future: _getCategoryName(categoryId),
                   builder: (context, snapshot) {
                     log(categoryId);
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Text('Chargement de la catégorie...',
-                          style: TextStyle(fontSize: 18));
+                      return const Text(
+                        'Chargement de la catégorie...',
+                        style: TextStyle(fontSize: 18),
+                      );
                     } else if (snapshot.hasError || !snapshot.hasData) {
-                      return const Text('Catégorie inconnue',
-                          style: TextStyle(fontSize: 18));
+                      return const Text(
+                        'Catégorie inconnue',
+                        style: TextStyle(fontSize: 18),
+                      );
                     }
-                    return Text('Catégorie : ${snapshot.data}',
-                        style: const TextStyle(fontSize: 18));
+                    return Text(
+                      'Catégorie : ${snapshot.data}',
+                      style: const TextStyle(fontSize: 18),
+                    );
                   },
                 )
               else
-                const Text('Type : Revenus', style: TextStyle(fontSize: 18)),
+                Text(
+                  'Type : ${isDebit ? 'Débit' : 'Crédit'}',
+                  style: const TextStyle(fontSize: 18),
+                ),
               const SizedBox(height: 10),
               Text('Notes : $notes', style: const TextStyle(fontSize: 18)),
               const SizedBox(height: 10),

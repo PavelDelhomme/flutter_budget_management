@@ -23,6 +23,7 @@ import 'package:budget_management/utils/categories.dart';
 import '../../../services/utils_services/permissions_service.dart';
 import '../../../services/utils_services/image_service.dart';
 import '../../../utils/transactions.dart';
+import 'ancien_detail/transaction_details_modal.dart';
 
 class TransactionFormScreen extends StatefulWidget {
   final DocumentSnapshot? transaction;
@@ -107,7 +108,16 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       setState(() {
         _categories = categoriesSnapshot.docs.map((doc) => doc['name'].toString()).toSet().toList();
         _categoriesLoaded = true; // Important : assure que le formulaire est chargé
-        log("Categories loaded: $_categories");
+        // Si c'est une transaction existante, définir la catégorie sélectionnée
+        if (widget.transaction != null && _selectedCategory == null) {
+          final categoryId = widget.transaction!['categorie_id']?.toString();
+          if (categoryId != null) {
+            _selectedCategory = _categories.firstWhere(
+                  (category) => category == categoryId,
+              orElse: () => _categories.isNotEmpty ? _categories[0] : '',
+            );
+          }
+        }
       });
     }
   }
@@ -162,6 +172,24 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       subdomains: const ['a', 'b', 'c'],
       userAgentPackageName: 'com.budget.budget_management',
+    );
+  }
+
+  // Carte invisible pour initialiser MapController
+  Widget _buildInvisibleMap() {
+    return SizedBox(
+      height: 0,
+      width: 0,
+      child: FlutterMap(
+        mapController: _mapController,
+        options: MapOptions(
+          initialCenter: _userLocation ?? _defaultLocation,
+          initialZoom: _zoom,
+        ),
+        children: [
+          _buildTileLayer(),
+        ],
+      ),
     );
   }
 
@@ -252,64 +280,46 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       },
     );
   }
-
   Future<void> _saveTransaction() async {
     if (_amountController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: const Text("Veuillez saisir un montant pour ajouter la transaction"))
+        const SnackBar(content: Text("Veuillez saisir un montant pour ajouter la transaction")),
       );
       return;
     }
 
     if (_isDebit && (_selectedCategory == null || _selectedCategory!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Veuillez sélectionner une catégorie pour un débit."))
+        const SnackBar(content: Text("Veuillez sélectionner une catégorie pour un débit.")),
       );
       return;
     }
 
     final user = FirebaseAuth.instance.currentUser;
-
-    if (user != null && _amountController.text.isNotEmpty) {
+    if (user != null) {
       final amount = double.tryParse(_amountController.text.replaceAll(",", ".")) ?? 0.0;
       final notes = _notesController.text;
       final dateTransaction = _dateController.text.isNotEmpty ? DateFormat('yMd').parse(_dateController.text) : DateTime.now();
-      final isReccuring = _isRecurring;
+      final isRecurring = _isRecurring;
 
       List<String> newPhotos = [];
       for (File image in _photoFiles) {
         String? url = await uploadImage(image, user.uid);
-        if (url != null) {
-          newPhotos.add(url);
-        }
+        if (url != null) newPhotos.add(url);
       }
 
-      // Fusionner les images existantes et nouvelles
-      List<String> updatedPhotos = [..._existingPhotos, ...newPhotos];
-
-      // Conversion de la localisation
-      GeoPoint? geoPoint;
-      if (_userLocation != null) {
-        geoPoint = GeoPoint(_userLocation!.latitude, _userLocation!.longitude);
-      }
+      final updatedPhotos = [..._existingPhotos, ...newPhotos];
+      GeoPoint? geoPoint = _userLocation != null ? GeoPoint(_userLocation!.latitude, _userLocation!.longitude) : null;
 
       try {
         if (_isDebit) {
-          // Vérifiez que la catégorie sélectionnée existe bien pour les débits
-          await _checkAndCreateCategoryIfNeeded(user.uid, _selectedCategory!, 'debit');
-
-          // Récupérer l'ID de la catégorie sélectionnée
           final categoryId = await _getCategoryId(user.uid, _selectedCategory!, 'debit');
-
           if (widget.transaction != null) {
-            await FirebaseFirestore.instance
-                .collection("debits")
-                .doc(widget.transaction!.id)
-                .update({
+            await FirebaseFirestore.instance.collection("debits").doc(widget.transaction!.id).update({
               'amount': amount,
               'notes': notes,
               'date': Timestamp.fromDate(dateTransaction),
-              'isRecurring': isReccuring,
+              'isRecurring': isRecurring,
               'photos': updatedPhotos,
               'location': geoPoint,
               'categorie_id': categoryId,
@@ -323,45 +333,36 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
               notes: notes,
               photos: updatedPhotos,
               location: geoPoint,
-              isRecurring: isReccuring,
+              isRecurring: isRecurring,
             );
           }
         } else {
-          // Gestion pour les crédits
           if (widget.transaction != null) {
-            await FirebaseFirestore.instance
-                .collection('credits')
-                .doc(widget.transaction!.id)
-                .update({
+            await FirebaseFirestore.instance.collection('credits').doc(widget.transaction!.id).update({
               'amount': amount,
               'notes': notes,
               'date': Timestamp.fromDate(dateTransaction),
-              'isRecurring': isReccuring,
+              'isRecurring': isRecurring,
             });
           } else {
             await addCreditTransaction(
-                userId: user.uid,
-                date: dateTransaction,
-                amount: amount,
-                notes: notes,
-                isRecurring: isReccuring
+              userId: user.uid,
+              date: dateTransaction,
+              amount: amount,
+              notes: notes,
+              isRecurring: isRecurring,
             );
           }
         }
 
-        if (mounted) {
-          Navigator.pop(context, true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(widget.transaction == null ? "Transaction ajoutée" : "Transaction mise à jour")),
-          );
-        }
+        Navigator.pop(context, true);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.transaction == null ? "Transaction ajoutée" : "Transaction mise à jour")));
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Erreur: $e")),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Erreur: $e")));
       }
     }
   }
+
 
   Future<String> _getCategoryId(String userId, String categoryName, String type) async {
     final categoriesSnapshot = await FirebaseFirestore.instance
@@ -664,15 +665,71 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
           },
           hint: const Text("Select a category."),
         ),
-        if (_currentAdress != null) Text("Address: $_currentAdress"),
-        _buildMap(),
+        const SizedBox(height: 16),
+        Text("Adresse: ${_currentAdress ?? 'Non spécifiée'}"),
+        const SizedBox(height: 10),
         ElevatedButton(
           onPressed: _getCurrentLocation,
-          child: const Text("Get Current Location"),
+          child: const Text("Récupérer ma position actuelle"),
+        ),
+        const SizedBox(height: 10),
+        _buildPhotosSection(), // Remplace la carte par la section des photos
+      ],
+    );
+  }
+
+  Widget _buildPhotosSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Reçus :", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          children: [
+            ..._existingPhotos.map((url) => _buildPhotoWidget(url)),
+            ..._photoFiles.map((file) => _buildPhotoWidget(file.path, isFile: true)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: _pickImage,
+          child: const Text("Ajouter des reçus (2 max)"),
         ),
       ],
     );
   }
+
+  Widget _buildPhotoWidget(String imagePath, {bool isFile = false}) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ImageScreen(imageUrl: imagePath),
+          ),
+        );
+      },
+      child: SizedBox(
+        height: 100,
+        width: 100,
+        child: isFile
+            ? Image.file(File(imagePath), fit: BoxFit.cover)
+            : Image.network(
+          imagePath,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const Center(child: CircularProgressIndicator());
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return const Center(child: Icon(Icons.error, color: Colors.red, size: 50));
+          },
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildTypeSwitch() {
     return Row(
@@ -731,6 +788,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
               _buildTransactionForm(),
               const SizedBox(height: 16.0),
               _buildRecurringSwitch(),
+              _buildInvisibleMap(),
               Center(
                 child: ElevatedButton(
                   onPressed: _saveTransaction,
