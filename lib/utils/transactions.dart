@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import '../models/transaction_model.dart';
 import 'budgets.dart';
 import 'generate_ids.dart';
@@ -27,6 +30,8 @@ Future<void> addDebitTransaction({
     categorie_id: categoryId,
   );
 
+  log("Ajout de transaction de type Débit - ID: $transactionId - Montant: $amount");
+
   await FirebaseFirestore.instance
       .collection('debits')
       .doc(transactionId)
@@ -51,6 +56,8 @@ Future<void> addCreditTransaction({
     isRecurring: isRecurring,
     amount: amount,
   );
+
+  log("Ajout de transaction de type Crédit - ID: $transactionId - Montant: $amount");
 
   await FirebaseFirestore.instance
       .collection('credits')
@@ -83,4 +90,25 @@ Future<List<Credit>> getCreditsForCategory(String userId) async {
   return snapshot.docs
       .map((doc) => Credit.fromMap(doc.data() as Map<String, dynamic>))
       .toList();
+}
+
+Text formatTransactionAmount(double amount, bool isDebit) {
+  String sign = isDebit ? '-' : '+';
+  Color amountColor = isDebit ? Colors.red : Colors.green;
+
+  // Log le signe et la couleur du montant
+  log("Montant formaté : $sign€${amount.toStringAsFixed(2)} - Couleur : ${amountColor.toString()} - Type : ${isDebit ? 'Débit' : 'Crédit'}");
+
+  return Text(
+    "$sign€${amount.toStringAsFixed(2)}",
+    style: TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+      color: amountColor,
+    ),
+  );
+}
+
+bool isDebitTransaction(DocumentSnapshot transaction) {
+  return transaction.reference.parent.id == 'debits';
 }

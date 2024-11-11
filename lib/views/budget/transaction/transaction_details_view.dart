@@ -3,11 +3,12 @@ import 'package:budget_management/utils/recurring_transactions.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geocoding/geocoding.dart';
+
+import '../../../utils/transactions.dart';
 
 class TransactionDetailsView extends StatelessWidget {
   final DocumentSnapshot transaction;
@@ -36,6 +37,7 @@ class TransactionDetailsView extends StatelessWidget {
       if (categorySnapshot.exists) {
         return categorySnapshot.get("name");
       } else {
+        log("Catégorie avec ID $categoryId non trouvé.");
         return "Catégorie inconnue";
       }
     } catch (e) {
@@ -44,6 +46,15 @@ class TransactionDetailsView extends StatelessWidget {
     }
   }
 
+  Future<void> _removePhoto(String url) async {
+    try {
+      await transaction.reference.update({
+        "photos": FieldValue.arrayRemove([url]),
+      });
+    } catch (e) {
+      log("Erreur lors de la suppression de la photo : $e");
+    }
+  }
 
   Future<void> _toggleRecurrence(BuildContext context,
       DocumentSnapshot transaction, bool makeRecurring) async {
@@ -62,7 +73,7 @@ class TransactionDetailsView extends StatelessWidget {
         categoryId: categoryId,
         startDate: transactionDate,
         amount: amount,
-        isDebit: collection == 'debits',
+        isDebit: isDebitTransaction(transaction),
       );
     } else {
       bool confirmAllOccurrences = await _confirmToggleFutureOccurrences(context);
@@ -122,7 +133,10 @@ class TransactionDetailsView extends StatelessWidget {
       );
     }
 
-    final bool isDebit = transaction.reference.parent.id == 'débits';
+    final bool isDebit = isDebitTransaction(transaction);
+    log("transaction_details_view.dart : transaction.reference.parent.id : ${transaction.reference.parent.id}");
+    log("Déterminé isDebit : $isDebit");
+
     final amount = data['amount'] ?? 0.0;
     final date = DateFormat.yMMMMd('fr_FR').format((data['date'] as Timestamp).toDate());
     final notes = data['notes'] ?? '';
@@ -130,8 +144,10 @@ class TransactionDetailsView extends StatelessWidget {
     final List<String> photos = isDebit && data.containsKey('photos') ? List<String>.from(data['photos'] ?? []) : [];
     final String? categoryId = isDebit ? data['categorie_id'] : null;
     final LatLng? location = data['localisation'] != null ? LatLng((data['localisation'] as GeoPoint).latitude, (data['localisation'] as GeoPoint).longitude) : null;
-    log("amount : $amount | categoryId : $categoryId | isDebit : $isDebit}");
-    String sign = isDebit ? '+' : '-';
+
+    // Log les détails de la transaction
+    log("Détails de la transaction - Montant : $amount, Type : ${isDebit ? 'Débit' : 'Crédit'}, Catégorie ID : $categoryId, Notes : $notes");
+
 
     return Scaffold(
       appBar: AppBar(
@@ -166,14 +182,17 @@ class TransactionDetailsView extends StatelessWidget {
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-              Text(
-                'Montant : ${sign}€${amount.toStringAsFixed(2)}',
-                style: TextStyle(
-                    fontSize: 18,
-                  color: isDebit ? Colors.green : Colors.red,
-                ),
-              ),const SizedBox(height: 10),
-              if (categoryId != null)
+              Row(
+                children: [
+                  const Text(
+                    'Montant : ',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  formatTransactionAmount(amount, isDebit),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (categoryId != null && categoryId.isNotEmpty)
                 FutureBuilder<String>(
                   future: _getCategoryName(categoryId),
                   builder: (context, snapshot) {
@@ -239,40 +258,54 @@ class TransactionDetailsView extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Reçus :",
-                        style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text("Reçus :", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
                       children: photos.map((url) {
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ImageScreen(imageUrl: url),
+                        return Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ImageScreen(imageUrl: url),
+                                  ),
+                                );
+                              },
+                              child: SizedBox(
+                                height: 100,
+                                width: 100,
+                                child: Image.network(
+                                  url,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(child: CircularProgressIndicator());
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Center(
+                                      child: Icon(Icons.error, color: Colors.red, size: 50),
+                                    );
+                                  },
+                                ),
                               ),
-                            );
-                          },
-                          child: SizedBox(
-                            height: 100,
-                            width: 100,
-                            child: Image.network(
-                              url,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(
-                                    child: CircularProgressIndicator());
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Center(
-                                    child: Icon(Icons.error,
-                                        color: Colors.red, size: 50));
-                              },
                             ),
-                          ),
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: GestureDetector(
+                                onTap: () async {
+                                  await _removePhoto(url);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("Photo supprimée")),
+                                  );
+                                },
+                                child: const Icon(Icons.close, color: Colors.red, size: 20),
+                              ),
+                            ),
+                          ],
                         );
                       }).toList(),
                     ),

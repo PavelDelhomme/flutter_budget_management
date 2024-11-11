@@ -701,35 +701,47 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
   }
 
   Widget _buildPhotoWidget(String imagePath, {bool isFile = false}) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ImageScreen(imageUrl: imagePath),
+    return Stack(
+      children: [
+        SizedBox(
+          height: 100,
+          width: 100,
+          child: isFile
+              ? Image.file(
+            File(imagePath),
+            fit: BoxFit.cover,
+          )
+              : Image.network(
+            imagePath,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return const Center(child: CircularProgressIndicator());
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return const Center(child: Icon(Icons.error, color: Colors.red, size: 50));
+            },
           ),
-        );
-      },
-      child: SizedBox(
-        height: 100,
-        width: 100,
-        child: isFile
-            ? Image.file(File(imagePath), fit: BoxFit.cover)
-            : Image.network(
-          imagePath,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return const Center(child: CircularProgressIndicator());
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return const Center(child: Icon(Icons.error, color: Colors.red, size: 50));
-          },
         ),
-      ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                if (isFile) {
+                  _photoFiles.removeWhere((file) => file.path == imagePath);
+                } else {
+                  _existingPhotos.remove(imagePath);
+                }
+              });
+            },
+            child: const Icon(Icons.close, color: Colors.red, size: 20),
+          ),
+        ),
+      ],
     );
   }
-
 
   Widget _buildTypeSwitch() {
     return Row(

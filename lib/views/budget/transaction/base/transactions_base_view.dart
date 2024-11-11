@@ -7,6 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../utils/transactions.dart';
+
 class TransactionsBaseView extends StatefulWidget {
   final bool showRecurring; // Indique si l'on affiche uniquement les récurrentes
 
@@ -48,6 +50,9 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
     DateTime startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     DateTime endOfDay = startOfDay.add(Duration(days: 1));
 
+    // Log de la date sélectionnée
+    log("Date sélectionnée : $selectedDate");
+
     // Applique le filtre `showOnlyRecurring` si activé
     var debitStream = FirebaseFirestore.instance
         .collection("debits")
@@ -73,12 +78,22 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
       double creditTotal = creditSnapshot.docs
           .fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
 
+      log("Total Débit : €${debitTotal.toStringAsFixed(2)}");
+      log("Total Crédit : €${creditTotal.toStringAsFixed(2)}");
+
+
       List<QueryDocumentSnapshot> transactions = [
         ...debitSnapshot.docs,
         ...creditSnapshot.docs,
       ];
 
       transactions.sort((a, b) => (b['date'] as Timestamp).compareTo(a['date'] as Timestamp)); // Tri par date croissante
+
+      // Log le type de transaction pour chaque document
+      for (var transaction in transactions) {
+        final bool isDebit = isDebitTransaction(transaction);
+        log("Transaction ID: ${transaction.id} - Type: ${isDebit ? 'Débit' : 'Crédit'} - Montant: ${transaction['amount']}");
+      }
 
       return {
         'transactions': transactions,
@@ -198,18 +213,16 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
 
   Future<String> getCategoryNameOrNotes(DocumentSnapshot transaction) async {
     bool isDebit = transaction.reference.parent.id == 'debits';
+    String? categoryId = transaction['categorie_id'];
 
-    if (isDebit) {
-      // Si c'est un débit, on suppose qu'il y a une catégorie ID
-      String? categoryId = transaction['categorie_id'];
-      if (categoryId != null) {
-        return await getCategoryName(categoryId);
-      } else {
-        return "Sans catégorie";
-      }
-    } else {
+    if (isDebit && categoryId != null) {
+      // Pour les débits avec une catégorie valide, récupère le nom de la catégorie
+      return await getCategoryName(categoryId);
+    } else if (!isDebit) {
       // Si c'est un crédit et qu'il n'y a pas de catégorie, affiche les notes
       return (transaction['notes'] ?? "Sans notes").toString();
+    } else {
+      return "Sans catégorie";
     }
   }
 
@@ -412,7 +425,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
 
                 List<QueryDocumentSnapshot> transactions = data['transactions'] ?? [];
                 transactions = transactions.where((transaction) {
-                  bool isDebit = transaction.reference.parent.id == 'debits';
+                  final bool isDebit = isDebitTransaction(transaction);
                   if (transactionFilter == "debits") return isDebit;
                   if (transactionFilter == "credits") return !isDebit;
                   return true;
@@ -456,9 +469,8 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                           itemCount: transactions.length,
                           itemBuilder: (context, index) {
                             var transaction = transactions[index];
-                            bool isDebit = transaction.reference.parent.id == 'debits';
+                            final bool isDebit = isDebitTransaction(transaction);
                             double amount = transaction['amount'].toDouble();
-                            String sign = isDebit ? '-' : '+';
                             DateTime transactionDate = (transaction['date'] as Timestamp).toDate();
                             String formattedDate = DateFormat('d MMMM', 'fr_FR').format(transactionDate);
 
@@ -499,14 +511,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                                     formattedDate,
                                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                   ),
-                                  title: Text(
-                                    "$sign${amount.toStringAsFixed(2)} €",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: isDebit ? Colors.red : Colors.green,
-                                    ),
-                                  ),
+                                  title: formatTransactionAmount(amount, isDebit),
                                   subtitle: FutureBuilder<String>(
                                     future: getCategoryNameOrNotes(transaction),
                                     builder: (context, snapshot) {
