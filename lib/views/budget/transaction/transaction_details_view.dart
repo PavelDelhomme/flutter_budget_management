@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:budget_management/utils/recurring_transactions.dart';
+import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -135,6 +136,24 @@ class TransactionDetailsView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Détails de la transcation"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TransactionFormScreen(transaction: transaction)
+                ),
+              );
+
+              // Si la transaction est mise à jour, rafraîchit les détails
+              if (result == true) {
+                Navigator.pop(context);
+              }
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
