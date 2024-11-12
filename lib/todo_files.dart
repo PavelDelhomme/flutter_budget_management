@@ -41,10 +41,10 @@
 // Mesttre les photos dans les détails de la transactions
 // aggrandir photos lors du clique
 //ajouter la possibilité de modifier la transaction avec un bouton en haut de l'affichage des détails de la transaction
-//Todo demander l'authentification a nouveau pour pouvoir faire juste un button mettre  ajour le mot de passe
-// todo déclancher popup pour qu'il seconnecter en donnant adresse mail et nouveau mot d epasse
-// todo suppression champs adresse email.
-//todo juste modification mot de passe niveau profil
+//demander l'authentification a nouveau pour pouvoir faire juste un button mettre  ajour le mot de passe
+// déclancher popup pour qu'il seconnecter en donnant adresse mail et nouveau mot d epasse
+// suppression champs adresse email.
+//juste modification mot de passe niveau profil
 // todo au chargement de l'application summary view doit forcément calculere en fonction de ce qu'il se trouve dans la base de données il ne le fait pas actuellement
 //avoir tout les rublrique a la même taille. dans summary
 
