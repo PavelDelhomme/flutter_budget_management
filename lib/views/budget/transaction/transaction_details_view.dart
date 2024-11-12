@@ -1,12 +1,10 @@
 import 'dart:developer';
-import 'dart:io';
-import 'package:budget_management/services/utils_services/image_service.dart';
 import 'package:budget_management/utils/recurring_transactions.dart';
+import 'package:budget_management/views/budget/transaction/photos/photos_gallery.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
@@ -24,8 +22,10 @@ class TransactionDetailsView extends StatefulWidget {
 }
 
 class _TransactionDetailsViewState extends State<TransactionDetailsView> {
+  final ValueNotifier<List<String>> photosNotifier = ValueNotifier<List<String>>([]);
+
   FirebaseStorage storage = FirebaseStorage.instance;
-  List<String> photos = [];
+  //List<String> photos = [];
   late bool isLoading = false;
   String? statusMessage;
 
@@ -37,7 +37,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
     final data = widget.transaction.data() as Map<String, dynamic>;
     photos = data.containsKey('photos') ? List<String>.from(data['photos']) : [];
     log("Initial photos loaded :$photos");*/
-    _loadImages();
+    _loadInitialPhotos();
   }
 
 
@@ -72,217 +72,18 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
     }
   }
 
-  Future<bool> _isImageAccessible(String url, {int maxRetries = 5, int delayInSeconds = 4}) async {
-    // Vérification de l'accessibilité de l'image après plusieur tentative avant de recharger le widget
-    for (int i = 0; i < maxRetries; i++) {
-      try {
-        final request = await HttpClient().getUrl(Uri.parse(url));
-        final response = await request.close();
-        if (response.statusCode == 200) {
-          return true;
-        }
-      } catch (e) {
-        log("Tentative $i : Image inaccessible. Erreur : $e");
-      }
-      await Future.delayed(Duration(seconds: delayInSeconds));
-    }
-    return false;
-  }
-
-
-  Future<void> _loadImages() async {
-    /*
-    // Récupération des images depuis Firebase Storage
+  Future<void> _loadInitialPhotos() async {
     setState(() => isLoading = true);
-
-    final List<Map<String, dynamic>> files = [];
-    final ListResult result = await storage.ref().list();
-    final List<Reference> allFiles = result.items;
-
-    await Future.forEach<Reference>(allFiles, (file) async {
-      final String fileUrl = await file.getDownloadURL();
-      final FullMetadata fileMeta = await file.getMetadata();
-      files.add({
-        "url": fileUrl,
-        "path": file.fullPath,
-        "uploaded_by": fileMeta.customMetadata?['uploaded_by'] ?? 'N/A',
-        "description": fileMeta.customMetadata?['description'] ?? 'No description'
-      });
-    });
-
-    setState(() {
-      images = files;
-      isLoading = false;
-    });
-     */
-    setState(() => isLoading = true);
-
     final data = widget.transaction.data() as Map<String, dynamic>?;
-    setState(() {
-      photos = data != null && data.containsKey('photos') ? List<String>.from(data['photos']) : [];
-      isLoading = false;
-    });
+    photosNotifier.value = data != null && data.containsKey("photos") ? List<String>.from(data['photos']) : [];
+    setState(() => isLoading = false);
   }
 
-  Future<void> _pickImageAndUpload(String source) async {
-    if (photos.length >= 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Vous ne pouvez ajouter que 2 photos")),
-      );
-      return;
-    }
-
-    final picker = ImagePicker();
-    final XFile? pickedFile = await picker.pickImage(
-      source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
-    );
-
-    if (pickedFile == null) return;
-
-    final String fileName = DateTime.now().toIso8601String();
-    final File imageFile = File(pickedFile.path);
-
-    try {
-      await storage.ref(fileName).putFile(
-        imageFile,
-        SettableMetadata(customMetadata: {
-          'uploaded_by': FirebaseAuth.instance.currentUser?.email ?? 'N/A',
-          'description': 'User transaction image'
-        }),
-      );
-
-      // Ajouter l'URL de l'image à Firestore
-      final String downloadUrl = await storage.ref(fileName).getDownloadURL();
-      await widget.transaction.reference.update({
-        "photos": FieldValue.arrayUnion([downloadUrl])
-      });
-
-      _loadImages();
-    } catch (e) {
-      log("Erreur lors de l'upload de l'image : $e");
-    }
+  @override
+  void dispose() {
+    photosNotifier.dispose();
+    super.dispose();
   }
-
-
-  Future<void> _replacePhoto(BuildContext context, String oldUrl) async {
-    log("Attempting to replace photo: $oldUrl");
-    final picker = ImagePicker();
-    final pickedFile = await showDialog<XFile?>(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text("Choisissez une option"),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop(await picker.pickImage(source: ImageSource.camera));
-                },
-                child: const Text("Prendre une photo"),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop(await picker.pickImage(source: ImageSource.gallery));
-                },
-                child: const Text("Depuis la galerie"),
-              ),
-            ],
-          );
-        }
-    );
-
-    if (pickedFile != null) {
-      setState(() {
-        isLoading = true;
-        statusMessage = "Remplacement de l'image en cours...";
-      });
-
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final newUrl = await uploadImage(File(pickedFile.path), user.uid);
-        log("New image URL: $newUrl");
-
-        if (newUrl != null) {
-          // Attendre l'accessibilité de l'image URL
-          bool isUrlAccessible = await _isImageAccessible(newUrl);
-          if (isUrlAccessible) {
-            log("New URL accessible, updating Firestore...");
-            // Mise a jour Firestore sans cache-buster
-            await widget.transaction.reference.update({
-              "photos": FieldValue.arrayRemove([oldUrl]),
-            });
-            await widget.transaction.reference.update({
-              "photos": FieldValue.arrayUnion([newUrl]),
-            });
-            log("Firestore updated successfully.");
-            // Mettre à jour `photos` et rafraîchir l'interface
-            setState(() {
-              photos.remove(oldUrl);
-              photos.add(newUrl);
-              statusMessage = "Photo remplacée avec succès";
-              log("Updated photos list: $photos");
-            });
-          } else {
-            setState(() {
-              statusMessage = "Erreur : Impossible de charger la nouvelle photo";
-              log("New URL not accessible: $newUrl");
-            });
-          }
-        }
-      }
-
-      setState(() {
-        isLoading = false;
-        Future.delayed(Duration(seconds: 2), () {
-          setState(() {
-            statusMessage = null;
-          });
-        });
-      });
-    }
-  }
-
-  Future<void> _confirmAndRemovePhoto(BuildContext context, String url) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Confirmer la suppression"),
-          content: const Text("Êtes-vous sûr de vouloir supprimer cette photo ?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text("Annuler"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text("Supprimer"),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed == true) {
-      await _removePhoto(url);
-    }
-  }
-  Future<void> _removePhoto(String url) async {
-    try {
-      await widget.transaction.reference.update({
-        "photos": FieldValue.arrayRemove([url]),
-      });
-      setState(() {
-        photos.remove(url);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Photo supprimée")),
-      );
-    } catch (e) {
-      log("Erreur lors de la suppression de la photo : $e");
-    }
-  }
-
-
 
   Future<void> _toggleRecurrence(BuildContext context,
       DocumentSnapshot transaction, bool makeRecurring) async {
@@ -555,66 +356,9 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                           );
                         }).toList(),
                       ),*/
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text("Ajouter une photo (2 max)"),
-                        if (photos.length < 2)
-                          ElevatedButton(
-                            onPressed: () => _pickImageAndUpload('gallery'),
-                            child: const Icon(Icons.add_a_photo),
-                          ),
-                      ],
+                    PhotoGallery(
+                        transaction: widget.transaction,
                     ),
-                    const SizedBox(height: 10),
-                    Column(
-                      children: photos.map((url) {
-                        return Stack(
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ImageScreen(imageUrl: url),
-                                  ),
-                                );
-                              },
-                              child: SizedBox(
-                                height: 100,
-                                width: 100,
-                                child: Image.network(
-                                  url,
-                                  fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return const Center(child: CircularProgressIndicator());
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Center(
-                                      child: Icon(Icons.error, color: Colors.red, size: 50),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: GestureDetector(
-                                onTap: () => _confirmAndRemovePhoto(context, url),
-                                child: const Icon(Icons.close, color: Colors.red, size: 20),
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                    if (statusMessage != null)
-                      Text(
-                        statusMessage!,
-                        style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold),
-                      ),
                     /*
                     if (photos.isNotEmpty)
                       if (photos.length < 2)
