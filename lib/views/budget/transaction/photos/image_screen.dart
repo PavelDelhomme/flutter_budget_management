@@ -10,6 +10,33 @@ class ImageScreen extends StatelessWidget {
   const ImageScreen(
       {super.key, required this.imageUrl, required this.transaction});
 
+  Future<void> _confirmAndRemovePhoto(BuildContext context) async {
+    bool confirmDeletion = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirmer la suppression"),
+          content: const Text("Êtes-vous sûr de vouloir supprimer cette photo ?"),
+          actions: [
+            TextButton(
+              child: const Text("Annuler"),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: const Text("Supprimer"),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmDeletion) {
+      await removeImage(imageUrl, transaction.reference);
+      Navigator.pop(context, "removed");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,10 +45,7 @@ class ImageScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.delete),
-            onPressed: () async {
-              await removeImage(imageUrl, transaction.reference);
-              Navigator.pop(context, "removed");
-            },
+            onPressed: () => _confirmAndRemovePhoto(context),
           ),
           IconButton(
             icon: const Icon(Icons.edit),

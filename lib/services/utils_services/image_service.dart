@@ -22,9 +22,12 @@ Future<String?> uploadImage(File file) async {
   }
 }
 
+
 Future<void> removeImage(String imageUrl, DocumentReference transactionRef) async {
   try {
-    await storage.refFromURL(imageUrl).delete();
+    // Supprimer l'image de Firebase Storage
+    await FirebaseStorage.instance.refFromURL(imageUrl).delete();
+    // Mettre à jour Firestore pour supprimer l'URL
     await transactionRef.update({
       "photos": FieldValue.arrayRemove([imageUrl]),
     });
@@ -33,17 +36,46 @@ Future<void> removeImage(String imageUrl, DocumentReference transactionRef) asyn
   }
 }
 
-Future<void> replaceImage(BuildContext context, String oldImageUrl, DocumentReference transactionRef) async {
-  final ImagePicker picker = ImagePicker();
-  final XFile? pickedFile = await showImageSourceDialog(context, picker);
+Future<void> replaceImage(BuildContext context, String imageUrl, DocumentReference transactionRef) async {
+  final picker = ImagePicker();
+  final XFile? pickedFile = await showDialog<XFile?>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text("Choisissez une option pour remplacer la photo."),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop(await picker.pickImage(source: ImageSource.camera));
+            },
+            child: const Text("Prendre une photo"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop(await picker.pickImage(source: ImageSource.gallery));
+            },
+            child: const Text("Depuis la galerie"),
+          ),
+        ],
+      );
+    },
+  );
 
   if (pickedFile != null) {
-    final String? newUrl = await uploadImage(File(pickedFile.path));
-    if (newUrl != null) {
+    final String fileName = DateTime.now().toIso8601String();
+    final File imageFile = File(pickedFile.path);
+
+    try {
+      final newUrl = await FirebaseStorage.instance
+          .ref(fileName)
+          .putFile(imageFile)
+          .then((task) => task.ref.getDownloadURL());
       await transactionRef.update({
-        "photos": FieldValue.arrayRemove([oldImageUrl]),
+        "photos": FieldValue.arrayRemove([imageUrl]),
         "photos": FieldValue.arrayUnion([newUrl]),
       });
+    } catch (e) {
+      log("Erreur lors du remplacement de l'image : $e");
     }
   }
 }

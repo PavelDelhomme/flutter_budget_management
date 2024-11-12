@@ -1,6 +1,6 @@
 import 'dart:developer';
 import 'package:budget_management/utils/recurring_transactions.dart';
-import 'package:budget_management/views/budget/transaction/photos/photos_gallery.dart';
+import 'package:budget_management/views/budget/transaction/photos/photo_gallery.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
