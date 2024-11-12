@@ -9,7 +9,6 @@ class ImageScreen extends StatelessWidget {
 
   const ImageScreen(
       {super.key, required this.imageUrl, required this.transaction});
-
   Future<void> _confirmAndRemovePhoto(BuildContext context) async {
     bool confirmDeletion = await showDialog(
       context: context,
@@ -33,9 +32,15 @@ class ImageScreen extends StatelessWidget {
 
     if (confirmDeletion) {
       await removeImage(imageUrl, transaction.reference);
-      Navigator.pop(context, "removed");
+      Navigator.pop(context, "removed"); // Indiquer la suppression
     }
   }
+
+  Future<void> _replacePhoto(BuildContext context) async {
+    await replaceImage(context, imageUrl, transaction.reference);
+    Navigator.pop(context, "replaced"); // Indiquer le remplacement
+  }
+
 
   @override
   Widget build(BuildContext context) {
