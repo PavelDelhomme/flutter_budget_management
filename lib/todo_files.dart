@@ -52,6 +52,7 @@
 // todo au chargement de l'application summary view doit forcément calculere en fonction de ce qu'il se trouve dans la base de données il ne le fait pas actuellement
 //avoir tout les rublrique a la même taille. dans summary
 
+//todo avoir la taille réel image
 //la date d el'application dois être Jour Mois Années en Français globalement.
 //lorsque dans la liste des transaction on affiche uniquement les débits ou les crédit, il daut remplacer la petite carte sommaire pour n'affiche que Total crédit ou que Total débit et si c'est Tous alors afficher en plus les économies
 //lorsque on affiche en mode mois la liste des transactions afficher les économies mais par dans la vue en mode jour.
