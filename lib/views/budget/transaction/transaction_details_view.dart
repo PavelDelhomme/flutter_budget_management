@@ -25,7 +25,7 @@ class TransactionDetailsView extends StatefulWidget {
 
 class _TransactionDetailsViewState extends State<TransactionDetailsView> {
   FirebaseStorage storage = FirebaseStorage.instance;
-  late List<Map<String, dynamic>> images = [];
+  List<String> photos = [];
   late bool isLoading = false;
   String? statusMessage;
 
@@ -89,10 +89,52 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
     return false;
   }
 
+
+  Future<void> _loadImages() async {
+    /*
+    // Récupération des images depuis Firebase Storage
+    setState(() => isLoading = true);
+
+    final List<Map<String, dynamic>> files = [];
+    final ListResult result = await storage.ref().list();
+    final List<Reference> allFiles = result.items;
+
+    await Future.forEach<Reference>(allFiles, (file) async {
+      final String fileUrl = await file.getDownloadURL();
+      final FullMetadata fileMeta = await file.getMetadata();
+      files.add({
+        "url": fileUrl,
+        "path": file.fullPath,
+        "uploaded_by": fileMeta.customMetadata?['uploaded_by'] ?? 'N/A',
+        "description": fileMeta.customMetadata?['description'] ?? 'No description'
+      });
+    });
+
+    setState(() {
+      images = files;
+      isLoading = false;
+    });
+     */
+    setState(() => isLoading = true);
+
+    final data = widget.transaction.data() as Map<String, dynamic>?;
+    setState(() {
+      photos = data != null && data.containsKey('photos') ? List<String>.from(data['photos']) : [];
+      isLoading = false;
+    });
+  }
+
   Future<void> _pickImageAndUpload(String source) async {
+    if (photos.length >= 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Vous ne pouvez ajouter que 2 photos")),
+      );
+      return;
+    }
+
     final picker = ImagePicker();
     final XFile? pickedFile = await picker.pickImage(
-      source: source == 'camera' ? ImageSource.camera : ImageSource.gallery;
+      source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
     );
 
     if (pickedFile == null) return;
@@ -119,75 +161,8 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
     } catch (e) {
       log("Erreur lors de l'upload de l'image : $e");
     }
-
-    if (pickedFile != null) {
-      setState(() {
-        isLoading = true;
-        statusMessage = "Ajout de l'image en cours...";
-      });
-
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final newUrl = await uploadImage(File(pickedFile.path), user.uid);
-        if (newUrl != null) {
-          bool isUrlAccessible = await _isImageAccessible(newUrl);
-          if (isUrlAccessible) {
-            await widget.transaction.reference.update({
-              "photos": FieldValue.arrayUnion([newUrl]),
-            });
-            setState(() {
-              photos.add(newUrl);
-              statusMessage = "Photo ajoutée avec succès";
-            });
-          } else {
-            setState(() {
-              statusMessage = "Erreur : Impossible de charger la nouvelle photo";
-            });
-          }
-        }
-      }
-
-      setState(() {
-        isLoading = false;
-        Future.delayed(Duration(seconds: 2), () {
-          setState(() {
-            statusMessage = null;
-          });
-        });
-      });
-    }
   }
 
-  Future<List<Map<String, dynamic>>> _loadImages() async {
-    // Récupération des images depuis Firebase Storage
-    setState(() => isLoading = true);
-
-    List<Map<String, dynamic>>? files = [];
-    final ListResult result = await storage.ref().list();
-    final List<Reference> allFiles = result.items;
-
-    await Future.forEach<Reference>(allFiles, (file) async {
-      final String fileUrl = await file.getDownloadURL();
-      final FullMetadata fileMeta = await file.getMetadata();
-      files.add({
-        "url": fileUrl,
-        "path": file.fullPath,
-        "uploaded_by": fileMeta.customMetadata?['uploaded_by'] ?? 'N/A',
-        "description": fileMeta.customMetadata?['description'] ?? "No description"
-      });
-    });
-
-    setState(() {
-      images = files;
-      isLoading = false;
-    });
-  }
-
-  Future<void> _delete(String ref) async {
-    await FirebaseStorage.instance.ref(ref).delete();
-    // Rebluid the UI
-    setState(() {});
-  }
 
   Future<void> _replacePhoto(BuildContext context, String oldUrl) async {
     log("Attempting to replace photo: $oldUrl");
@@ -289,9 +264,6 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
 
     if (confirmed == true) {
       await _removePhoto(url);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Photo supprimée")),
-      );
     }
   }
   Future<void> _removePhoto(String url) async {
@@ -394,12 +366,13 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
 
 
     final bool isRecurring = data['isRecurring'] ?? false;
-    final List<String> photos = isDebit && data.containsKey('photos') ? List<String>.from(data['photos'] ?? []) : [];
     final String? categoryId = isDebit ? data['categorie_id'] : null;
     final LatLng? location = data['localisation'] != null ? LatLng((data['localisation'] as GeoPoint).latitude, (data['localisation'] as GeoPoint).longitude) : null;
 
     // Log les détails de la transaction
     log("Détails de la transaction - Type : ${isDebit ? 'Débit' : 'Crédit'}, Catégorie ID : $categoryId");
+
+    //final List<String> photos = isDebit && data.containsKey('photos') ? List<String>.from(data['photos'] ?? []) : [];
 
 
     return Scaffold(
@@ -513,6 +486,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                       ),
                     ],
                     const SizedBox(height: 20), // Photos
+                    /*
                     if (photos.isNotEmpty)
                       if (photos.length < 2)
                         Row(
@@ -580,8 +554,62 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                             ],
                           );
                         }).toList(),
-                      ),
+                      ),*/
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text("Ajouter une photo (2 max)"),
+                        if (photos.length < 2)
+                          ElevatedButton(
+                            onPressed: () => _pickImageAndUpload('gallery'),
+                            child: const Icon(Icons.add_a_photo),
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 10),
+                    Column(
+                      children: photos.map((url) {
+                        return Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ImageScreen(imageUrl: url),
+                                  ),
+                                );
+                              },
+                              child: SizedBox(
+                                height: 100,
+                                width: 100,
+                                child: Image.network(
+                                  url,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(child: CircularProgressIndicator());
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Center(
+                                      child: Icon(Icons.error, color: Colors.red, size: 50),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: GestureDetector(
+                                onTap: () => _confirmAndRemovePhoto(context, url),
+                                child: const Icon(Icons.close, color: Colors.red, size: 20),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
                     if (statusMessage != null)
                       Text(
                         statusMessage!,
