@@ -1,10 +1,12 @@
 import 'dart:developer';
+import 'dart:io';
 import 'package:budget_management/utils/recurring_transactions.dart';
 import 'package:budget_management/views/budget/transaction/photos/photos_gallery.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
@@ -287,152 +289,9 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                       ),
                     ],
                     const SizedBox(height: 20), // Photos
-                    /*
-                    if (photos.isNotEmpty)
-                      if (photos.length < 2)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text("Ajouter une photo (2 max)"),
-                            // Button pour ajouter une photo
-                            if (photos.length < 2)
-                              ElevatedButton(
-                                onPressed: () async {
-                                  _pickImageAndUpload(context);
-                                },
-                                child: const Icon(Icons.add_a_photo),
-                              ),
-                          ],
-                        ),
-                      const SizedBox(height: 10), // Affichage des photos
-                      Column(
-                        children: photos.map((url) {
-                          return Stack(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => ImageScreen(imageUrl: url),
-                                    ),
-                                  );
-                                },
-                                child: SizedBox(
-                                  height: 150,
-                                  width: 150,
-                                  child: Image.network(
-                                    url,
-                                    key: ValueKey(url),
-                                    fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return const Center(child: CircularProgressIndicator());
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Center(
-                                        child: Icon(Icons.error, color: Colors.red, size: 50),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: GestureDetector(
-                                  onTap: () => _confirmAndRemovePhoto(context, url),
-                                  child: const Icon(Icons.close, color: Colors.red, size: 30),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 8,
-                                right: 8,
-                                child: GestureDetector(
-                                  onTap: () => _replacePhoto(context, url),
-                                  child: const Icon(Icons.refresh, color: Colors.blue, size: 30),
-                                ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                      ),*/
                     PhotoGallery(
                         transaction: widget.transaction,
                     ),
-                    /*
-                    if (photos.isNotEmpty)
-                      if (photos.length < 2)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text("Ajouter une photo (2 max)"),
-                            // Button pour ajouter une photo
-                            if (photos.length < 2)
-                              ElevatedButton(
-                                onPressed: () async {
-                                  _pickImageAndUpload(context);
-                                },
-                                child: const Icon(Icons.add_a_photo),
-                              ),
-                          ],
-                        ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-
-                        // Si photos n'est pas vide, afficher les images
-                        if (photos.isNotEmpty)
-                          ...photos.map((url) => Stack(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ImageScreen(imageUrl: url),
-                                    ),
-                                  );
-                                },
-                                child: SizedBox(
-                                  height: 100,
-                                  width: 100,
-                                  child: Image.network(
-                                    url,
-                                    key: ValueKey(url),
-                                    fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return const Center(child: CircularProgressIndicator());
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Center(
-                                        child: Icon(Icons.error, color: Colors.red, size: 50),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: GestureDetector(
-                                  onTap: () => _confirmAndRemovePhoto(context, url),
-                                  child: const Icon(Icons.close, color: Colors.red, size: 20),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 4,
-                                right: 4,
-                                child: GestureDetector(
-                                  onTap: () => _replacePhoto(context, url),
-                                  child: const Icon(Icons.refresh, color: Colors.blue, size: 20),
-                                ),
-                              ),
-                            ],
-                          )).toList(),
-                      ],
-                    ),
-                     */
                   ],
                 ),
               ),
@@ -442,41 +301,6 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                 child: CircularProgressIndicator(),
             ),
         ],
-      ),
-    );
-  }
-}
-
-
-class ImageScreen extends StatelessWidget {
-  final String imageUrl;
-
-  const ImageScreen({super.key, required this.imageUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Reçu"),
-      ),
-      body: Center(
-        child: Image.network(
-          imageUrl,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) {
-              return child;
-            } else {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return const Center(
-              child: Icon(Icons.error, color: Colors.red, size: 50),
-            );
-          },
-        ),
       ),
     );
   }

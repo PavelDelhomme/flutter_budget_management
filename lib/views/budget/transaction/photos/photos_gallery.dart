@@ -16,30 +16,26 @@ class PhotoGallery extends StatefulWidget {
 }
 
 class _PhotoGalleryState extends State<PhotoGallery> {
-  final FirebaseStorage storage = FirebaseStorage.instance;
-  final ImagePicker picker = ImagePicker();
   late List<String> photos = [];
   bool isLoading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadPhotos();
-  }
 
   Future<void> _loadPhotos() async {
     setState(() => isLoading = true);
     final data = widget.transaction.data() as Map<String, dynamic>?;
     List<String> fetchedPhotos = data != null && data.containsKey('photos') ? List<String>.from(data['photos']) : [];
+    setState(() {
+      photos.clear();
+      photos.addAll(fetchedPhotos);
+      isLoading = false;
+    });
+  }
 
-    // Mise à jour de la liste locale si différente de la liste Firebase
-    if (fetchedPhotos.toString() != photos.toString()) {
-      setState(() {
-        photos = fetchedPhotos;
-      });
-    }
 
-    setState(() => isLoading = false);
+  @override
+  void initState() {
+    super.initState();
+    _loadPhotos();
   }
 
   Future<void> _pickImageAndUpload(String source) async {
