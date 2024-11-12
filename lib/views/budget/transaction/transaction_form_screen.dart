@@ -23,7 +23,6 @@ import 'package:budget_management/utils/categories.dart';
 import '../../../services/utils_services/permissions_service.dart';
 import '../../../services/utils_services/image_service.dart';
 import '../../../utils/transactions.dart';
-import 'ancien_detail/transaction_details_modal.dart';
 
 class TransactionFormScreen extends StatefulWidget {
   final DocumentSnapshot? transaction;
@@ -47,11 +46,13 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
   final TextEditingController _notesController = TextEditingController();
   bool _isRecurring = false;
   bool _isDebit = true;
-  LatLng? _userLocation;
+
+  // Images
   final List<File> _photoFiles = [];
   List<String> _existingPhotos = [];
 
   // Map
+  LatLng? _userLocation;
   final MapController _mapController = MapController();
   final LatLng _defaultLocation = const LatLng(48.8566, 2.3522); // Defaut paris
   String? _currentAdress;
@@ -305,7 +306,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
 
       List<String> newPhotos = [];
       for (File image in _photoFiles) {
-        String? url = await uploadImage(image, user.uid);
+        String? url = await uploadImage(image);
         if (url != null) newPhotos.add(url);
       }
 
@@ -480,42 +481,14 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
 
 
   Future<void> _pickImage() async {
-    if (_photoFiles.length >= 2) {
+    if (_photoFiles.length + _existingPhotos.length >= 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Vous ne pouvez ajourter que 2 reçus.")),
       );
       return;
     }
 
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Ajouter une image"),
-          content: const Text("Choisissez une option"),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _selectImage(ImageSource.camera);
-              },
-              child: const Text("Prendre une photo"),
-            ),TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _selectImage(ImageSource.gallery);
-              },
-              child: const Text("Depuis la galerie"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _selectImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
+    final XFile? pickedFile = await showImageSourceDialog(context, ImagePicker());
 
     if (pickedFile != null) {
       setState(() {
@@ -523,76 +496,6 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       });
     }
   }
-
-  Future<void> _replaceImage(File oldImage) async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Remplacer l'image"),
-          content: const Text("Choisissez une option"),
-          actions: <Widget>[
-            TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await _selectNewImageForReplace(oldImage, ImageSource.camera);
-                },
-                child: const Text("Prendre une photo"),
-            ),
-            TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await _selectNewImageForReplace(oldImage, ImageSource.gallery);
-                },
-                child: const Text("Depuis la galerie"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _selectNewImageForReplace(File oldImage, ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
-
-    if (pickedFile != null) {
-      setState(() {
-        _photoFiles[_photoFiles.indexOf(oldImage)] = File(pickedFile.path);
-      });
-    }
-  }
-
-  Future<void> _showImageOptionsDialog(File image) async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Options de l'image"),
-          content: Image.file(image, fit: BoxFit.cover),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _photoFiles.remove(image);
-                });
-                Navigator.of(context).pop();
-              },
-              child: const Text("Supprimer"),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _replaceImage(image);
-              },
-              child: const Text("Remplacer"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
 
   Widget _buildTransactionForm() {
     return Column(

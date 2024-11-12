@@ -1,11 +1,9 @@
-import 'dart:developer';
 import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:budget_management/views/budget/transaction/photos/image_screen.dart';
+import 'image_screen.dart';
+import 'package:budget_management/services/utils_services/image_service.dart';
 
 class PhotoGallery extends StatefulWidget {
   final DocumentSnapshot transaction;
@@ -20,6 +18,7 @@ class _PhotoGalleryState extends State<PhotoGallery> {
   final ImagePicker picker = ImagePicker();
   late List<String> photos = [];
   bool isLoading = false;
+  int currentIndex = 0;
 
 
   Future<void> _loadPhotos() async {
@@ -27,9 +26,13 @@ class _PhotoGalleryState extends State<PhotoGallery> {
     final data = widget.transaction.data() as Map<String, dynamic>?;
     List<String> fetchedPhotos = data != null && data.containsKey('photos') ? List<String>.from(data['photos']) : [];
     setState(() {
+      photos = fetchedPhotos;
+      isLoading = false;
+      /*
       photos.clear();
       photos.addAll(fetchedPhotos);
       isLoading = false;
+      */
     });
   }
 
@@ -48,45 +51,14 @@ class _PhotoGalleryState extends State<PhotoGallery> {
       return;
     }
 
-    final XFile? pickedFile = await showDialog<XFile?>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Ajouter une photo"),
-          content: const Text("Choisissez une option pour ajouter une photos."),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context, await picker.pickImage(source: ImageSource.camera));
-              },
-              child: const Text("Prendre une photo"),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context, await picker.pickImage(source: ImageSource.gallery));
-              },
-              child: const Text("Depuis la galerie"),
-            ),
-          ],
-        );
-      },
-    );
-
+    final XFile? pickedFile = await showImageSourceDialog(context, picker);
     if (pickedFile != null) {
-      final String fileName = DateTime.now().toIso8601String();
-      final File imageFile = File(pickedFile.path);
-
-      try {
-        final downloadUrl = await FirebaseStorage.instance
-            .ref(fileName)
-            .putFile(imageFile)
-            .then((task) => task.ref.getDownloadURL());
+      final String? downloadUrl = await uploadImage(File(pickedFile.path));
+      if (downloadUrl != null) {
         await widget.transaction.reference.update({
           "photos": FieldValue.arrayUnion([downloadUrl]),
         });
         _loadPhotos();
-      } catch (e) {
-        log("Erreur lors de l'upload de l'image : $e");
       }
     }
   }
@@ -105,32 +77,42 @@ class _PhotoGalleryState extends State<PhotoGallery> {
         const SizedBox(height: 10),
         isLoading
             ? const CircularProgressIndicator()
-            : Wrap(
-          spacing: 10,
-          children: photos.map((url) {
-            return GestureDetector(
-              onTap: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ImageScreen(
-                      imageUrl: url,
-                      transaction: widget.transaction,
+            : photos.isEmpty
+                ? const Text("Aucune photo disponible")
+                : SizedBox(
+                    height: 200,
+                    child: PageView.builder(
+                      itemCount: photos.length,
+                      controller: PageController(initialPage: currentIndex),
+                      onPageChanged: (index) {
+                        setState(() {
+                          currentIndex = index;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        return GestureDetector(
+                          onTap: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ImageScreen(
+                                  imageUrl: photos[index],
+                                  transaction: widget.transaction,
+                                ),
+                              ),
+                            );
+                            if (result == "removed" || result == "replaced") {
+                              _loadPhotos();
+                            }
+                          },
+                          child: Image.network(
+                            photos[index],
+                            fit: BoxFit.cover,
+                          ),
+                        );
+                      },
                     ),
                   ),
-                );
-                if (result == "removed" || result == "replaced") {
-                  _loadPhotos();
-                }
-              },
-              child: SizedBox(
-                height: 100,
-                width: 100,
-                child: Image.network(url, fit: BoxFit.cover),
-              ),
-            );
-          }).toList(),
-        ),
       ],
     );
   }
