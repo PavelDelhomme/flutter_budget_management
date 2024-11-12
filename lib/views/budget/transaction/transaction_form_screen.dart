@@ -517,7 +517,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       controller: _amountController,
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
-      decoration: const InputDecoration(hintText: "Enter amount"),
+      decoration: const InputDecoration(hintText: "Entré un montant"),
     );
   }
 
@@ -527,7 +527,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       readOnly: true,
       onTap: _selectDate,
       decoration: const InputDecoration(
-        hintText: "Select a date and time",
+        hintText: "Selectionner la date",
       ),
     );
   }
@@ -535,7 +535,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
   Widget _buildNotesField() {
     return TextField(
       controller: _notesController,
-      decoration: const InputDecoration(hintText: "Add notes"),
+      decoration: const InputDecoration(hintText: "Ajouter des notes"),
     );
   }
 
@@ -555,7 +555,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
             ..add(
               const DropdownMenuItem<String>(
                 value: "New Category",
-                child: Text("Create a new category"),
+                child: Text("Créer une nouvelle catégorie"),
               ),
             ),
           onChanged: (newValue) {
@@ -567,7 +567,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
               });
             }
           },
-          hint: const Text("Select a category."),
+          hint: const Text("Sélectionner une catégorie."),
         ),
         const SizedBox(height: 16),
         Text("Adresse: ${_currentAdress ?? 'Non spécifiée'}"),
@@ -672,7 +672,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text("Recurring"),
+        const Text("Réccurente"),
         Switch(
           value: _isRecurring,
           onChanged: (value) {
@@ -690,7 +690,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.transaction == null ? 'Add Transaction' : 'Edit Transaction'),
+        title: Text(widget.transaction == null ? 'Ajouter Transaction' : 'Modifier Transaction'),
       ),
       body: _categoriesLoaded
           ? Padding(
@@ -708,7 +708,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
               Center(
                 child: ElevatedButton(
                   onPressed: _saveTransaction,
-                  child: Text(widget.transaction == null ? 'Add' : 'Update'),
+                  child: Text(widget.transaction == null ? 'Ajouter' : 'Modifier'),
                 ),
               ),
             ],
