@@ -330,13 +330,17 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
           children: [
             GestureDetector(
               onTap: () async {
+                bool isInitialDateSelectable = debitDays.containsKey(selectedDate) || creditDays.containsKey(selectedDate);
+
                 DateTime? pickedDate = await showDatePicker(
                   context: context,
                   initialDate: selectedDate,
                   firstDate: DateTime(DateTime.now().year - 1),
                   lastDate: DateTime(DateTime.now().year + 1),
                   locale: const Locale("fr", "FR"),
-                  selectableDayPredicate: (day) => debitDays.containsKey(day) || creditDays.containsKey(day), // todo erreur de predictable :  Failed assertion: line 205 pos 5: 'selectableDayPredicate == null || initialDate == null || selectableDayPredicate(initialDate)': Provided initialDate 2024-11-03 00:00:00.000 must satisfy provided selectableDayPredicate.
+                  selectableDayPredicate: isInitialDateSelectable
+                      ? (day) => debitDays.containsKey(day) || creditDays.containsKey(day)
+                      : null,
                   builder: (context, child) {
                     return Theme(
                       data: Theme.of(context).copyWith(
