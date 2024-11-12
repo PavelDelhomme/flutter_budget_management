@@ -13,10 +13,26 @@ import 'package:geocoding/geocoding.dart';
 
 import '../../../utils/transactions.dart';
 
-class TransactionDetailsView extends StatelessWidget {
+class TransactionDetailsView extends StatefulWidget {
   final DocumentSnapshot transaction;
 
   const TransactionDetailsView({super.key, required this.transaction});
+
+  @override
+  _TransactionDetailsViewState createState() => _TransactionDetailsViewState();
+}
+
+class _TransactionDetailsViewState extends State<TransactionDetailsView> {
+  late List<String> photos;
+
+  @override
+  void initState() {
+    super.initState();
+    // Charger les photos initiales
+    final data = widget.transaction.data() as Map<String, dynamic>;
+    photos = data.containsKey('photos') ? List<String>.from(data['photos']) : [];
+  }
+
 
   Future<String> _getAddressFromLatLng(LatLng location) async {
     try {
@@ -55,38 +71,43 @@ class TransactionDetailsView extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Choississez une option"),
+          title: const Text("Choisissez une option"),
           actions: <Widget>[
             TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop(await picker.pickImage(source: ImageSource.camera));
-                },
-                child: const Text("Prendre une photo"),
+              onPressed: () async {
+                Navigator.of(context).pop(await picker.pickImage(source: ImageSource.camera));
+              },
+              child: const Text("Prendre une photo"),
             ),
             TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop(await picker.pickImage(source: ImageSource.gallery));
-                },
-                child: Text("Depuis la gallery"),
+              onPressed: () async {
+                Navigator.of(context).pop(await picker.pickImage(source: ImageSource.gallery));
+              },
+              child: const Text("Depuis la galerie"),
             ),
           ],
         );
-      }
+      },
     );
 
     if (pickedFile != null) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Uploadez la nouvelle image (à personnaliser en fonction de votre fonction de téléchargement)
         final newUrl = await uploadImage(File(pickedFile.path), user.uid);
         if (newUrl != null) {
-          // Mettez à jour Firestore en supprimant l'ancienne URL et ajoutant la nouvelle
-          await transaction.reference.update({
+          await widget.transaction.reference.update({
             "photos": FieldValue.arrayRemove([oldUrl]),
           });
-          await transaction.reference.update({
+          await widget.transaction.reference.update({
             "photos": FieldValue.arrayUnion([newUrl]),
           });
+
+          // Met à jour `photos` et rafraîchit l'interface
+          setState(() {
+            photos.remove(oldUrl);
+            photos.add(newUrl);
+          });
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Photo remplacée avec succès")),
           );
@@ -126,9 +147,15 @@ class TransactionDetailsView extends StatelessWidget {
 
   Future<void> _removePhoto(String url) async {
     try {
-      await transaction.reference.update({
+      await widget.transaction.reference.update({
         "photos": FieldValue.arrayRemove([url]),
       });
+      setState(() {
+        photos.remove(url);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Photo supprimée")),
+      );
     } catch (e) {
       log("Erreur lors de la suppression de la photo : $e");
     }
@@ -139,7 +166,7 @@ class TransactionDetailsView extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Choississez une option"),
+          title: const Text("Choisissez une option"),
           actions: <Widget>[
             TextButton(
               onPressed: () async {
@@ -163,8 +190,11 @@ class TransactionDetailsView extends StatelessWidget {
       if (user != null) {
         final newUrl = await uploadImage(File(pickedFile.path), user.uid);
         if (newUrl != null) {
-          await transaction.reference.update({
+          await widget.transaction.reference.update({
             "photos": FieldValue.arrayUnion([newUrl]),
+          });
+          setState(() {
+            photos.add(newUrl);
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Photo ajoutée avec succès")),
@@ -241,7 +271,7 @@ class TransactionDetailsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = transaction.data() as Map<String, dynamic>?;
+    final data = widget.transaction.data() as Map<String, dynamic>?;
 
     if (data == null) {
       return Scaffold(
@@ -252,8 +282,8 @@ class TransactionDetailsView extends StatelessWidget {
       );
     }
 
-    final bool isDebit = isDebitTransaction(transaction);
-    log("transaction_details_view.dart : transaction.reference.parent.id : ${transaction.reference.parent.id}");
+    final bool isDebit = isDebitTransaction(widget.transaction);
+    log("transaction_details_view.dart : transaction.reference.parent.id : ${widget.transaction.reference.parent.id}");
     log("Déterminé isDebit : $isDebit");
 
     final amount = data['amount'] ?? 0.0;
@@ -278,7 +308,7 @@ class TransactionDetailsView extends StatelessWidget {
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => TransactionFormScreen(transaction: transaction)
+                  builder: (context) => TransactionFormScreen(transaction: widget.transaction)
                 ),
               );
 
@@ -349,7 +379,7 @@ class TransactionDetailsView extends StatelessWidget {
                   Switch(
                     value: isRecurring,
                     onChanged: (value) async {
-                      await _toggleRecurrence(context, transaction, value);
+                      await _toggleRecurrence(context, widget.transaction, value);
                       Navigator.of(context).pop();
                     },
                   )
