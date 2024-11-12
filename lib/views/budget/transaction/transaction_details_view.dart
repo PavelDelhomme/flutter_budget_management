@@ -27,18 +27,12 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
   final ValueNotifier<List<String>> photosNotifier = ValueNotifier<List<String>>([]);
   final ImagePicker picker = ImagePicker();
   FirebaseStorage storage = FirebaseStorage.instance;
-  //List<String> photos = [];
   late bool isLoading = false;
   String? statusMessage;
 
   @override
   void initState() {
     super.initState();
-    // Charger les photos initiales
-    /*
-    final data = widget.transaction.data() as Map<String, dynamic>;
-    photos = data.containsKey('photos') ? List<String>.from(data['photos']) : [];
-    log("Initial photos loaded :$photos");*/
     _loadInitialPhotos();
   }
 
@@ -74,6 +68,12 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
     }
   }
 
+  String _addCacheBuster(String url) {
+    final cacheBuster = 'cache_buster=${DateTime.now().millisecondsSinceEpoch}';
+    return url.contains('?') ? '$url&$cacheBuster' : '$url?$cacheBuster';
+  }
+
+
   Future<void> _loadInitialPhotos() async {
     setState(() => isLoading = true);
     try {
@@ -101,7 +101,33 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
       return;
     }
 
-    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    // Boîte de dialogue pour choisir entre caméra et galerie
+    final XFile? pickedFile = await showDialog<XFile>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Ajouter une photo"),
+          content: const Text("Choisissez une option pour ajouter une photo."),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () async {
+                final XFile? cameraFile = await picker.pickImage(source: ImageSource.camera);
+                Navigator.of(context).pop(cameraFile);
+              },
+              child: const Text("Caméra"),
+            ),
+            TextButton(
+              onPressed: () async {
+                final XFile? galleryFile = await picker.pickImage(source: ImageSource.gallery);
+                Navigator.of(context).pop(galleryFile);
+              },
+              child: const Text("Galerie"),
+            ),
+          ],
+        );
+      },
+    );
+
     if (pickedFile != null) {
       setState(() => isLoading = true);
       try {
@@ -125,7 +151,6 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
     }
   }
 
-
   Future<void> _removePhoto(String url) async {
     try {
       await widget.transaction.reference.update({
@@ -141,7 +166,32 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
   }
 
   Future<void> _replacePhoto(String oldUrl) async {
-    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await showDialog<XFile>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Remplacer la photo"),
+          content: const Text("Choisissez une option pour remplacer la photo."),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () async {
+                final XFile? cameraFile = await picker.pickImage(source: ImageSource.camera);
+                Navigator.of(context).pop(cameraFile);
+              },
+              child: const Text("Caméra"),
+            ),
+            TextButton(
+              onPressed: () async {
+                final XFile? galleryFile = await picker.pickImage(source: ImageSource.gallery);
+                Navigator.of(context).pop(galleryFile);
+              },
+              child: const Text("Galerie"),
+            ),
+          ],
+        );
+      },
+    );
+
     if (pickedFile != null) {
       setState(() => isLoading = true);
       try {
@@ -150,15 +200,27 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
         await storageRef.putFile(File(pickedFile.path));
 
         final newUrl = await storageRef.getDownloadURL();
+
+        // Supprimer l'ancienne photo et ajouter la nouvelle dans Firestore
         await widget.transaction.reference.update({
           "photos": FieldValue.arrayRemove([oldUrl]),
+        });
+        await widget.transaction.reference.update({
           "photos": FieldValue.arrayUnion([newUrl]),
         });
 
+        // Recharger les photos pour s'assurer que l'ancienne image est supprimée
         photosNotifier.value = List.from(photosNotifier.value)
           ..remove(oldUrl)
-          ..add(newUrl);
+          ..add(_addCacheBuster(newUrl));
+
+
         statusMessage = "Photo remplacée avec succès";
+
+        // Recharger les données pour s'assurer que l'ancienne photo est bien supprimée
+        //await _loadInitialPhotos();
+
+        //statusMessage = "Photo remplacée avec succès";
       } catch (e) {
         log("Erreur lors du remplacement de l'image : $e");
         statusMessage = "Erreur lors du remplacement de l'image";
@@ -167,6 +229,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
       }
     }
   }
+
 
   Future<void> _toggleRecurrence(BuildContext context,
       DocumentSnapshot transaction, bool makeRecurring) async {
@@ -344,70 +407,71 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                       },
                     ),
                   const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("Ajouter une photo (2 max)"),
-                      if (photosNotifier.value.length < 2)
-                        ElevatedButton(
-                          onPressed: _pickImageAndUpload,
-                          child: const Icon(Icons.add_a_photo),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  ValueListenableBuilder<List<String>>(
-                    valueListenable: photosNotifier,
-                    builder: (context, photos, child) {
-                      return Column(
-                        children: photos.map((url) {
-                          return Stack(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => ImageScreen(imageUrl: url)),
-                                  );
-                                },
-                                child: SizedBox(
-                                  height: 150,
-                                  width: 150,
-                                  child: Image.network(
-                                    url,
-                                    fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      return loadingProgress == null
-                                          ? child
-                                          : const Center(child: CircularProgressIndicator());
-                                    },
+                  if (isDebit)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text("Ajouter une photo (2 max)"),
+                        if (photosNotifier.value.length < 2)
+                          ElevatedButton(
+                            onPressed: _pickImageAndUpload,
+                            child: const Icon(Icons.add_a_photo),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    ValueListenableBuilder<List<String>>(
+                      valueListenable: photosNotifier,
+                      builder: (context, photos, child) {
+                        return Column(
+                          children: photos.map((url) {
+                            return Stack(
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => ImageScreen(imageUrl: url)),
+                                    );
+                                  },
+                                  child: SizedBox(
+                                    height: 150,
+                                    width: 150,
+                                    child: Image.network(
+                                      _addCacheBuster(url),
+                                      fit: BoxFit.cover,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        return loadingProgress == null
+                                            ? child
+                                            : const Center(child: CircularProgressIndicator());
+                                      },
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: GestureDetector(
-                                  onTap: () => _removePhoto(url),
-                                  child: const Icon(Icons.close, color: Colors.red, size: 30),
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: GestureDetector(
+                                    onTap: () => _removePhoto(url),
+                                    child: const Icon(Icons.close, color: Colors.red, size: 30),
+                                  ),
                                 ),
-                              ),
-                              Positioned(
-                                bottom: 8,
-                                right: 8,
-                                child: GestureDetector(
-                                  onTap: () => _replacePhoto(url),
-                                  child: const Icon(Icons.refresh, color: Colors.blue, size: 30),
+                                Positioned(
+                                  bottom: 8,
+                                  right: 8,
+                                  child: GestureDetector(
+                                    onTap: () => _replacePhoto(url),
+                                    child: const Icon(Icons.refresh, color: Colors.blue, size: 30),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
-                  if (statusMessage != null)
-                    Text(statusMessage!, style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                              ],
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                    if (statusMessage != null)
+                      Text(statusMessage!, style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
