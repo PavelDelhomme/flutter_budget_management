@@ -30,36 +30,78 @@ class ProfileViewState extends State<ProfileView> {
     super.dispose();
   }
 
-  //Todo demander l'authentification a nouveau pour pouvoir faire juste un button mettre  ajour le mot de passe
-  // todo déclancher popup pour qu'il seconnecter en donnant adresse mail et nouveau mot d epasse
-  // todo suppression champs adresse email.
-
-  Future<void> _updateEmail() async {
-    if (user != null && _emailController.text.isNotEmpty) {
-      try {
-        await user!.updateEmail(_emailController.text);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("Email mis à jour.")));
-      } catch (e) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Erreur : $e")));
-      }
+  Future<void> _reauthenticateUser(String email, String password) async {
+    try {
+      final credential = EmailAuthProvider.credential(email: email, password: password);
+      await user!.reauthenticateWithCredential(credential);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Ré-authentification réussie"))
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erreur de ré-authentification: $e"))
+      );
     }
   }
 
+  // Popup pour ré-authentification
+  Future<void> _showReauthPopup() async {
+    String email = '';
+    String password = '';
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Ré-authentification requise'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: const InputDecoration(labelText: 'Adresse email'),
+                onChanged: (value) {
+                  email = value;
+                },
+              ),
+              TextField(
+                decoration: const InputDecoration(labelText: 'Mot de passe'),
+                obscureText: true,
+                onChanged: (value) {
+                  password = value;
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _reauthenticateUser(email, password);
+              },
+              child: const Text('Confirmer'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Mise à jour du mot de passe
   Future<void> _updatePassword() async {
-    if (user != null && _passwordController.text.isNotEmpty) {
+    if (_passwordController.text.isNotEmpty) {
       try {
         await user!.updatePassword(_passwordController.text);
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Mot de passe mis à jour.')));
       } catch (e) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Erreur: $e')));
+        if (e.toString().contains('requires-recent-login')) {
+          _showReauthPopup(); // Demander la ré-authentification
+        } else {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('Erreur: $e')));
+        }
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -72,27 +114,13 @@ class ProfileViewState extends State<ProfileView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ExpansionTile(
-                title: const Text("Modifier l'adresse email"),
-                children: [
-                  TextField(
-                    controller: _emailController,
-                    decoration: const InputDecoration(
-                        labelText: "Nouvelle adresse email"),
-                  ),
-                  ElevatedButton(
-                    onPressed: _updateEmail,
-                    child: const Text("Mettre à jour l'e-mail"),
-                  ),
-                ],
-              ),
+              // Affichage seulement du champ de modification du mot de passe
               ExpansionTile(
                 title: const Text("Modifier le mot de passe"),
                 children: [
                   TextField(
                     controller: _passwordController,
-                    decoration: const InputDecoration(
-                        labelText: "Nouveau mot de passe"),
+                    decoration: const InputDecoration(labelText: "Nouveau mot de passe"),
                     obscureText: true,
                   ),
                   ElevatedButton(
