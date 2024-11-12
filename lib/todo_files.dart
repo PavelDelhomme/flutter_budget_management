@@ -58,3 +58,5 @@
 //lorsque on affiche en mode mois la liste des transactions afficher les économies mais par dans la vue en mode jour.
 
 //ajout du boutons de vue spécifique pour n'afficher que les transaction réccurente
+
+//todo transactions_base_view.dart  Failed assertion: line 205 pos 5: 'selectableDayPredicate == null || initialDate == null || selectableDayPredicate(initialDate)': Provided initialDate 2024-11-03 00:00:00.000 must satisfy provided selectableDayPredicate.
