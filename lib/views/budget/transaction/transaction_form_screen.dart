@@ -75,19 +75,14 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       final Timestamp? date = transaction['date'] as Timestamp?;
       _dateController.text = date != null ? DateFormat('yMd').format(date.toDate()) : DateFormat('yMd').format(DateTime.now());
 
-      // Localisation, uniquement pour les débits
       if (_isDebit) {
-        // Initialisation des reçus existants
+        // Localisation, uniquement pour les débits
         _existingPhotos = List<String>.from(transaction['photos'] ?? []);
-        final GeoPoint? location = (transaction?.data() as Map<String, dynamic>?)?.containsKey('location')  == true
-            ? transaction!['location'] as GeoPoint?
-            : null;
+        final GeoPoint? location = transaction['location'] as GeoPoint?;
+        _userLocation = location != null ? LatLng(location.latitude, location.longitude) : _defaultLocation;
 
-        _userLocation = location != null
-            ? LatLng(location.latitude, location.longitude)
-            : _defaultLocation;
-
-        _selectedCategory = transaction['categorie_id']?.toString().trim() ?? '';
+        // Assurez-vous que _selectedCategory est défini uniquement pour les débits
+        _selectedCategory = transaction['categorie_id']?.toString().trim();
       }
     } else {
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
@@ -108,9 +103,10 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
 
       setState(() {
         _categories = categoriesSnapshot.docs.map((doc) => doc['name'].toString()).toSet().toList();
-        _categoriesLoaded = true; // Important : assure que le formulaire est chargé
-        // Si c'est une transaction existante, définir la catégorie sélectionnée
-        if (widget.transaction != null) {
+        _categoriesLoaded = true;
+
+        // Définir la catégorie sélectionnée pour les transactions de type débit seulement
+        if (_isDebit && widget.transaction != null) {
           final categoryId = widget.transaction!['categorie_id']?.toString();
           if (categoryId != null && _categories.contains(categoryId)) {
             _selectedCategory = categoryId;
@@ -118,7 +114,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
             _selectedCategory = _categories[0];
           }
         } else if (_categories.isNotEmpty) {
-          _selectedCategory = _categories[0]; // Sélectionner la première catégorie par défaut pour une nouvelle transaction
+          _selectedCategory = _categories[0]; // Par défaut pour une nouvelle transaction
         }
       });
     }
@@ -653,17 +649,24 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       children: [
         const Text("Type: "),
         const Text("Credit"),
-        Switch(
-          value: _isDebit,
-          onChanged: (value) {
-            setState(() {
-              _isDebit = value;
-              _categoriesLoaded = false;
-              _loadCategories(); // Reload categories on type change
-            });
-          },
+        Tooltip(
+          message: widget.transaction != null
+              ? "Type non modifiable pour une transaction existante"
+              : "", // Affiche un message seulement si c'est une transaction existante
+          child: Switch(
+            value: _isDebit,
+            onChanged: widget.transaction == null
+                ? (value) {
+              setState(() {
+                _isDebit = value;
+                _categoriesLoaded = false;
+                _loadCategories(); // Recharger les catégories lors du changement de type
+              });
+            }
+                : null, // Désactive le switch pour une transaction existante
+          ),
         ),
-        const Text("Debit")
+        const Text("Debit"),
       ],
     );
   }
