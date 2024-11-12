@@ -5,6 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:budget_management/views/budget/transaction/photos/image_screen.dart';
 
 class PhotoGallery extends StatefulWidget {
   final DocumentSnapshot transaction;
@@ -16,6 +17,7 @@ class PhotoGallery extends StatefulWidget {
 }
 
 class _PhotoGalleryState extends State<PhotoGallery> {
+  final ImagePicker picker = ImagePicker();
   late List<String> photos = [];
   bool isLoading = false;
 
@@ -38,169 +40,94 @@ class _PhotoGalleryState extends State<PhotoGallery> {
     _loadPhotos();
   }
 
-  Future<void> _pickImageAndUpload(String source) async {
+  Future<void> _pickImageAndUpload() async {
     if (photos.length >= 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Vous ne pouvez ajouter que 2 photos")),
+        const SnackBar(content: Text("Vous ne pouvez ajouter que 2 photos.")),
       );
       return;
     }
 
-    final XFile? pickedImage = await picker.pickImage(
-      source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
-      maxWidth: 1920,
-    );
-
-    if (pickedImage == null) return;
-
-    final String fileName = DateTime.now().toIso8601String();
-    final File imageFile = File(pickedImage.path);
-
-    try {
-      await storage.ref(fileName).putFile(
-        imageFile,
-        SettableMetadata(customMetadata: {
-          'uploaded_by': FirebaseAuth.instance.currentUser?.email ?? 'N/A',
-          'description': 'User transaction image'
-        }),
-      );
-
-      final String downloadUrl = await storage.ref(fileName).getDownloadURL();
-      await widget.transaction.reference.update({
-        "photos": FieldValue.arrayUnion([downloadUrl])
-      });
-
-      _loadPhotos();
-    } catch (e) {
-      log("Erreur lors de l'upload de l'image : $e");
-    }
-  }
-
-  Future<void> _confirmAndRemovePhoto(String url) async {
-    final confirmed = await showDialog<bool>(
+    final XFile? pickedFile = await showDialog<XFile?>(
       context: context,
-      builder: (context) {
+      builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Confirmer la suppression"),
-          content: const Text("Êtes-vous sûr de vouloir supprimer cette photo ?"),
+          title: const Text("Ajouter une photo"),
+          content: const Text("Choisissez une option pour ajouter une photos."),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text("Annuler"),
+              onPressed: () async {
+                Navigator.pop(context, await picker.pickImage(source: ImageSource.camera));
+              },
+              child: const Text("Prendre une photo"),
             ),
             TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text("Supprimer"),
+              onPressed: () async {
+                Navigator.pop(context, await picker.pickImage(source: ImageSource.gallery));
+              },
+              child: const Text("Depuis la galerie"),
             ),
           ],
         );
       },
     );
 
-    if (confirmed == true) {
-      await _removePhoto(url);
-    }
-  }
+    if (pickedFile != null) {
+      final String fileName = DateTime.now().toIso8601String();
+      final File imageFile = File(pickedFile.path);
 
-  Future<void> _removePhoto(String url) async {
-    try {
-      await storage.refFromURL(url).delete();
-      await widget.transaction.reference.update({
-        "photos": FieldValue.arrayRemove([url]),
-      });
-      _loadPhotos();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Photo supprimée")),
-      );
-    } catch (e) {
-      log("Erreur lors de la suppression de la photo : $e");
-    }
-  }
-
-  Future<bool> _isImageAccessible(String url, {int maxRetries = 5, int delayInSeconds = 4}) async {
-    // Vérification de l'accessibilité de l'image après plusieur tentative avant de recharger le widget
-    for (int i = 0; i < maxRetries; i++) {
       try {
-        final request = await HttpClient().getUrl(Uri.parse(url));
-        final response = await request.close();
-        if (response.statusCode == 200) {
-          return true;
-        }
+        final downloadUrl = await FirebaseStorage.instance
+            .ref(fileName)
+            .putFile(imageFile)
+            .then((task) => task.ref.getDownloadURL());
+        await widget.transaction.reference.update({
+          "photos": FieldValue.arrayUnion([downloadUrl]),
+        });
+        _loadPhotos();
       } catch (e) {
-        log("Tentative $i : Image inaccessible. Erreur : $e");
+        log("Erreur lors de l'upload de l'image : $e");
       }
-      await Future.delayed(Duration(seconds: delayInSeconds));
     }
-    return false;
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text("Ajouter une photo (2 max)"),
-            if (photos.length < 2)
-              ElevatedButton(
-                onPressed: () async {
-                  await _pickImageAndUpload('gallery');
-                },
-                child: const Icon(Icons.add_a_photo),
-              ),
-          ],
-        ),
+        // Bouton pour ajouter une photo si moins de 2
+        if (photos.length < 2)
+          ElevatedButton.icon(
+            onPressed: _pickImageAndUpload,
+            icon: const Icon(Icons.add_a_photo),
+            label: const Text("Ajouter une photo"),
+          ),
         const SizedBox(height: 10),
         isLoading
             ? const CircularProgressIndicator()
             : Wrap(
           spacing: 10,
           children: photos.map((url) {
-            return FutureBuilder<bool>(
-              future: _isImageAccessible(url),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator();
-                }
-                if (snapshot.hasError || !(snapshot.data ?? false)) {
-                  return const Icon(Icons.error, color: Colors.red, size: 50);
-                }
-                return Stack(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ImageScreen(imageUrl: url),
-                          ),
-                        );
-                      },
-                      child: SizedBox(
-                        height: 100,
-                        width: 100,
-                        child: Image.network(
-                          url,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const Center(child: CircularProgressIndicator());
-                          },
-                        ),
-                      ),
+            return GestureDetector(
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ImageScreen(
+                      imageUrl: url,
+                      transaction: widget.transaction,
                     ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: GestureDetector(
-                        onTap: () => _confirmAndRemovePhoto(url),
-                        child: const Icon(Icons.close, color: Colors.red, size: 20),
-                      ),
-                    ),
-                  ],
+                  ),
                 );
+                if (result == "removed" || result == "replaced") {
+                  _loadPhotos();
+                }
               },
+              child: SizedBox(
+                height: 100,
+                width: 100,
+                child: Image.network(url, fit: BoxFit.cover),
+              ),
             );
           }).toList(),
         ),
@@ -209,34 +136,3 @@ class _PhotoGalleryState extends State<PhotoGallery> {
   }
 }
 
-
-class ImageScreen extends StatelessWidget {
-  final String imageUrl;
-
-  const ImageScreen({super.key, required this.imageUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Reçu"),
-      ),
-      body: Center(
-        child: Image.network(
-          imageUrl,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return const Center(
-              child: Icon(Icons.error, color: Colors.red, size: 50),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}

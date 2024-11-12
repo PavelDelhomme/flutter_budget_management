@@ -32,7 +32,7 @@ class ImageScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Choisissez une option"),
+          title: const Text("Choisissez une option pour remplacer la photo."),
           actions: <Widget>[
             TextButton(
               onPressed: () async {
@@ -80,7 +80,7 @@ class ImageScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Reçus"),
+        title: const Text("Reçu"),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete),
