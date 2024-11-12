@@ -24,6 +24,8 @@ class TransactionDetailsView extends StatefulWidget {
 
 class _TransactionDetailsViewState extends State<TransactionDetailsView> {
   late List<String> photos;
+  late bool isLoading = false;
+  String? statusMessage;
 
   @override
   void initState() {
@@ -65,7 +67,24 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
     }
   }
 
-  Future<void> _replacePhoto(BuildContext context, String oldUrl) async {
+  Future<bool> _isImageAccessible(String url, {int maxRetries = 5, int delayInSeconds = 2}) async {
+    // Vérification de l'accessibilité de l'image après plusieur tentative avant de recharger le widget
+    for (int i = 0; i < maxRetries; i++) {
+      try {
+        final request = await HttpClient().getUrl(Uri.parse(url));
+        final response = await request.close();
+        if (response.statusCode == 200) {
+          return true;
+        }
+      } catch (e) {
+        log("Tentative $i : Image inaccessible. Erreur : $e");
+      }
+      await Future.delayed(Duration(seconds: delayInSeconds));
+    }
+    return false;
+  }
+
+  Future<void> _pickImageAndUpload(BuildContext context) async {
     final picker = ImagePicker();
     final pickedFile = await showDialog<XFile?>(
       context: context,
@@ -91,28 +110,110 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
     );
 
     if (pickedFile != null) {
+      setState(() {
+        isLoading = true;
+        statusMessage = "Ajout de l'image en cours...";
+      });
+
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         final newUrl = await uploadImage(File(pickedFile.path), user.uid);
         if (newUrl != null) {
-          await widget.transaction.reference.update({
-            "photos": FieldValue.arrayRemove([oldUrl]),
-          });
-          await widget.transaction.reference.update({
-            "photos": FieldValue.arrayUnion([newUrl]),
-          });
-
-          // Met à jour `photos` et rafraîchit l'interface
-          setState(() {
-            photos.remove(oldUrl);
-            photos.add(newUrl);
-          });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Photo remplacée avec succès")),
-          );
+          bool isUrlAccessible = await _isImageAccessible(newUrl);
+          if (isUrlAccessible) {
+            await widget.transaction.reference.update({
+              "photos": FieldValue.arrayUnion([newUrl]),
+            });
+            setState(() {
+              photos.add(newUrl);
+              statusMessage = "Photo ajoutée avec succès";
+            });
+          } else {
+            setState(() {
+              statusMessage = "Erreur : Impossible de charger la nouvelle photo";
+            });
+          }
         }
       }
+
+      setState(() {
+        isLoading = false;
+        Future.delayed(Duration(seconds: 2), () {
+          setState(() {
+            statusMessage = null;
+          });
+        });
+      });
+    }
+  }
+
+  Future<void> _replacePhoto(BuildContext context, String oldUrl) async {
+    final picker = ImagePicker();
+    final pickedFile = await showDialog<XFile?>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Choisissez une option"),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop(await picker.pickImage(source: ImageSource.camera));
+                },
+                child: const Text("Prendre une photo"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop(await picker.pickImage(source: ImageSource.gallery));
+                },
+                child: const Text("Depuis la galerie"),
+              ),
+            ],
+          );
+        }
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        isLoading = true;
+        statusMessage = "Remplacement de l'image en cours...";
+      });
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final newUrl = await uploadImage(File(pickedFile.path), user.uid);
+        if (newUrl != null) {
+          // Attendre l'accessibilité de l'image URL
+          bool isUrlAccessible = await _isImageAccessible(newUrl);
+          if (isUrlAccessible) {
+            // Mise a jour Firestore sans cache-buster
+            await widget.transaction.reference.update({
+              "photos": FieldValue.arrayRemove([oldUrl]),
+            });
+            await widget.transaction.reference.update({
+              "photos": FieldValue.arrayUnion([newUrl]),
+            });
+            // Mettre à jour `photos` et rafraîchir l'interface
+            setState(() {
+              photos.remove(oldUrl);
+              photos.add(newUrl);
+              statusMessage = "Photo remplacée avec succès";
+            });
+          } else {
+            setState(() {
+              statusMessage = "Erreur : Impossible de charger la nouvelle photo";
+            });
+          }
+        }
+      }
+
+      setState(() {
+        isLoading = false;
+        Future.delayed(Duration(seconds: 2), () {
+          setState(() {
+            statusMessage = null;
+          });
+        });
+      });
     }
   }
 
@@ -144,7 +245,6 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
       );
     }
   }
-
   Future<void> _removePhoto(String url) async {
     try {
       await widget.transaction.reference.update({
@@ -160,49 +260,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
       log("Erreur lors de la suppression de la photo : $e");
     }
   }
-  Future<void> _pickImageAndUpload(BuildContext context) async {
-    final picker = ImagePicker();
-    final pickedFile = await showDialog<XFile?>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Choisissez une option"),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop(await picker.pickImage(source: ImageSource.camera));
-              },
-              child: const Text("Prendre une photo"),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop(await picker.pickImage(source: ImageSource.gallery));
-              },
-              child: const Text("Depuis la galerie"),
-            ),
-          ],
-        );
-      },
-    );
 
-    if (pickedFile != null) {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final newUrl = await uploadImage(File(pickedFile.path), user.uid);
-        if (newUrl != null) {
-          await widget.transaction.reference.update({
-            "photos": FieldValue.arrayUnion([newUrl]),
-          });
-          setState(() {
-            photos.add(newUrl);
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Photo ajoutée avec succès")),
-          );
-        }
-      }
-    }
-  }
 
 
   Future<void> _toggleRecurrence(BuildContext context,
@@ -244,8 +302,6 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
           .update({'isRecurring': false});
     }
   }
-
-
   Future<bool> _confirmToggleFutureOccurrences(BuildContext context) async {
     return await showDialog(
       context: context,
@@ -269,6 +325,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
         false;
   }
 
+
   @override
   Widget build(BuildContext context) {
     final data = widget.transaction.data() as Map<String, dynamic>?;
@@ -286,16 +343,14 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
     log("transaction_details_view.dart : transaction.reference.parent.id : ${widget.transaction.reference.parent.id}");
     log("Déterminé isDebit : $isDebit");
 
-    final amount = data['amount'] ?? 0.0;
-    final date = DateFormat.yMMMMd('fr_FR').format((data['date'] as Timestamp).toDate());
-    final notes = data['notes'] ?? '';
+
     final bool isRecurring = data['isRecurring'] ?? false;
     final List<String> photos = isDebit && data.containsKey('photos') ? List<String>.from(data['photos'] ?? []) : [];
     final String? categoryId = isDebit ? data['categorie_id'] : null;
     final LatLng? location = data['localisation'] != null ? LatLng((data['localisation'] as GeoPoint).latitude, (data['localisation'] as GeoPoint).longitude) : null;
 
     // Log les détails de la transaction
-    log("Détails de la transaction - Montant : $amount, Type : ${isDebit ? 'Débit' : 'Crédit'}, Catégorie ID : $categoryId, Notes : $notes");
+    log("Détails de la transaction - Type : ${isDebit ? 'Débit' : 'Crédit'}, Catégorie ID : $categoryId");
 
 
     return Scaffold(
@@ -320,164 +375,180 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Date : $date",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Text(
-                    'Montant : ',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  formatTransactionAmount(amount, isDebit),
-                ],
-              ),
-              const SizedBox(height: 10),
-              if (categoryId != null && categoryId.isNotEmpty)
-                FutureBuilder<String>(
-                  future: _getCategoryName(categoryId),
-                  builder: (context, snapshot) {
-                    log(categoryId);
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Text(
-                        'Chargement de la catégorie...',
-                        style: TextStyle(fontSize: 18),
-                      );
-                    } else if (snapshot.hasError || !snapshot.hasData) {
-                      return const Text(
-                        'Catégorie inconnue',
-                        style: TextStyle(fontSize: 18),
-                      );
-                    }
-                    return Text(
-                      'Catégorie : ${snapshot.data}',
-                      style: const TextStyle(fontSize: 18),
-                    );
-                  },
-                )
-              else
-                Text(
-                  'Type : ${isDebit ? 'Débit' : 'Crédit'}',
-                  style: const TextStyle(fontSize: 18),
-                ),
-              const SizedBox(height: 10),
-              Text('Notes : $notes', style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Transaction récurrente :',
-                      style: TextStyle(fontSize: 18)),
-                  Switch(
-                    value: isRecurring,
-                    onChanged: (value) async {
-                      await _toggleRecurrence(context, widget.transaction, value);
-                      Navigator.of(context).pop();
-                    },
-                  )
-                ],
-              ),
-              const SizedBox(height: 20),
-              if (location != null) ...[
-                FutureBuilder<String>(
-                  future: _getAddressFromLatLng(location),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Text('Chargement de l\'adresse...',
-                          style: TextStyle(fontSize: 18));
-                    } else if (snapshot.hasError || !snapshot.hasData) {
-                      return const Text('Adresse inconnue',
-                          style: TextStyle(fontSize: 18));
-                    }
-                    return Text('Adresse : ${snapshot.data}',
-                        style: const TextStyle(fontSize: 18));
-                  },
-                ),
-              ],
-              const SizedBox(height: 20),
-              if (photos.isNotEmpty)
-                if (photos.length < 2)
-                  ElevatedButton(
-                    onPressed: () async {
-                      await _pickImageAndUpload(context);
-                    },
-                    child: const Text("Ajouter une photo (2 max)"),
-                  ),
-                Column(
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SingleChildScrollView(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
-                    // Si photos n'est pas vide, afficher les images
+                    // Date
+                    Text(
+                      "Date : ${DateFormat.yMMMMd('fr_FR').format((data['date'] as Timestamp).toDate())}",
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),// Montant
+                    Row(
+                      children: [
+                        const Text(
+                          'Montant : ',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        formatTransactionAmount(data['amount'] ?? 0.0, isDebit),
+                      ],
+                    ),
+                    const SizedBox(height: 10),// Catégorie
+                    if (categoryId != null && categoryId.isNotEmpty)
+                      FutureBuilder<String>(
+                        future: _getCategoryName(categoryId),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Text(
+                              'Chargement de la catégorie...',
+                              style: TextStyle(fontSize: 18),
+                            );
+                          } else if (snapshot.hasError || !snapshot.hasData) {
+                            return const Text(
+                              'Catégorie inconnue',
+                              style: TextStyle(fontSize: 18),
+                            );
+                          }
+                          return Text(
+                            'Catégorie : ${snapshot.data}',
+                            style: const TextStyle(fontSize: 18),
+                          );
+                        },
+                      )
+                    else // Type
+                      Text(
+                        'Type : ${isDebit ? 'Débit' : 'Crédit'}',
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                    const SizedBox(height: 10), // Notes
+                    Row(
+                      children: [
+                        Text('Notes : ${data['notes'] ?? ''}', style: const TextStyle(fontSize: 18))
+                      ],
+                    ),
+                    const SizedBox(height: 10), // Réccurence
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Transaction récurrente :',
+                            style: TextStyle(fontSize: 18)),
+                        Switch(
+                          value: isRecurring,
+                          onChanged: (value) async {
+                            await _toggleRecurrence(context, widget.transaction, value);
+                            Navigator.of(context).pop();
+                          },
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 20), // Localisation
+                    if (location != null) ...[
+                      FutureBuilder<String>(
+                        future: _getAddressFromLatLng(location),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Text('Chargement de l\'adresse...',
+                                style: TextStyle(fontSize: 18));
+                          } else if (snapshot.hasError || !snapshot.hasData) {
+                            return const Text('Adresse inconnue',
+                                style: TextStyle(fontSize: 18));
+                          }
+                          return Text('Adresse : ${snapshot.data}',
+                              style: const TextStyle(fontSize: 18));
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 20), // Photos
                     if (photos.isNotEmpty)
-                      ...photos.map((url) => Stack(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ImageScreen(imageUrl: url),
-                                ),
-                              );
-                            },
-                            child: SizedBox(
-                              height: 100,
-                              width: 100,
-                              child: Image.network(
-                                url,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(child: CircularProgressIndicator());
+                      if (photos.length < 2)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Ajouter une photo (2 max)"),
+                            // Button pour ajouter une photo
+                            if (photos.length < 2)
+                              ElevatedButton(
+                                onPressed: () async {
+                                  _pickImageAndUpload(context);
                                 },
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Center(
-                                    child: Icon(Icons.error, color: Colors.red, size: 50),
+                                child: const Icon(Icons.add_a_photo),
+                              ),
+                          ],
+                        ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+
+                        // Si photos n'est pas vide, afficher les images
+                        if (photos.isNotEmpty)
+                          ...photos.map((url) => Stack(
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ImageScreen(imageUrl: url),
+                                    ),
                                   );
                                 },
+                                child: SizedBox(
+                                  height: 100,
+                                  width: 100,
+                                  child: Image.network(
+                                    url,
+                                    key: ValueKey(url),
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const Center(child: CircularProgressIndicator());
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Center(
+                                        child: Icon(Icons.error, color: Colors.red, size: 50),
+                                      );
+                                    },
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: GestureDetector(
-                              onTap: () => _confirmAndRemovePhoto(context, url),
-                              child: const Icon(Icons.close, color: Colors.red, size: 20),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 4,
-                            right: 4,
-                            child: GestureDetector(
-                              onTap: () => _replacePhoto(context, url),
-                              child: const Icon(Icons.refresh, color: Colors.blue, size: 20),
-                            ),
-                          ),
-                        ],
-                      )).toList(),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: () => _confirmAndRemovePhoto(context, url),
+                                  child: const Icon(Icons.close, color: Colors.red, size: 20),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: () => _replacePhoto(context, url),
+                                  child: const Icon(Icons.refresh, color: Colors.blue, size: 20),
+                                ),
+                              ),
+                            ],
+                          )).toList(),
+                      ],
+                    ),
                   ],
                 ),
-              // Button pour ajouter une photo
-              if (photos.length < 2)
-                ElevatedButton(
-                  onPressed: () async {
-                    _pickImageAndUpload(context);
-                  },
-                  child: const Icon(Icons.add_a_photo),
-                ),
-            ],
+              ),
           ),
-        ),
-      )
+          if (isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
