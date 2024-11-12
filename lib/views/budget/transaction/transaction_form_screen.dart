@@ -57,6 +57,8 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
   final LatLng _defaultLocation = const LatLng(48.8566, 2.3522); // Defaut paris
   String? _currentAdress;
   final double _zoom = 16.0;
+  bool _isLoading = false;
+
 
   @override
   void initState() {
@@ -78,12 +80,21 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       if (_isDebit) {
         // Localisation, uniquement pour les débits
         _existingPhotos = List<String>.from(transaction['photos'] ?? []);
-        final GeoPoint? location = transaction['location'] as GeoPoint?;
-        _userLocation = location != null ? LatLng(location.latitude, location.longitude) : _defaultLocation;
+
+        // Vérifier si les données existent et si le champ "location" est présent
+        final data = transaction.data() as Map<String, dynamic>?; // Cast explicite en Map
+        if (data != null && data.containsKey('location')) {
+          final GeoPoint location = data['location'] as GeoPoint;
+          _userLocation = LatLng(location.latitude, location.longitude);
+        } else {
+          _userLocation = _defaultLocation; // Valeur par défaut si "location" n'existe pas
+        }
+
 
         // Assurez-vous que _selectedCategory est défini uniquement pour les débits
         _selectedCategory = transaction['categorie_id']?.toString().trim();
       }
+
     } else {
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
       if (_isDebit) {
@@ -293,6 +304,10 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       return;
     }
 
+    setState(() {
+      _isLoading = true; // Début du chargement
+    });
+
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final amount = double.tryParse(_amountController.text.replaceAll(",", ".")) ?? 0.0;
@@ -357,6 +372,8 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.transaction == null ? "Transaction ajoutée" : "Transaction mise à jour")));
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Erreur: $e")));
+      } finally {
+        _isLoading = false;
       }
     }
   }
@@ -695,7 +712,9 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       appBar: AppBar(
         title: Text(widget.transaction == null ? 'Ajouter Transaction' : 'Modifier Transaction'),
       ),
-      body: _categoriesLoaded
+      body: _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _categoriesLoaded
           ? Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
