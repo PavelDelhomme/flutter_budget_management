@@ -1,6 +1,5 @@
 import 'dart:developer';
 
-import 'package:budget_management/utils/recurring_transactions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -8,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geocoding/geocoding.dart';
+
+import '../../../../services/transactions.dart';
 
 class TransactionDetailsModal extends StatelessWidget {
   final DocumentSnapshot transaction;
@@ -56,7 +57,7 @@ class TransactionDetailsModal extends StatelessWidget {
       await FirebaseFirestore.instance.collection(collection)
           .doc(transaction.id)
           .update({'isRecurring': true});
-      await addRetroactiveRecurringTransaction(
+      await TransactionService().addRetroactiveRecurringTransaction(
         userId: userId,
         categoryId: categoryId,
         startDate: transactionDate,

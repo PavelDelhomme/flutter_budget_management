@@ -19,10 +19,11 @@ import 'package:get/get.dart';
 import 'package:nominatim_geocoding/nominatim_geocoding.dart';
 
 // My package
-import 'package:budget_management/utils/categories.dart';
+import '../../../services/budgets.dart';
+import '../../../services/categories.dart';
+import '../../../services/transactions.dart';
 import '../../../services/utils_services/permissions_service.dart';
 import '../../../services/utils_services/image_service.dart';
-import '../../../utils/transactions.dart';
 
 class TransactionFormScreen extends StatefulWidget {
   final DocumentSnapshot? transaction;
@@ -276,7 +277,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
                   String type = _isDebit ? 'debit' : 'credit';  // Déterminer le type (débit ou crédit)
 
                   // Créer la nouvelle catégorie avec le type approprié
-                  await createCategory(categoryController.text.trim(), user.uid, type);
+                  await CategoryService().createCategory(categoryController.text.trim(), user.uid, type);
 
                   // Recharger les catégories après la création
                   _loadCategories();
@@ -317,7 +318,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
 
       List<String> newPhotos = [];
       for (File image in _photoFiles) {
-        String? url = await uploadImage(image);
+        String? url = await ImageService().uploadImage(image);
         if (url != null) newPhotos.add(url);
       }
 
@@ -338,7 +339,8 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
               'categorie_id': categoryId,
             });
           } else {
-            await addDebitTransaction(
+            await TransactionService().addDebitTransaction(
+              budgetService: BudgetService(),
               userId: user.uid,
               categoryId: categoryId,
               date: dateTransaction,
@@ -358,7 +360,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
               'isRecurring': isRecurring,
             });
           } else {
-            await addCreditTransaction(
+            await TransactionService().addCreditTransaction(
               userId: user.uid,
               date: dateTransaction,
               amount: amount,
@@ -405,7 +407,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
         .get();
 
     if (categoriesSnapshot.docs.isEmpty) {
-      await createCategory(categoryName, userId, type);
+      await CategoryService().createCategory(categoryName, userId, type);
       await _loadCategories(); // Recharger les catégories pour inclure la nouvelle catégorie
     }
   }
@@ -501,7 +503,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       return;
     }
 
-    final XFile? pickedFile = await showImageSourceDialog(context, ImagePicker());
+    final XFile? pickedFile = await ImageService().showImageSourceDialog(context);
 
     if (pickedFile != null) {
       setState(() {

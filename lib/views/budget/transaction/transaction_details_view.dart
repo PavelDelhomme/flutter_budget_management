@@ -1,6 +1,5 @@
 import 'dart:developer';
 import 'dart:io';
-import 'package:budget_management/utils/recurring_transactions.dart';
 import 'package:budget_management/views/budget/transaction/ancien_detail/transaction_details_modal.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,7 +11,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geocoding/geocoding.dart';
 
-import '../../../utils/transactions.dart';
+import '../../../services/transactions.dart';
+
 
 class TransactionDetailsView extends StatefulWidget {
   final DocumentSnapshot transaction;
@@ -243,12 +243,12 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
       await FirebaseFirestore.instance.collection(collection)
           .doc(transaction.id)
           .update({'isRecurring': true});
-      await addRetroactiveRecurringTransaction(
+      await TransactionService().addRetroactiveRecurringTransaction(
         userId: userId,
         categoryId: categoryId,
         startDate: transactionDate,
         amount: amount,
-        isDebit: isDebitTransaction(transaction),
+        isDebit: TransactionService().isDebitTransaction(transaction),
       );
     } else {
       bool confirmAllOccurrences = await _confirmToggleFutureOccurrences(context);
@@ -306,7 +306,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
       );
     }
 
-    final bool isDebit = isDebitTransaction(widget.transaction);
+    final bool isDebit = TransactionService().isDebitTransaction(widget.transaction);
     final bool isRecurring = data['isRecurring'] ?? false;
     final String? categoryId = isDebit ? data['categorie_id'] : null;
     final LatLng? location = data['localisation'] != null
@@ -352,7 +352,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                         'Montant : ',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      formatTransactionAmount(data['amount'] ?? 0.0, isDebit),
+                      TransactionService().formatTransactionAmount(data['amount'] ?? 0.0, isDebit),
                     ],
                   ),
                   const SizedBox(height: 10),

@@ -1,4 +1,3 @@
-
 class Budget {
   String id;
   String user_id;

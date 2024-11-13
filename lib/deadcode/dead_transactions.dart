@@ -3,9 +3,8 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/transaction_model.dart';
-import 'budgets.dart';
-import 'generate_ids.dart';
-
+import '../utils/generate_ids.dart';
+/*
 /// Ajoute une transaction de type Débit.
 Future<void> addDebitTransaction({
   required String userId,
@@ -112,3 +111,4 @@ Text formatTransactionAmount(double amount, bool isDebit) {
 bool isDebitTransaction(DocumentSnapshot transaction) {
   return transaction.reference.parent.id == 'debits';
 }
+ */
