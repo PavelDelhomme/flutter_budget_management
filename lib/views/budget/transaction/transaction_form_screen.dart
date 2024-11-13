@@ -24,6 +24,13 @@ import '../../../services/categories.dart';
 import '../../../services/transactions.dart';
 import '../../../services/permissions_service.dart';
 import '../../../services/image_service.dart';
+import 'form/category_dropdown.dart';
+import 'form/location_section.dart';
+import 'form/photos_section.dart';
+import 'form/type_switch.dart';
+import 'form/recurring_switch.dart';
+import 'form/notes_field.dart';
+
 
 class TransactionFormScreen extends StatefulWidget {
   final DocumentSnapshot? transaction;
@@ -426,45 +433,39 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
     );
   }
 
+
   Widget _buildAdditionalFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DropdownButton<String>(
-          focusNode: _categoryFocusNode,
-          value: _categories.contains(_selectedCategory) ? _selectedCategory : null,
-          items: _categories.map((categoryName) {
-            return DropdownMenuItem<String>(
-              value: categoryName,
-              child: Text(categoryName),
-            );
-          }).toList()
-            ..add(
-              const DropdownMenuItem<String>(
-                value: "New Category",
-                child: Text("Créer une nouvelle catégorie"),
-              ),
-            ),
-          onChanged: (newValue) {
-            if (newValue == 'New Category') {
-              _createNewCategory();
-            } else {
-              setState(() {
-                _selectedCategory = newValue;
-              });
-            }
+        CategoryDropdown(
+          categories: _categories,
+          selectedCategory: _selectedCategory,
+          onCategoryChange: (value) {
+            setState(() => _selectedCategory = value);
           },
-          hint: const Text("Sélectionner une catégorie."),
+          onCreateCategory: _createNewCategory,
         ),
         const SizedBox(height: 16),
-        Text("Adresse: ${_currentAdress ?? 'Non spécifiée'}"),
-        const SizedBox(height: 10),
-        ElevatedButton(
-          onPressed: _getCurrentLocation,
-          child: const Text("Récupérer ma position actuelle"),
+        LocationSection(
+          currentAddress: _currentAdress,
+          onLocationUpdate: _getCurrentLocation,
         ),
-        const SizedBox(height: 10),
-        _buildPhotosSection(), // Remplace la carte par la section des photos
+        const SizedBox(height: 16),
+        PhotosSection(
+          photoFiles: _photoFiles,
+          existingPhotos: _existingPhotos,
+          onAddPhoto: _pickImage,
+          onRemovePhoto: (imagePath) {
+            setState(() {
+              if (_photoFiles.any((file) => file.path == imagePath)) {
+                _photoFiles.removeWhere((file) => file.path == imagePath);
+              } else {
+                _existingPhotos.remove(imagePath);
+              }
+            });
+          },
+        ),
       ],
     );
   }
