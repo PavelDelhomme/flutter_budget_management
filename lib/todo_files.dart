@@ -4,3 +4,8 @@
 
 
 
+//todo meme taille pour atégorie que autre champs dans formulaire.
+
+//todo réccurence en haut dans formulaire
+
+//todo revérifier les merges pour m'assurer que toutes les fonctionnalité doivent fonctionné
