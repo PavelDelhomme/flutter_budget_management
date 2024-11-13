@@ -597,9 +597,10 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
             children: [
               _buildTypeSwitch(),
               const SizedBox(height: 16.0),
+              _buildRecurringSwitch(),
+              const SizedBox(height: 16.0),
               _buildTransactionForm(),
               const SizedBox(height: 16.0),
-              _buildRecurringSwitch(),
               _buildInvisibleMap(),
               Center(
                 child: ElevatedButton(
