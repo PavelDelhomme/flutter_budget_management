@@ -22,8 +22,8 @@ import 'package:nominatim_geocoding/nominatim_geocoding.dart';
 import '../../../services/budgets.dart';
 import '../../../services/categories.dart';
 import '../../../services/transactions.dart';
-import '../../../services/utils_services/permissions_service.dart';
-import '../../../services/utils_services/image_service.dart';
+import '../../../services/permissions_service.dart';
+import '../../../services/image_service.dart';
 
 class TransactionFormScreen extends StatefulWidget {
   final DocumentSnapshot? transaction;

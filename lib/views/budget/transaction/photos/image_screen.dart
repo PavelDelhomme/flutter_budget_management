@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../../../services/utils_services/image_service.dart';
+import '../../../../services/image_service.dart';
 
 class ImageScreen extends StatelessWidget {
   final String imageUrl;
