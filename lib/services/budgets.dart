@@ -1,8 +1,5 @@
 import 'package:budget_management/services/categories.dart';
-import 'package:budget_management/services/transactions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../models/budget_model.dart';
 import '../models/transaction_model.dart';
@@ -11,7 +8,6 @@ import '../utils/generate_ids.dart';
 class BudgetService {
 
   final FirebaseFirestore _database = FirebaseFirestore.instance;
-  final TransactionService _transactionService = TransactionService();
   final CategoryService _categoryService = CategoryService();
 
   Future<void> handleMonthTransition({

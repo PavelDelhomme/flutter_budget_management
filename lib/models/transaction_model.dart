@@ -1,7 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Classe parent Transaction pour les champs communs
-
 class Transaction {
   String id;
   String user_id;
@@ -31,7 +29,6 @@ class Transaction {
   }
 }
 
-// Classe Debit héritant de Transaction et ajoutant des champs spécifiques
 class Debit extends Transaction {
   List<String>? photos;
   GeoPoint localisation;
@@ -84,7 +81,6 @@ class Debit extends Transaction {
   }
 }
 
-// Classe Credit héritant de Transaction, n'ajoutant que le montant spécifique
 class Credit extends Transaction {
   Credit({
     required super.id,

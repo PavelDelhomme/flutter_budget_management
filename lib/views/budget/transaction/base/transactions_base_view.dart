@@ -51,9 +51,6 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
     DateTime startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     DateTime endOfDay = startOfDay.add(Duration(days: 1));
 
-    // Log de la date sélectionnée
-    log("Date sélectionnée : $selectedDate");
-
     // Applique le filtre `showOnlyRecurring` si activé
     var debitStream = FirebaseFirestore.instance
         .collection("debits")
@@ -79,22 +76,12 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
       double creditTotal = creditSnapshot.docs
           .fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
 
-      log("Total Débit : €${debitTotal.toStringAsFixed(2)}");
-      log("Total Crédit : €${creditTotal.toStringAsFixed(2)}");
-
-
       List<QueryDocumentSnapshot> transactions = [
         ...debitSnapshot.docs,
         ...creditSnapshot.docs,
       ];
 
       transactions.sort((a, b) => (b['date'] as Timestamp).compareTo(a['date'] as Timestamp)); // Tri par date croissante
-
-      // Log le type de transaction pour chaque document
-      for (var transaction in transactions) {
-        final bool isDebit = TransactionService().isDebitTransaction(transaction);
-        log("Transaction ID: ${transaction.id} - Type: ${isDebit ? 'Débit' : 'Crédit'} - Montant: ${transaction['amount']}");
-      }
 
       return {
         'transactions': transactions,
@@ -172,18 +159,6 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
     });
   }
 
-
-  void _previousMonth() {
-    setState(() {
-      selectedMonth = DateTime(selectedMonth.year, selectedMonth.month - 1);
-    });
-  }
-
-  void _nextMonth() {
-    setState(() {
-      selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + 1);
-    });
-  }
 
   void _toggleTransactionFilter(String filter) {
     setState(() {

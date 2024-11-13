@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 
 Widget? checkSnapshot(AsyncSnapshot snapshot, {String errorMessage = "Erreur lors du chargement des données"}) {

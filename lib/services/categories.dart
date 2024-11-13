@@ -1,11 +1,8 @@
-
-import 'package:budget_management/services/transactions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CategoryService {
 
   final FirebaseFirestore _database = FirebaseFirestore.instance;
-  final TransactionService _transactionService = TransactionService();
 
   Future<void> createCategory(String name, String userId, String type) async {
     await _database.collection("categories").add({

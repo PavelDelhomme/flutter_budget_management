@@ -117,75 +117,6 @@ class TransactionsViewState extends State<TransactionsView> {
     }
   }
 
-  /*
-  void _previousMonth() {
-    setState(() {
-      selectedMonth = DateTime(selectedMonth.year, selectedMonth.month - 1);
-      _updateMonthlyTotals();
-    });
-  }
-
-  void _nextMonth() {
-    setState(() {
-      selectedMonth = DateTime(selectedMonth.year, selectedMonth.month + 1);
-      _updateMonthlyTotals();
-    });
-  }
-
-
-  void _editTransaction(BuildContext context, DocumentSnapshot transaction) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TransactionFormScreen(transaction: transaction),
-      ),
-    );
-
-    if (result == true) {
-      setState(() {});
-    }
-  }
-
-  void _addNewTransaction(BuildContext context) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const TransactionFormScreen(),
-      ),
-    );
-
-    if (result == true) {
-      setState(() {});
-    }
-  }
-
-  void _deleteTransaction(BuildContext context, DocumentSnapshot transaction) async {
-    bool confirm = await _showDeleteConfirmation(context);
-    if (!confirm) return;
-
-    bool isDebit = transaction.reference.parent.id == 'debits';
-    String collection = isDebit ? 'debits' : 'credits';
-    double amount = transaction['amount'] as double;
-
-    // Supprimer la transaction de la collection appropriée
-    await FirebaseFirestore.instance.collection(collection).doc(transaction.id).delete();
-
-    // Mettre  à jour le budget après suppression
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      await updateBudgetAfterTransactionDeletion(user.uid, amount, isDebit: isDebit);
-    }
-
-    if (mounted) {
-      setState(() {});
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Transaction supprimée avec succès.")),
-      );
-    }
-  }
-
-  */
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -302,38 +233,5 @@ class TransactionsViewState extends State<TransactionsView> {
         },
       ),
     );
-  }
-
-  void _showMonthDetails(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => BudgetMonthDetailsScreen(selectedMonth: selectedMonth),
-      ),
-    );
-  }
-
-  Future<bool> _showDeleteConfirmation(BuildContext context) async {
-    return await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text("Confirmer la suppression"),
-              content: const Text(
-                  "Êtes-vous sûr de vouloir supprimer cette transaction ?"),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text("Annuler"),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text("Supprimer"),
-                ),
-              ],
-            );
-          },
-        ) ??
-        false;
   }
 }
