@@ -101,16 +101,14 @@ class SummaryViewState extends State<SummaryView> {
       body: StreamBuilder<Map<String, double>>(
         stream: _getSummaryStream(),
         builder: (context, snapshot) {
-          Widget? checkResult = checkSnapshot(snapshot,
-              errorMessage: "Erreur lors du chargement des données de résumé");
+          Widget? checkResult = checkSnapshot(snapshot, errorMessage: "Erreur lors du chargement des données de résumé");
           if (checkResult != null) return checkResult;
 
-          final data = snapshot.data!;
+          final data = snapshot.data ?? {};
           double totalCredit = data['totalCredit'] ?? 0.0;
           double totalDebit = data['totalDebit'] ?? 0.0;
           double remainingAmount = data['remainingAmount'] ?? 0.0;
-          double projectedRemainingAmount =
-              data['projectedRemainingAmount'] ?? 0.0;
+          double projectedRemainingAmount = data['projectedRemainingAmount'] ?? 0.0;
           double totalSavings = data['savings'] ?? 0.0;
 
           return SingleChildScrollView(
@@ -119,18 +117,11 @@ class SummaryViewState extends State<SummaryView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildBudgetCard("Total Crédits",
-                      totalCredit.toStringAsFixed(2), Colors.green),
-                  _buildBudgetCard("Total Débits",
-                      totalDebit.toStringAsFixed(2), Colors.red),
-                  _buildBudgetCard("Montant Restant",
-                      remainingAmount.toStringAsFixed(2), Colors.blue),
-                  _buildBudgetCard("Economies déjà acquises",
-                      totalSavings.toStringAsFixed(2), Colors.grey),
-                  _buildBudgetCard(
-                      "Montant Restant avec Economies",
-                      projectedRemainingAmount.toStringAsFixed(2),
-                      Colors.orange),
+                  _buildBudgetCard("Total Crédits", totalCredit.toStringAsFixed(2), Colors.green),
+                  _buildBudgetCard("Total Débits", totalDebit.toStringAsFixed(2), Colors.red),
+                  _buildBudgetCard("Montant Restant", remainingAmount.toStringAsFixed(2), Colors.blue),
+                  _buildBudgetCard("Economies déjà acquises", totalSavings.toStringAsFixed(2), Colors.grey),
+                  _buildBudgetCard("Montant Restant avec Economies", projectedRemainingAmount.toStringAsFixed(2), Colors.orange),
                 ],
               ),
             ),
@@ -150,7 +141,7 @@ class SummaryViewState extends State<SummaryView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8.0),
             Text("€$amount", style: TextStyle(fontSize: 20, color: color, fontWeight: FontWeight.bold)),
           ],

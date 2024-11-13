@@ -11,6 +11,8 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+  final TransactionService _transactionService = TransactionService();
+
   @override
   void initState() {
     super.initState();
@@ -18,7 +20,7 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _initializeRecurringTransactions () {
-    TransactionService().copyRecurringTransactionsForNewMonth();
+    _transactionService.copyRecurringTransactionsForNewMonth();
   }
 
   @override
