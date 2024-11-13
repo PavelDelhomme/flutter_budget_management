@@ -29,39 +29,6 @@ class SummaryViewState extends State<SummaryView> {
     }
   }
 
-  Stream<Map<String, double>> _getBudgetStream() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return Stream.value({});
-    }
-
-    final now = DateTime.now();
-    final budgetStream = fs.FirebaseFirestore.instance
-        .collection("budgets")
-        .where("user_id", isEqualTo: user.uid)
-        .where("month", isEqualTo: now.month)
-        .where("year", isEqualTo: now.year)
-        .snapshots();
-
-    return budgetStream.map((snapshot) {
-      if (snapshot.docs.isEmpty) return {};
-
-      final budget = snapshot.docs.first;
-      double totalCredit = (budget['total_credit'] as num?)?.toDouble() ?? 0.0;
-      double totalDebit = (budget['total_debit'] as num?)?.toDouble() ?? 0.0;
-      double remainingAmount = (budget['remaining'] as num?)?.toDouble() ?? 0.0;
-      double cumulativeRemainingAmount =
-          (budget['cumulativeRemaining'] as num?)?.toDouble() ?? 0.0;
-
-      return {
-        'totalCredit': totalCredit,
-        'totalDebit': totalDebit,
-        'remainingAmount': remainingAmount,
-        'cumulativeRemainingAmount': cumulativeRemainingAmount,
-      };
-    });
-  }
-
   Stream<Map<String, double>> _getSummaryStream() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -88,13 +55,11 @@ class SummaryViewState extends State<SummaryView> {
         .snapshots();
 
     return debitStream.asyncMap((debitSnapshot) async {
-      double debitTotal = debitSnapshot.docs
-          .fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
+      double debitTotal = debitSnapshot.docs.fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
       double creditTotal = 0.0;
 
       await for (var creditSnapshot in creditStream) {
-        creditTotal = creditSnapshot.docs
-            .fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
+        creditTotal = creditSnapshot.docs.fold(0.0, (sum, doc) => sum + (doc['amount'] as num).toDouble());
         break;
       }
 
@@ -132,7 +97,6 @@ class SummaryViewState extends State<SummaryView> {
 
   @override
   Widget build(BuildContext context) {
-    //todo avoir tout les rublrique a la même taille.
     return Scaffold(
       body: StreamBuilder<Map<String, double>>(
         stream: _getSummaryStream(),
