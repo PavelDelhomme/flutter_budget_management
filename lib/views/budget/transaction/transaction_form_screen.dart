@@ -3,6 +3,7 @@ import 'dart:io';
 // Flutter
 import 'package:budget_management/views/budget/transaction/form/amount_field.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 // Others
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -92,6 +93,9 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
         if (data != null && data.containsKey('location')) {
           final GeoPoint location = data['location'] as GeoPoint;
           _userLocation = LatLng(location.latitude, location.longitude);
+          
+          // Obtention de l'adresse depuis la localisation initial
+          _updateAddressFromGeoPoint(location);
         } else {
           _userLocation = _defaultLocation; // Valeur par défaut si "location" n'existe pas
         }
@@ -105,6 +109,14 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
     }
   }
 
+  Future<void> _updateAddressFromGeoPoint(GeoPoint location) async {
+    List<Placemark> placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
+    String address = "${placemarks.first.street}, ${placemarks.first.locality}, ${placemarks.first.administrativeArea}";
+    setState(() {
+      _currentAdress = address;
+    });
+  }
+  
   Future<void> _loadCategories() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -363,7 +375,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
           userLocation: _userLocation,
           onLocationUpdate: _updateLocation,
           onAddressUpdate: _updateAddress,
-          allowUserCurrentLocation: widget.transaction == null,
+          allowUserCurrentLocation: widget.transaction != null,
         ),
         const SizedBox(height: 16),
         PhotosSection(

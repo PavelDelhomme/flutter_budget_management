@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+
 class LocationSection extends StatefulWidget {
   final LatLng defaultLocation;
   final MapController mapController;
@@ -31,11 +32,16 @@ class LocationSection extends StatefulWidget {
 }
 
 class _LocationSectionState extends State<LocationSection> {
+  String? _displayedAddress;
 
   @override
   void initState() {
     super.initState();
-    if (widget.allowUserCurrentLocation) {
+    // Si une adresse est déjà définie, l'afficher
+    if (widget.currentAddress != null) {
+      _displayedAddress = widget.currentAddress;
+    } else if (widget.allowUserCurrentLocation) {
+      // Récupérer la localisation si l'option est autorisée
       _getCurrentLocation();
     }
   }
@@ -53,7 +59,9 @@ class _LocationSectionState extends State<LocationSection> {
       _updateAddress(newLocation);
     } catch (e) {
       log("Erreur lors de la récupération de la localisation : $e");
-      widget.onAddressUpdate("Adresse inconnue");
+      setState(() {
+        _displayedAddress = "Adresse inconnue";
+      });
     }
   }
 
@@ -62,10 +70,15 @@ class _LocationSectionState extends State<LocationSection> {
       List<Placemark> placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
       Placemark place = placemarks.first;
       String address = "${place.street}, ${place.locality}, ${place.administrativeArea}";
+      setState(() {
+        _displayedAddress = address;
+      });
       widget.onAddressUpdate(address);
     } catch (e) {
       log("Erreur lors de la récupération de l'adresse : $e");
-      widget.onAddressUpdate("Adresse inconnue");
+      setState(() {
+        _displayedAddress = "Adresse inconnue";
+      });
     }
   }
 
@@ -116,13 +129,14 @@ class _LocationSectionState extends State<LocationSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Adresse: ${widget.currentAddress ?? 'Non spécifiée'}"),
+        Text("Adresse: ${_displayedAddress ?? 'Non spécifiée'}"),
         const SizedBox(height: 10),
-        ElevatedButton(
-          onPressed: _getCurrentLocation,
-          child: const Text("Utiliser la localisation actuelle"),
-        ),
-        _buildInvisibleMap(), // La carte invisible pour obtenir la localisation
+        if (widget.allowUserCurrentLocation)
+          ElevatedButton(
+            onPressed: _getCurrentLocation,
+            child: const Text("Utiliser la localisation actuelle"),
+          ),
+        _buildInvisibleMap(),
       ],
     );
   }

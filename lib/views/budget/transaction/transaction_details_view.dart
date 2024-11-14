@@ -1,6 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
-import 'package:budget_management/views/budget/transaction/ancien_detail/transaction_details_modal.dart';
+import 'package:budget_management/views/budget/transaction/photos/image_screen.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -431,7 +431,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                                   onTap: () {
                                     Navigator.push(
                                       context,
-                                      MaterialPageRoute(builder: (context) => ImageScreen(imageUrl: url)),
+                                      MaterialPageRoute(builder: (context) => ImageScreen(imageUrl: url, transaction: widget.transaction)),
                                     );
                                   },
                                   child: SizedBox(
