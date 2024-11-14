@@ -58,3 +58,5 @@
 // réccurence en haut dans formulaire
 
 //meme taille pour atégorie que autre champs dans formulaire.
+
+//Suppression des fichiers en trop non nécessaire et ajout de la fonctionnalité de pouvoir correctement afficher les images et surtout de récupération de la transaction a chaque formulaire créer et gestion correct des photos depuis le formulaire de trnacation.
