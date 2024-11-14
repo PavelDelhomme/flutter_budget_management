@@ -55,14 +55,8 @@
 // au chargement de l'application summary view doit forcément calculere en fonction de ce qu'il se trouve dans la base de données il ne le fait pas actuellement
 
 //transactions_base_view.dart  Failed assertion: line 205 pos 5: 'selectableDayPredicate == null || initialDate == null || selectableDayPredicate(initialDate)': Provided initialDate 2024-11-03 00:00:00.000 must satisfy provided selectableDayPredicate.
-<<<<<<< HEAD
 // réccurence en haut dans formulaire
 
 //meme taille pour atégorie que autre champs dans formulaire.
 
 //Suppression des fichiers en trop non nécessaire et ajout de la fonctionnalité de pouvoir correctement afficher les images et surtout de récupération de la transaction a chaque formulaire créer et gestion correct des photos depuis le formulaire de trnacation.
-=======
-
-//meme taille pour atégorie que autre champs dans formulaire.
-// réccurence en haut dans formulaire
->>>>>>> b0ec4c3 (Même taille de catégorie pour le champs des catégorie dans le formulaire et refactorisation correcte avec utilisation des champs de formulaire spécifique générer.)
