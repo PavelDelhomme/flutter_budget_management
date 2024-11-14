@@ -56,3 +56,5 @@
 
 //transactions_base_view.dart  Failed assertion: line 205 pos 5: 'selectableDayPredicate == null || initialDate == null || selectableDayPredicate(initialDate)': Provided initialDate 2024-11-03 00:00:00.000 must satisfy provided selectableDayPredicate.
 // réccurence en haut dans formulaire
+
+//meme taille pour atégorie que autre champs dans formulaire.

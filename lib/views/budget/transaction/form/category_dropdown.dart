@@ -16,28 +16,34 @@ class CategoryDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButton<String>(
-      value: categories.contains(selectedCategory) ? selectedCategory : null,
-      items: categories.map((categoryName) {
-        return DropdownMenuItem<String>(
-          value: categoryName,
-          child: Text(categoryName),
-        );
-      }).toList()
-        ..add(
-          DropdownMenuItem<String>(
-            value: "New Category",
-            child: Text("Créer une nouvelle catégorie"),
-          ),
+    return Center(
+      child: SizedBox(
+        width: double.infinity,
+        child: DropdownButton<String>(
+          isExpanded: true,
+          value: categories.contains(selectedCategory) ? selectedCategory : null,
+          items: categories.map((categoryName) {
+            return DropdownMenuItem<String>(
+              value: categoryName,
+              child: Text(categoryName),
+            );
+          }).toList()
+            ..add(
+              DropdownMenuItem<String>(
+                value: "New Category",
+                child: Text("Créer une nouvelle catégorie"),
+              ),
+            ),
+          onChanged: (newValue) {
+            if (newValue == 'New Category') {
+              onCreateCategory();
+            } else {
+              onCategoryChange(newValue);
+            }
+          },
+          hint: Text("Sélectionner une catégorie"),
         ),
-      onChanged: (newValue) {
-        if (newValue == 'New Category') {
-          onCreateCategory();
-        } else {
-          onCategoryChange(newValue);
-        }
-      },
-      hint: Text("Sélectionner une catégorie"),
+      ),
     );
   }
 }
