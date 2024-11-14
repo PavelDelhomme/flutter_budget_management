@@ -55,3 +55,6 @@
 // au chargement de l'application summary view doit forcément calculere en fonction de ce qu'il se trouve dans la base de données il ne le fait pas actuellement
 
 //transactions_base_view.dart  Failed assertion: line 205 pos 5: 'selectableDayPredicate == null || initialDate == null || selectableDayPredicate(initialDate)': Provided initialDate 2024-11-03 00:00:00.000 must satisfy provided selectableDayPredicate.
+
+//meme taille pour atégorie que autre champs dans formulaire.
+// réccurence en haut dans formulaire
