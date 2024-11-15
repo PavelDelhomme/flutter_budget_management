@@ -151,7 +151,7 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
     }
   }
 
-  Future<void> _removePhoto(String url) async {
+  Future<void> _removePhoto(String url) async { // todo Appeler cette fonction avant d'enregistre la nouvelle photos pour le remplpacement d'une photos
     try {
       await widget.transaction.reference.update({
         "photos": FieldValue.arrayRemove([url]),
@@ -394,18 +394,42 @@ class _TransactionDetailsViewState extends State<TransactionDetailsView> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  if (location != null)
-                    FutureBuilder<String>(
-                      future: _getAddressFromLatLng(location),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Text('Chargement de l\'adresse...', style: TextStyle(fontSize: 18));
-                        } else if (snapshot.hasError || !snapshot.hasData) {
-                          return const Text('Adresse inconnue', style: TextStyle(fontSize: 18));
-                        }
-                        return Text('Adresse : ${snapshot.data}', style: const TextStyle(fontSize: 18));
-                      },
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (location != null)
+                        FutureBuilder<String>(
+                          future: _getAddressFromLatLng(location),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Text('Chargement de l\'adresse...', style: TextStyle(fontSize: 18));
+                            } else if (snapshot.hasError || !snapshot.hasData) {
+                              return const Text('Adresse inconnue', style: TextStyle(fontSize: 18));
+                            }
+                            return Text('Adresse : ${snapshot.data}', style: const TextStyle(fontSize: 18));
+                          },
+                        ),
+                      ElevatedButton(
+                        onPressed: () async {
+                          LatLng shopLocation = LatLng(43.299041, 5.374900); // Boutique à Marseille
+                          try {
+                            await widget.transaction.reference.update({
+                              'localisation': GeoPoint(shopLocation.latitude, shopLocation.longitude),
+                            });
+                            setState(() {
+                              statusMessage = "Localisation mise à jour pour la boutique à Marseille";
+                            });
+                          } catch (e) {
+                            log("Erreur lors de la mise à jour de la localisation : $e");
+                            setState(() {
+                              statusMessage = "Erreur lors de la mise à jour de la localisation";
+                            });
+                          }
+                        },
+                        child: const Text("Changer pour boutique à Marseille"),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 20),
                   if (isDebit)
                     Row(

@@ -83,21 +83,22 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       _amountController.text = transaction['amount']?.toString() ?? '';
       _isRecurring = transaction['isRecurring'] ?? false;
       final Timestamp? date = transaction['date'] as Timestamp?;
-      _dateController.text = date != null ? DateFormat('yMd').format(date.toDate()) : DateFormat('yMd').format(DateTime.now());
+      _dateController.text = date != null
+          ? DateFormat('yMd').format(date.toDate())
+          : DateFormat('yMd').format(DateTime.now());
 
       if (_isDebit) {
         _existingPhotos = List<String>.from(transaction['photos'] ?? []);
 
-        // Localisation, uniquement pour les débits
-        // Vérifier si les données existent et si le champ "location" est présent
-        final data = transaction.data() as Map<String, dynamic>?; // Cast explicite en Map
-        if (data != null && data.containsKey('location')) {
-          final GeoPoint location = data['location'] as GeoPoint;
-          _userLocation = geoPointToLatLng(location);
+        // Vérifier si les données existent et si le champ "localisation" est présent
+        final data = transaction.data() as Map<String, dynamic>?;
+        if (data != null && data.containsKey('localisation')) {
+          final GeoPoint localisation = data['localisation'] as GeoPoint;
+          _userLocation = geoPointToLatLng(localisation);
 
           // Récupérer l'adresse depuis la localisation initiale
           _getAddressFromLocation(_userLocation!);
-        }else {
+        } else {
           _userLocation = _defaultLocation;
           _currentAdress = "Adresse non spécifiée";
         }
@@ -105,7 +106,6 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
         // Assurez-vous que _selectedCategory est défini uniquement pour les débits
         _selectedCategory = transaction['categorie_id']?.toString().trim();
       }
-
     } else {
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
       _currentAdress = "Adresse non spécifiée";
@@ -118,6 +118,8 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
       );
     }
   }
+
+
   LatLng geoPointToLatLng(GeoPoint geoPoint) {
     return LatLng(geoPoint.latitude, geoPoint.longitude);
   }
@@ -459,6 +461,16 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.transaction == null ? 'Ajouter Transaction' : 'Modifier Transaction'),
+        actions: [
+          if (widget.transaction != null)
+            IconButton(
+              icon: const Icon(Icons.copy),
+              tooltip: 'Dupliquer la transaction',
+              onPressed: () {
+                _duplicateTransaction(widget.transaction!.id);
+              },
+            ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -488,4 +500,47 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
           : const Center(child: CircularProgressIndicator()), // Loading indicator
     );
   }
+
+  Future<void> _duplicateTransaction(String transactionId) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        // Récupérer la transaction existante
+        DocumentSnapshot transactionDoc = await FirebaseFirestore.instance
+            .collection(_isDebit ? 'debits' : 'credits') // Vérifie si c'est un débit ou un crédit
+            .doc(transactionId)
+            .get();
+
+        if (transactionDoc.exists) {
+          // Copier les données de la transaction
+          Map<String, dynamic> transactionData = transactionDoc.data() as Map<String, dynamic>;
+
+          // Supprimer les champs inutiles ou à générer
+          transactionData.remove('id'); // Si l'ID est inclus dans les données
+          transactionData['date'] = Timestamp.now(); // Définir une nouvelle date
+          transactionData['notes'] = "${transactionData['notes']} (Duplicata)"; // Facultatif : indiquer que c'est un duplicata
+
+          // Ajouter la nouvelle transaction
+          await FirebaseFirestore.instance
+              .collection(_isDebit ? 'debits' : 'credits') // Même collection
+              .add(transactionData);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Transaction dupliquée avec succès")),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Transaction introuvable.")),
+          );
+        }
+      }
+    } catch (e) {
+      log("Erreur lors de la duplication de la transaction : $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erreur : $e")),
+      );
+    }
+  }
+
 }

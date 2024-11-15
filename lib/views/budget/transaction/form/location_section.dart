@@ -48,8 +48,6 @@ class _LocationSectionState extends State<LocationSection> {
     }
   }
 
-
-
   Future<void> _getCurrentLocation() async {
     setState(() {
       _isLoadingAddress = true;
@@ -59,14 +57,17 @@ class _LocationSectionState extends State<LocationSection> {
       await _checkLocationPermissions();
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       LatLng newLocation = LatLng(position.latitude, position.longitude);
-      _newLocation = newLocation;
 
-      setState(() {
+      // Vérifier si la localisation a réellement changé
+      if (widget.userLocation != null && _locationsAreEqual(newLocation, widget.userLocation!)) {
+        log("La localisation récupérée est identique à l'ancienne. Aucun changement.");
+        _newLocation = null;
+      } else {
+        _newLocation = newLocation;
         widget.onLocationUpdate(newLocation);
         widget.mapController.move(newLocation, widget.zoom);
-      });
-
-      await _updateAddress(newLocation);
+        await _updateAddress(newLocation);
+      }
     } catch (e) {
       log("Erreur lors de la récupération de la localisation : $e");
       setState(() {
@@ -82,12 +83,18 @@ class _LocationSectionState extends State<LocationSection> {
   Future<void> _updateAddress(LatLng location) async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
-      Placemark place = placemarks.first;
-      String address = "${place.street}, ${place.locality}, ${place.administrativeArea}";
-      setState(() {
-        _displayedAddress = address;
-      });
-      widget.onAddressUpdate(address);
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks.first;
+        String address = "${place.street}, ${place.locality}, ${place.administrativeArea}";
+        setState(() {
+          _displayedAddress = address.isNotEmpty ? address : "Adresse non spécifiée";
+        });
+        widget.onAddressUpdate(address);
+      } else {
+        setState(() {
+          _displayedAddress = "Adresse non spécifiée";
+        });
+      }
     } catch (e) {
       log("Erreur lors de la récupération de l'adresse : $e");
       setState(() {
@@ -95,6 +102,7 @@ class _LocationSectionState extends State<LocationSection> {
       });
     }
   }
+
 
   Future<void> _checkLocationPermissions() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -113,6 +121,11 @@ class _LocationSectionState extends State<LocationSection> {
     }
   }
 
+  /// Vérifie si deux localisations sont identiques
+  bool _locationsAreEqual(LatLng location1, LatLng location2) {
+    return location1.latitude == location2.latitude &&
+        location1.longitude == location2.longitude;
+  }
 
   Widget _buildInvisibleMap() {
     return SizedBox(
@@ -138,9 +151,10 @@ class _LocationSectionState extends State<LocationSection> {
       userAgentPackageName: 'com.budget.budget_management',
     );
   }
-
-  @override
   Widget build(BuildContext context) {
+    final hasNewLocation = _newLocation != null &&
+        (widget.userLocation == null || !_locationsAreEqual(_newLocation!, widget.userLocation!));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -152,16 +166,37 @@ class _LocationSectionState extends State<LocationSection> {
           onPressed: _getCurrentLocation,
           child: const Text("Récupérer la nouvelle localisation"),
         ),
-        if (_newLocation != null)
+        if (hasNewLocation)
           ElevatedButton(
             onPressed: () {
               setState(() {
                 _newLocation = null;
+
+                // Restaurer l'ancienne localisation
+                widget.onLocationUpdate(widget.userLocation ?? widget.defaultLocation);
+
+                // Restaurer l'ancienne adresse affichée
                 _displayedAddress = widget.currentAddress;
               });
+              log("Ancienne localisation restaurée : ${widget.userLocation}");
+              log("Ancienne adresse restaurée : $_displayedAddress");
             },
             child: const Text("Garder l'ancienne localisation"),
           ),
+        ElevatedButton(
+          onPressed: () {
+            // Définir la localisation pour Marseille
+            LatLng marseilleLocation = LatLng(43.2965, 5.3698);
+            setState(() {
+              _newLocation = marseilleLocation;
+              widget.onLocationUpdate(marseilleLocation);
+              widget.mapController.move(marseilleLocation, widget.zoom);
+            });
+            _updateAddress(marseilleLocation);
+            log("Localisation modifiée pour Marseille");
+          },
+          child: const Text("Modifier pour Marseille"),
+        ),
         _buildInvisibleMap(),
       ],
     );

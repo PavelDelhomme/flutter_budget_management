@@ -211,7 +211,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
       ),
     );
 
-    if (result == true) {
+    if (result == true) { //todo termine le widget
       setState(() {}); // Rafraîchit l'interface après l'édition
     }
   }
@@ -224,7 +224,8 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
       ),
     );
 
-    if (result == true) {
+    if (result) {
+      //todo E/flutter (18501): The preferred solution is to cancel the timer or stop listening to the animation in the dispose() callback. Another solution is to check the "mounted" property of this object before calling setState() to ensure the object is still in the tree.
       setState(() {}); // Rafraîchit l'interface après l'ajout
     }
   }
