@@ -73,6 +73,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
     Get.put(NominatimGeocoding());
 
     _loadCategories(); // Charger les catégories existantes
+
     if (widget.transaction != null) {
       final transaction = widget.transaction!;
       log("Transaction reçue : ${transaction.data()}");
@@ -92,12 +93,13 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
         final data = transaction.data() as Map<String, dynamic>?; // Cast explicite en Map
         if (data != null && data.containsKey('location')) {
           final GeoPoint location = data['location'] as GeoPoint;
-          _userLocation = LatLng(location.latitude, location.longitude);
-          
-          // Obtention de l'adresse depuis la localisation initial
-          _updateAddressFromGeoPoint(location);
-        } else {
-          _userLocation = _defaultLocation; // Valeur par défaut si "location" n'existe pas
+          _userLocation = geoPointToLatLng(location);
+
+          // Récupérer l'adresse depuis la localisation initiale
+          _getAddressFromLocation(_userLocation!);
+        }else {
+          _userLocation = _defaultLocation;
+          _currentAdress = "Adresse non spécifiée";
         }
 
         // Assurez-vous que _selectedCategory est défini uniquement pour les débits
@@ -106,16 +108,56 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
 
     } else {
       _dateController.text = DateFormat('yMd').add_jm().format(DateTime.now());
+      _currentAdress = "Adresse non spécifiée";
+    }
+
+    // Vérification de l'adresse
+    if (_userLocation != null && _currentAdress == null) {
+      _updateAddressFromGeoPoint(
+        GeoPoint(_userLocation!.latitude, _userLocation!.longitude),
+      );
+    }
+  }
+  LatLng geoPointToLatLng(GeoPoint geoPoint) {
+    return LatLng(geoPoint.latitude, geoPoint.longitude);
+  }
+
+  /// Récupérer l'adresse à partir d'une localisation
+  Future<void> _getAddressFromLocation(LatLng location) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        setState(() {
+          _currentAdress = "${place.street}, ${place.locality}, ${place.administrativeArea}";
+        });
+      }
+    } catch (e) {
+      log("Erreur lors de la récupération de l'adresse : $e");
+      setState(() {
+        _currentAdress = "Adresse inconnue";
+      });
+    }
+  }
+  Future<void> _updateAddressFromGeoPoint(GeoPoint location) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        location.latitude,
+        location.longitude,
+      );
+      String address =
+          "${placemarks.first.street}, ${placemarks.first.locality}, ${placemarks.first.administrativeArea}";
+      setState(() {
+        _currentAdress = address;
+      });
+    } catch (e) {
+      log("Erreur lors de la récupération de l'adresse : $e");
+      setState(() {
+        _currentAdress = "Adresse inconnue";
+      });
     }
   }
 
-  Future<void> _updateAddressFromGeoPoint(GeoPoint location) async {
-    List<Placemark> placemarks = await placemarkFromCoordinates(location.latitude, location.longitude);
-    String address = "${placemarks.first.street}, ${placemarks.first.locality}, ${placemarks.first.administrativeArea}";
-    setState(() {
-      _currentAdress = address;
-    });
-  }
   
   Future<void> _loadCategories() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -375,7 +417,7 @@ class TransactionFormScreenState extends State<TransactionFormScreen> {
           userLocation: _userLocation,
           onLocationUpdate: _updateLocation,
           onAddressUpdate: _updateAddress,
-          allowUserCurrentLocation: widget.transaction != null,
+          allowUserCurrentLocation: widget.transaction == null,
         ),
         const SizedBox(height: 16),
         PhotosSection(

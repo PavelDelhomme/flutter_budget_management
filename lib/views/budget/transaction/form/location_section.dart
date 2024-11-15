@@ -33,34 +33,48 @@ class LocationSection extends StatefulWidget {
 
 class _LocationSectionState extends State<LocationSection> {
   String? _displayedAddress;
+  bool _isLoadingAddress = false;
+  LatLng? _newLocation;
 
   @override
   void initState() {
     super.initState();
-    // Si une adresse est déjà définie, l'afficher
     if (widget.currentAddress != null) {
       _displayedAddress = widget.currentAddress;
+    } else if (widget.userLocation != null) {
+      _updateAddress(widget.userLocation!);
     } else if (widget.allowUserCurrentLocation) {
-      // Récupérer la localisation si l'option est autorisée
       _getCurrentLocation();
     }
   }
 
+
+
   Future<void> _getCurrentLocation() async {
-    await _checkLocationPermissions();
+    setState(() {
+      _isLoadingAddress = true;
+    });
 
     try {
+      await _checkLocationPermissions();
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       LatLng newLocation = LatLng(position.latitude, position.longitude);
+      _newLocation = newLocation;
+
       setState(() {
         widget.onLocationUpdate(newLocation);
         widget.mapController.move(newLocation, widget.zoom);
       });
-      _updateAddress(newLocation);
+
+      await _updateAddress(newLocation);
     } catch (e) {
       log("Erreur lors de la récupération de la localisation : $e");
       setState(() {
         _displayedAddress = "Adresse inconnue";
+      });
+    } finally {
+      setState(() {
+        _isLoadingAddress = false;
       });
     }
   }
@@ -99,6 +113,7 @@ class _LocationSectionState extends State<LocationSection> {
     }
   }
 
+
   Widget _buildInvisibleMap() {
     return SizedBox(
       height: 0,
@@ -129,12 +144,23 @@ class _LocationSectionState extends State<LocationSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Adresse: ${_displayedAddress ?? 'Non spécifiée'}"),
+        _isLoadingAddress
+            ? const CircularProgressIndicator()
+            : Text("Adresse: ${_displayedAddress ?? 'Non spécifiée'}"),
         const SizedBox(height: 10),
-        if (widget.allowUserCurrentLocation)
+        ElevatedButton(
+          onPressed: _getCurrentLocation,
+          child: const Text("Récupérer la nouvelle localisation"),
+        ),
+        if (_newLocation != null)
           ElevatedButton(
-            onPressed: _getCurrentLocation,
-            child: const Text("Utiliser la localisation actuelle"),
+            onPressed: () {
+              setState(() {
+                _newLocation = null;
+                _displayedAddress = widget.currentAddress;
+              });
+            },
+            child: const Text("Garder l'ancienne localisation"),
           ),
         _buildInvisibleMap(),
       ],
