@@ -1,6 +1,6 @@
 # budget_management
 
-A new Flutter project.
+A budget management app with flutter
 
 ## Getting Started
 
