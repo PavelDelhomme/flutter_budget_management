@@ -1,0 +1,556 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.budget.budget_management"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="23"
+9        android:targetSdkVersion="34" />
+10    <!--
+11         The INTERNET permission is required for development. Specifically,
+12         the Flutter tool needs it to communicate with the running application
+13         to allow setting breakpoints, to provide hot reload, etc.
+14    -->
+15    <uses-permission android:name="android.permission.INTERNET" />
+15-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/debug/AndroidManifest.xml:6:5-66
+15-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/debug/AndroidManifest.xml:6:22-64
+16    <!-- permission pour la localisation -->
+17    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+17-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:3:5-79
+17-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:3:22-76
+18    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+18-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:4:5-81
+18-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:4:22-78
+19    <!-- permission qui requière au minimum Android 10 ou API 29 -->
+20    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+20-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:6:5-85
+20-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:6:22-82
+21    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+21-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:7:5-78
+21-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:7:22-76
+22    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+22-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:7:5-78
+22-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:7:22-76
+23    <!--
+24 Required to query activities that can process text, see:
+25         https://developer.android.com/training/package-visibility and
+26         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+27
+28         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin.
+29    -->
+30    <queries>
+30-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:47:5-52:15
+31        <intent>
+31-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:48:9-51:18
+32            <action android:name="android.intent.action.PROCESS_TEXT" />
+32-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:49:13-72
+32-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:49:21-70
+33
+34            <data android:mimeType="text/plain" />
+34-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:50:13-50
+34-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:50:19-48
+35        </intent>
+36    </queries>
+37
+38    <uses-permission android:name="android.permission.VIBRATE" />
+38-->[:flutter_local_notifications] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:9:5-66
+38-->[:flutter_local_notifications] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:9:22-63
+39    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+39-->[:flutter_local_notifications] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:10:5-77
+39-->[:flutter_local_notifications] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/flutter_local_notifications/intermediates/merged_manifest/debug/AndroidManifest.xml:10:22-74
+40    <uses-permission android:name="android.permission.WAKE_LOCK" />
+40-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:24:5-68
+40-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:24:22-65
+41    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+41-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:25:5-79
+41-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:25:22-76
+42    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" />
+42-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:26:5-88
+42-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:26:22-85
+43    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" />
+43-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:27:5-82
+43-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:27:22-79
+44    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+44-->[com.google.android.recaptcha:recaptcha:18.4.0] /home/pactivisme/.gradle/caches/transforms-3/88836692bc56ef8aaea1ff0b97428d73/transformed/jetified-recaptcha-18.4.0/AndroidManifest.xml:9:5-98
+44-->[com.google.android.recaptcha:recaptcha:18.4.0] /home/pactivisme/.gradle/caches/transforms-3/88836692bc56ef8aaea1ff0b97428d73/transformed/jetified-recaptcha-18.4.0/AndroidManifest.xml:9:22-95
+45    <uses-permission android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE" />
+45-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:26:5-110
+45-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:26:22-107
+46
+47    <permission
+47-->[androidx.core:core:1.13.1] /home/pactivisme/.gradle/caches/transforms-3/147c7629b7da3548696aae006a1926a3/transformed/core-1.13.1/AndroidManifest.xml:22:5-24:47
+48        android:name="com.budget.budget_management.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+48-->[androidx.core:core:1.13.1] /home/pactivisme/.gradle/caches/transforms-3/147c7629b7da3548696aae006a1926a3/transformed/core-1.13.1/AndroidManifest.xml:23:9-81
+49        android:protectionLevel="signature" />
+49-->[androidx.core:core:1.13.1] /home/pactivisme/.gradle/caches/transforms-3/147c7629b7da3548696aae006a1926a3/transformed/core-1.13.1/AndroidManifest.xml:24:9-44
+50
+51    <uses-permission android:name="com.budget.budget_management.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+51-->[androidx.core:core:1.13.1] /home/pactivisme/.gradle/caches/transforms-3/147c7629b7da3548696aae006a1926a3/transformed/core-1.13.1/AndroidManifest.xml:26:5-97
+51-->[androidx.core:core:1.13.1] /home/pactivisme/.gradle/caches/transforms-3/147c7629b7da3548696aae006a1926a3/transformed/core-1.13.1/AndroidManifest.xml:26:22-94
+52
+53    <application
+54        android:name="android.app.Application"
+55        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+55-->[androidx.core:core:1.13.1] /home/pactivisme/.gradle/caches/transforms-3/147c7629b7da3548696aae006a1926a3/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
+56        android:debuggable="true"
+57        android:extractNativeLibs="false"
+58        android:icon="@mipmap/ic_launcher"
+59        android:label="budget_management" >
+60        <activity
+61            android:name="com.budget.budget_management.MainActivity"
+62            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+63            android:exported="true"
+64            android:hardwareAccelerated="true"
+65            android:launchMode="singleTop"
+66            android:taskAffinity=""
+67            android:theme="@style/LaunchTheme"
+68            android:windowSoftInputMode="adjustResize" >
+69
+70            <!--
+71                 Specifies an Android theme to apply to this Activity as soon as
+72                 the Android process has started. This theme is visible to the user
+73                 while the Flutter UI initializes. After that, this theme continues
+74                 to determine the Window background behind the Flutter UI.
+75            -->
+76            <meta-data
+77                android:name="io.flutter.embedding.android.NormalTheme"
+78                android:resource="@style/NormalTheme" />
+79
+80            <intent-filter>
+81                <action android:name="android.intent.action.MAIN" />
+82
+83                <category android:name="android.intent.category.LAUNCHER" />
+84            </intent-filter>
+85        </activity>
+86        <!--
+87             Don't delete the meta-data below.
+88             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java
+89        -->
+90        <meta-data
+91            android:name="flutterEmbedding"
+92            android:value="2" />
+93
+94        <service
+94-->[:cloud_firestore] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/cloud_firestore/intermediates/merged_manifest/debug/AndroidManifest.xml:10:9-14:19
+95            android:name="com.google.firebase.components.ComponentDiscoveryService"
+95-->[:cloud_firestore] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/cloud_firestore/intermediates/merged_manifest/debug/AndroidManifest.xml:10:18-89
+96            android:directBootAware="true"
+96-->[com.google.firebase:firebase-common:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/6571f1975e7aee9d245440bc30210b9a/transformed/jetified-firebase-common-21.0.0/AndroidManifest.xml:32:13-43
+97            android:exported="false" >
+97-->[com.google.firebase:firebase-firestore:25.1.0] /home/pactivisme/.gradle/caches/transforms-3/32b16937be2e318901696fede4b8f6ab/transformed/jetified-firebase-firestore-25.1.0/AndroidManifest.xml:16:13-37
+98            <meta-data
+98-->[:cloud_firestore] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/cloud_firestore/intermediates/merged_manifest/debug/AndroidManifest.xml:11:13-13:85
+99                android:name="com.google.firebase.components:io.flutter.plugins.firebase.firestore.FlutterFirebaseFirestoreRegistrar"
+99-->[:cloud_firestore] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/cloud_firestore/intermediates/merged_manifest/debug/AndroidManifest.xml:12:17-134
+100                android:value="com.google.firebase.components.ComponentRegistrar" />
+100-->[:cloud_firestore] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/cloud_firestore/intermediates/merged_manifest/debug/AndroidManifest.xml:13:17-82
+101            <meta-data
+101-->[:firebase_auth] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/firebase_auth/intermediates/merged_manifest/debug/AndroidManifest.xml:11:13-13:85
+102                android:name="com.google.firebase.components:io.flutter.plugins.firebase.auth.FlutterFirebaseAuthRegistrar"
+102-->[:firebase_auth] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/firebase_auth/intermediates/merged_manifest/debug/AndroidManifest.xml:12:17-124
+103                android:value="com.google.firebase.components.ComponentRegistrar" />
+103-->[:firebase_auth] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/firebase_auth/intermediates/merged_manifest/debug/AndroidManifest.xml:13:17-82
+104            <meta-data
+104-->[:firebase_storage] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/firebase_storage/intermediates/merged_manifest/debug/AndroidManifest.xml:11:13-13:85
+105                android:name="com.google.firebase.components:io.flutter.plugins.firebase.storage.FlutterFirebaseAppRegistrar"
+105-->[:firebase_storage] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/firebase_storage/intermediates/merged_manifest/debug/AndroidManifest.xml:12:17-126
+106                android:value="com.google.firebase.components.ComponentRegistrar" />
+106-->[:firebase_storage] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/firebase_storage/intermediates/merged_manifest/debug/AndroidManifest.xml:13:17-82
+107            <meta-data
+107-->[:firebase_core] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/firebase_core/intermediates/merged_manifest/debug/AndroidManifest.xml:11:13-13:85
+108                android:name="com.google.firebase.components:io.flutter.plugins.firebase.core.FlutterFirebaseCoreRegistrar"
+108-->[:firebase_core] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/firebase_core/intermediates/merged_manifest/debug/AndroidManifest.xml:12:17-124
+109                android:value="com.google.firebase.components.ComponentRegistrar" />
+109-->[:firebase_core] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/firebase_core/intermediates/merged_manifest/debug/AndroidManifest.xml:13:17-82
+110            <meta-data
+110-->[com.google.firebase:firebase-firestore:25.1.0] /home/pactivisme/.gradle/caches/transforms-3/32b16937be2e318901696fede4b8f6ab/transformed/jetified-firebase-firestore-25.1.0/AndroidManifest.xml:17:13-19:85
+111                android:name="com.google.firebase.components:com.google.firebase.firestore.FirebaseFirestoreKtxRegistrar"
+111-->[com.google.firebase:firebase-firestore:25.1.0] /home/pactivisme/.gradle/caches/transforms-3/32b16937be2e318901696fede4b8f6ab/transformed/jetified-firebase-firestore-25.1.0/AndroidManifest.xml:18:17-122
+112                android:value="com.google.firebase.components.ComponentRegistrar" />
+112-->[com.google.firebase:firebase-firestore:25.1.0] /home/pactivisme/.gradle/caches/transforms-3/32b16937be2e318901696fede4b8f6ab/transformed/jetified-firebase-firestore-25.1.0/AndroidManifest.xml:19:17-82
+113            <meta-data
+113-->[com.google.firebase:firebase-firestore:25.1.0] /home/pactivisme/.gradle/caches/transforms-3/32b16937be2e318901696fede4b8f6ab/transformed/jetified-firebase-firestore-25.1.0/AndroidManifest.xml:20:13-22:85
+114                android:name="com.google.firebase.components:com.google.firebase.firestore.FirestoreRegistrar"
+114-->[com.google.firebase:firebase-firestore:25.1.0] /home/pactivisme/.gradle/caches/transforms-3/32b16937be2e318901696fede4b8f6ab/transformed/jetified-firebase-firestore-25.1.0/AndroidManifest.xml:21:17-111
+115                android:value="com.google.firebase.components.ComponentRegistrar" />
+115-->[com.google.firebase:firebase-firestore:25.1.0] /home/pactivisme/.gradle/caches/transforms-3/32b16937be2e318901696fede4b8f6ab/transformed/jetified-firebase-firestore-25.1.0/AndroidManifest.xml:22:17-82
+116            <meta-data
+116-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:37:13-39:85
+117                android:name="com.google.firebase.components:com.google.firebase.analytics.connector.internal.AnalyticsConnectorRegistrar"
+117-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:38:17-139
+118                android:value="com.google.firebase.components.ComponentRegistrar" />
+118-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:39:17-82
+119            <meta-data
+119-->[com.google.firebase:firebase-storage:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/b539205d03ecaa2fee2eadb05660eaf7/transformed/jetified-firebase-storage-21.0.0/AndroidManifest.xml:30:13-32:85
+120                android:name="com.google.firebase.components:com.google.firebase.storage.FirebaseStorageKtxRegistrar"
+120-->[com.google.firebase:firebase-storage:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/b539205d03ecaa2fee2eadb05660eaf7/transformed/jetified-firebase-storage-21.0.0/AndroidManifest.xml:31:17-118
+121                android:value="com.google.firebase.components.ComponentRegistrar" />
+121-->[com.google.firebase:firebase-storage:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/b539205d03ecaa2fee2eadb05660eaf7/transformed/jetified-firebase-storage-21.0.0/AndroidManifest.xml:32:17-82
+122            <meta-data
+122-->[com.google.firebase:firebase-storage:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/b539205d03ecaa2fee2eadb05660eaf7/transformed/jetified-firebase-storage-21.0.0/AndroidManifest.xml:33:13-35:85
+123                android:name="com.google.firebase.components:com.google.firebase.storage.StorageRegistrar"
+123-->[com.google.firebase:firebase-storage:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/b539205d03ecaa2fee2eadb05660eaf7/transformed/jetified-firebase-storage-21.0.0/AndroidManifest.xml:34:17-107
+124                android:value="com.google.firebase.components.ComponentRegistrar" />
+124-->[com.google.firebase:firebase-storage:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/b539205d03ecaa2fee2eadb05660eaf7/transformed/jetified-firebase-storage-21.0.0/AndroidManifest.xml:35:17-82
+125            <meta-data
+125-->[com.google.firebase:firebase-installations:18.0.0] /home/pactivisme/.gradle/caches/transforms-3/c058ec90f471b6cef237dc1d632b8584/transformed/jetified-firebase-installations-18.0.0/AndroidManifest.xml:15:13-17:85
+126                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar"
+126-->[com.google.firebase:firebase-installations:18.0.0] /home/pactivisme/.gradle/caches/transforms-3/c058ec90f471b6cef237dc1d632b8584/transformed/jetified-firebase-installations-18.0.0/AndroidManifest.xml:16:17-130
+127                android:value="com.google.firebase.components.ComponentRegistrar" />
+127-->[com.google.firebase:firebase-installations:18.0.0] /home/pactivisme/.gradle/caches/transforms-3/c058ec90f471b6cef237dc1d632b8584/transformed/jetified-firebase-installations-18.0.0/AndroidManifest.xml:17:17-82
+128            <meta-data
+128-->[com.google.firebase:firebase-installations:18.0.0] /home/pactivisme/.gradle/caches/transforms-3/c058ec90f471b6cef237dc1d632b8584/transformed/jetified-firebase-installations-18.0.0/AndroidManifest.xml:18:13-20:85
+129                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
+129-->[com.google.firebase:firebase-installations:18.0.0] /home/pactivisme/.gradle/caches/transforms-3/c058ec90f471b6cef237dc1d632b8584/transformed/jetified-firebase-installations-18.0.0/AndroidManifest.xml:19:17-127
+130                android:value="com.google.firebase.components.ComponentRegistrar" />
+130-->[com.google.firebase:firebase-installations:18.0.0] /home/pactivisme/.gradle/caches/transforms-3/c058ec90f471b6cef237dc1d632b8584/transformed/jetified-firebase-installations-18.0.0/AndroidManifest.xml:20:17-82
+131            <meta-data
+131-->[com.google.firebase:firebase-appcheck:18.0.0] /home/pactivisme/.gradle/caches/transforms-3/403668fa49461e15a02906232f3e45a5/transformed/jetified-firebase-appcheck-18.0.0/AndroidManifest.xml:25:13-27:85
+132                android:name="com.google.firebase.components:com.google.firebase.appcheck.FirebaseAppCheckKtxRegistrar"
+132-->[com.google.firebase:firebase-appcheck:18.0.0] /home/pactivisme/.gradle/caches/transforms-3/403668fa49461e15a02906232f3e45a5/transformed/jetified-firebase-appcheck-18.0.0/AndroidManifest.xml:26:17-120
+133                android:value="com.google.firebase.components.ComponentRegistrar" />
+133-->[com.google.firebase:firebase-appcheck:18.0.0] /home/pactivisme/.gradle/caches/transforms-3/403668fa49461e15a02906232f3e45a5/transformed/jetified-firebase-appcheck-18.0.0/AndroidManifest.xml:27:17-82
+134            <meta-data
+134-->[com.google.firebase:firebase-appcheck:18.0.0] /home/pactivisme/.gradle/caches/transforms-3/403668fa49461e15a02906232f3e45a5/transformed/jetified-firebase-appcheck-18.0.0/AndroidManifest.xml:28:13-30:85
+135                android:name="com.google.firebase.components:com.google.firebase.appcheck.FirebaseAppCheckRegistrar"
+135-->[com.google.firebase:firebase-appcheck:18.0.0] /home/pactivisme/.gradle/caches/transforms-3/403668fa49461e15a02906232f3e45a5/transformed/jetified-firebase-appcheck-18.0.0/AndroidManifest.xml:29:17-117
+136                android:value="com.google.firebase.components.ComponentRegistrar" />
+136-->[com.google.firebase:firebase-appcheck:18.0.0] /home/pactivisme/.gradle/caches/transforms-3/403668fa49461e15a02906232f3e45a5/transformed/jetified-firebase-appcheck-18.0.0/AndroidManifest.xml:30:17-82
+137            <meta-data
+137-->[com.google.firebase:firebase-common-ktx:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/4e73762a75d1ec7f19aa26f596e8ce31/transformed/jetified-firebase-common-ktx-21.0.0/AndroidManifest.xml:12:13-14:85
+138                android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar"
+138-->[com.google.firebase:firebase-common-ktx:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/4e73762a75d1ec7f19aa26f596e8ce31/transformed/jetified-firebase-common-ktx-21.0.0/AndroidManifest.xml:13:17-116
+139                android:value="com.google.firebase.components.ComponentRegistrar" />
+139-->[com.google.firebase:firebase-common-ktx:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/4e73762a75d1ec7f19aa26f596e8ce31/transformed/jetified-firebase-common-ktx-21.0.0/AndroidManifest.xml:14:17-82
+140            <meta-data
+140-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:69:13-71:85
+141                android:name="com.google.firebase.components:com.google.firebase.auth.FirebaseAuthRegistrar"
+141-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:70:17-109
+142                android:value="com.google.firebase.components.ComponentRegistrar" />
+142-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:71:17-82
+143            <meta-data
+143-->[com.google.firebase:firebase-common:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/6571f1975e7aee9d245440bc30210b9a/transformed/jetified-firebase-common-21.0.0/AndroidManifest.xml:35:13-37:85
+144                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
+144-->[com.google.firebase:firebase-common:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/6571f1975e7aee9d245440bc30210b9a/transformed/jetified-firebase-common-21.0.0/AndroidManifest.xml:36:17-109
+145                android:value="com.google.firebase.components.ComponentRegistrar" />
+145-->[com.google.firebase:firebase-common:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/6571f1975e7aee9d245440bc30210b9a/transformed/jetified-firebase-common-21.0.0/AndroidManifest.xml:37:17-82
+146        </service>
+147
+148        <provider
+148-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:11:9-19:20
+149            android:name="io.flutter.plugins.imagepicker.ImagePickerFileProvider"
+149-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:12:13-82
+150            android:authorities="com.budget.budget_management.flutter.image_provider"
+150-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:13:13-74
+151            android:exported="false"
+151-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:14:13-37
+152            android:grantUriPermissions="true" >
+152-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:15:13-47
+153            <meta-data
+153-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:16:13-18:75
+154                android:name="android.support.FILE_PROVIDER_PATHS"
+154-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:17:17-67
+155                android:resource="@xml/flutter_image_picker_file_paths" />
+155-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:18:17-72
+156        </provider> <!-- Trigger Google Play services to install the backported photo picker module. -->
+157        <service
+157-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:21:9-33:19
+158            android:name="com.google.android.gms.metadata.ModuleDependencies"
+158-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:22:13-78
+159            android:enabled="false"
+159-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:23:13-36
+160            android:exported="false" >
+160-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:24:13-37
+161            <intent-filter>
+161-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:26:13-28:29
+162                <action android:name="com.google.android.gms.metadata.MODULE_DEPENDENCIES" />
+162-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:27:17-94
+162-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:27:25-91
+163            </intent-filter>
+164
+165            <meta-data
+165-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:30:13-32:36
+166                android:name="photopicker_activity:0:required"
+166-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:31:17-63
+167                android:value="" />
+167-->[:image_picker_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/image_picker_android/intermediates/merged_manifest/debug/AndroidManifest.xml:32:17-33
+168        </service>
+169        <service
+169-->[:geolocator_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:10:9-14:56
+170            android:name="com.baseflow.geolocator.GeolocatorLocationService"
+170-->[:geolocator_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:11:13-77
+171            android:enabled="true"
+171-->[:geolocator_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:12:13-35
+172            android:exported="false"
+172-->[:geolocator_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:13:13-37
+173            android:foregroundServiceType="location" />
+173-->[:geolocator_android] /home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/build/geolocator_android/intermediates/merged_manifest/debug/AndroidManifest.xml:14:13-53
+174
+175        <property
+175-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:30:9-32:61
+176            android:name="android.adservices.AD_SERVICES_CONFIG"
+176-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:31:13-65
+177            android:resource="@xml/ga_ad_services_config" />
+177-->[com.google.android.gms:play-services-measurement-api:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/13b69123fd926c82651807ea94df8862/transformed/jetified-play-services-measurement-api-22.1.0/AndroidManifest.xml:32:13-58
+178
+179        <activity
+179-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:29:9-46:20
+180            android:name="com.google.firebase.auth.internal.GenericIdpActivity"
+180-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:30:13-80
+181            android:excludeFromRecents="true"
+181-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:31:13-46
+182            android:exported="true"
+182-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:32:13-36
+183            android:launchMode="singleTask"
+183-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:33:13-44
+184            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+184-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:34:13-72
+185            <intent-filter>
+185-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:35:13-45:29
+186                <action android:name="android.intent.action.VIEW" />
+186-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:36:17-69
+186-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:36:25-66
+187
+188                <category android:name="android.intent.category.DEFAULT" />
+188-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:38:17-76
+188-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:38:27-73
+189                <category android:name="android.intent.category.BROWSABLE" />
+189-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:39:17-78
+189-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:39:27-75
+190
+191                <data
+191-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:50:13-50
+192                    android:host="firebase.auth"
+193                    android:path="/"
+194                    android:scheme="genericidp" />
+195            </intent-filter>
+196        </activity>
+197        <activity
+197-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:47:9-64:20
+198            android:name="com.google.firebase.auth.internal.RecaptchaActivity"
+198-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:48:13-79
+199            android:excludeFromRecents="true"
+199-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:49:13-46
+200            android:exported="true"
+200-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:50:13-36
+201            android:launchMode="singleTask"
+201-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:51:13-44
+202            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+202-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:52:13-72
+203            <intent-filter>
+203-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:53:13-63:29
+204                <action android:name="android.intent.action.VIEW" />
+204-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:36:17-69
+204-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:36:25-66
+205
+206                <category android:name="android.intent.category.DEFAULT" />
+206-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:38:17-76
+206-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:38:27-73
+207                <category android:name="android.intent.category.BROWSABLE" />
+207-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:39:17-78
+207-->[com.google.firebase:firebase-auth:23.0.0] /home/pactivisme/.gradle/caches/transforms-3/92c1e0abffd9133b46c427a2c8c5b33d/transformed/jetified-firebase-auth-23.0.0/AndroidManifest.xml:39:27-75
+208
+209                <data
+209-->/home/pactivisme/Documents/Travail/Aubepine/flutter_budget_management/android/app/src/main/AndroidManifest.xml:50:13-50
+210                    android:host="firebase.auth"
+211                    android:path="/"
+212                    android:scheme="recaptcha" />
+213            </intent-filter>
+214        </activity>
+215
+216        <service
+216-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:24:9-32:19
+217            android:name="androidx.credentials.playservices.CredentialProviderMetadataHolder"
+217-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:25:13-94
+218            android:enabled="true"
+218-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:26:13-35
+219            android:exported="false" >
+219-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:27:13-37
+220            <meta-data
+220-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:29:13-31:104
+221                android:name="androidx.credentials.CREDENTIAL_PROVIDER_KEY"
+221-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:30:17-76
+222                android:value="androidx.credentials.playservices.CredentialProviderPlayServicesImpl" />
+222-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:31:17-101
+223        </service>
+224
+225        <activity
+225-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:34:9-41:20
+226            android:name="androidx.credentials.playservices.HiddenActivity"
+226-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:35:13-76
+227            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+227-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:36:13-87
+228            android:enabled="true"
+228-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:37:13-35
+229            android:exported="false"
+229-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:38:13-37
+230            android:fitsSystemWindows="true"
+230-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:39:13-45
+231            android:theme="@style/Theme.Hidden" >
+231-->[androidx.credentials:credentials-play-services-auth:1.2.0-rc01] /home/pactivisme/.gradle/caches/transforms-3/6e61d51007005211ca13942cb06b0327/transformed/jetified-credentials-play-services-auth-1.2.0-rc01/AndroidManifest.xml:40:13-48
+232        </activity>
+233        <activity
+233-->[com.google.android.gms:play-services-auth:20.7.0] /home/pactivisme/.gradle/caches/transforms-3/955a04f501a96909f034ec181368bf43/transformed/jetified-play-services-auth-20.7.0/AndroidManifest.xml:23:9-27:75
+234            android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
+234-->[com.google.android.gms:play-services-auth:20.7.0] /home/pactivisme/.gradle/caches/transforms-3/955a04f501a96909f034ec181368bf43/transformed/jetified-play-services-auth-20.7.0/AndroidManifest.xml:24:13-93
+235            android:excludeFromRecents="true"
+235-->[com.google.android.gms:play-services-auth:20.7.0] /home/pactivisme/.gradle/caches/transforms-3/955a04f501a96909f034ec181368bf43/transformed/jetified-play-services-auth-20.7.0/AndroidManifest.xml:25:13-46
+236            android:exported="false"
+236-->[com.google.android.gms:play-services-auth:20.7.0] /home/pactivisme/.gradle/caches/transforms-3/955a04f501a96909f034ec181368bf43/transformed/jetified-play-services-auth-20.7.0/AndroidManifest.xml:26:13-37
+237            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+237-->[com.google.android.gms:play-services-auth:20.7.0] /home/pactivisme/.gradle/caches/transforms-3/955a04f501a96909f034ec181368bf43/transformed/jetified-play-services-auth-20.7.0/AndroidManifest.xml:27:13-72
+238        <!--
+239            Service handling Google Sign-In user revocation. For apps that do not integrate with
+240            Google Sign-In, this service will never be started.
+241        -->
+242        <service
+242-->[com.google.android.gms:play-services-auth:20.7.0] /home/pactivisme/.gradle/caches/transforms-3/955a04f501a96909f034ec181368bf43/transformed/jetified-play-services-auth-20.7.0/AndroidManifest.xml:33:9-37:51
+243            android:name="com.google.android.gms.auth.api.signin.RevocationBoundService"
+243-->[com.google.android.gms:play-services-auth:20.7.0] /home/pactivisme/.gradle/caches/transforms-3/955a04f501a96909f034ec181368bf43/transformed/jetified-play-services-auth-20.7.0/AndroidManifest.xml:34:13-89
+244            android:exported="true"
+244-->[com.google.android.gms:play-services-auth:20.7.0] /home/pactivisme/.gradle/caches/transforms-3/955a04f501a96909f034ec181368bf43/transformed/jetified-play-services-auth-20.7.0/AndroidManifest.xml:35:13-36
+245            android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"
+245-->[com.google.android.gms:play-services-auth:20.7.0] /home/pactivisme/.gradle/caches/transforms-3/955a04f501a96909f034ec181368bf43/transformed/jetified-play-services-auth-20.7.0/AndroidManifest.xml:36:13-107
+246            android:visibleToInstantApps="true" />
+246-->[com.google.android.gms:play-services-auth:20.7.0] /home/pactivisme/.gradle/caches/transforms-3/955a04f501a96909f034ec181368bf43/transformed/jetified-play-services-auth-20.7.0/AndroidManifest.xml:37:13-48
+247
+248        <activity
+248-->[com.google.android.gms:play-services-base:18.3.0] /home/pactivisme/.gradle/caches/transforms-3/2ab961cd761aea36497f139abbfaa8a2/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:20:9-22:45
+249            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+249-->[com.google.android.gms:play-services-base:18.3.0] /home/pactivisme/.gradle/caches/transforms-3/2ab961cd761aea36497f139abbfaa8a2/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:20:19-85
+250            android:exported="false"
+250-->[com.google.android.gms:play-services-base:18.3.0] /home/pactivisme/.gradle/caches/transforms-3/2ab961cd761aea36497f139abbfaa8a2/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:22:19-43
+251            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+251-->[com.google.android.gms:play-services-base:18.3.0] /home/pactivisme/.gradle/caches/transforms-3/2ab961cd761aea36497f139abbfaa8a2/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:21:19-78
+252
+253        <receiver
+253-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:29:9-33:20
+254            android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
+254-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:30:13-85
+255            android:enabled="true"
+255-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:31:13-35
+256            android:exported="false" >
+256-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:32:13-37
+257        </receiver>
+258
+259        <service
+259-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:35:9-38:40
+260            android:name="com.google.android.gms.measurement.AppMeasurementService"
+260-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:36:13-84
+261            android:enabled="true"
+261-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:37:13-35
+262            android:exported="false" />
+262-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:38:13-37
+263        <service
+263-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:39:9-43:72
+264            android:name="com.google.android.gms.measurement.AppMeasurementJobService"
+264-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:40:13-87
+265            android:enabled="true"
+265-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:41:13-35
+266            android:exported="false"
+266-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:42:13-37
+267            android:permission="android.permission.BIND_JOB_SERVICE" />
+267-->[com.google.android.gms:play-services-measurement:22.1.0] /home/pactivisme/.gradle/caches/transforms-3/fa706247cb39245c8374aecf4817b630/transformed/jetified-play-services-measurement-22.1.0/AndroidManifest.xml:43:13-69
+268
+269        <provider
+269-->[com.google.firebase:firebase-common:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/6571f1975e7aee9d245440bc30210b9a/transformed/jetified-firebase-common-21.0.0/AndroidManifest.xml:23:9-28:39
+270            android:name="com.google.firebase.provider.FirebaseInitProvider"
+270-->[com.google.firebase:firebase-common:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/6571f1975e7aee9d245440bc30210b9a/transformed/jetified-firebase-common-21.0.0/AndroidManifest.xml:24:13-77
+271            android:authorities="com.budget.budget_management.firebaseinitprovider"
+271-->[com.google.firebase:firebase-common:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/6571f1975e7aee9d245440bc30210b9a/transformed/jetified-firebase-common-21.0.0/AndroidManifest.xml:25:13-72
+272            android:directBootAware="true"
+272-->[com.google.firebase:firebase-common:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/6571f1975e7aee9d245440bc30210b9a/transformed/jetified-firebase-common-21.0.0/AndroidManifest.xml:26:13-43
+273            android:exported="false"
+273-->[com.google.firebase:firebase-common:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/6571f1975e7aee9d245440bc30210b9a/transformed/jetified-firebase-common-21.0.0/AndroidManifest.xml:27:13-37
+274            android:initOrder="100" />
+274-->[com.google.firebase:firebase-common:21.0.0] /home/pactivisme/.gradle/caches/transforms-3/6571f1975e7aee9d245440bc30210b9a/transformed/jetified-firebase-common-21.0.0/AndroidManifest.xml:28:13-36
+275
+276        <uses-library
+276-->[androidx.window:window:1.2.0] /home/pactivisme/.gradle/caches/transforms-3/579cf1730c3ae7db69512e018db59612/transformed/jetified-window-1.2.0/AndroidManifest.xml:23:9-25:40
+277            android:name="androidx.window.extensions"
+277-->[androidx.window:window:1.2.0] /home/pactivisme/.gradle/caches/transforms-3/579cf1730c3ae7db69512e018db59612/transformed/jetified-window-1.2.0/AndroidManifest.xml:24:13-54
+278            android:required="false" />
+278-->[androidx.window:window:1.2.0] /home/pactivisme/.gradle/caches/transforms-3/579cf1730c3ae7db69512e018db59612/transformed/jetified-window-1.2.0/AndroidManifest.xml:25:13-37
+279        <uses-library
+279-->[androidx.window:window:1.2.0] /home/pactivisme/.gradle/caches/transforms-3/579cf1730c3ae7db69512e018db59612/transformed/jetified-window-1.2.0/AndroidManifest.xml:26:9-28:40
+280            android:name="androidx.window.sidecar"
+280-->[androidx.window:window:1.2.0] /home/pactivisme/.gradle/caches/transforms-3/579cf1730c3ae7db69512e018db59612/transformed/jetified-window-1.2.0/AndroidManifest.xml:27:13-51
+281            android:required="false" />
+281-->[androidx.window:window:1.2.0] /home/pactivisme/.gradle/caches/transforms-3/579cf1730c3ae7db69512e018db59612/transformed/jetified-window-1.2.0/AndroidManifest.xml:28:13-37
+282        <uses-library
+282-->[androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] /home/pactivisme/.gradle/caches/transforms-3/b8020345eb0d44e224e216344e9b7387/transformed/jetified-ads-adservices-1.0.0-beta05/AndroidManifest.xml:23:9-25:40
+283            android:name="android.ext.adservices"
+283-->[androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] /home/pactivisme/.gradle/caches/transforms-3/b8020345eb0d44e224e216344e9b7387/transformed/jetified-ads-adservices-1.0.0-beta05/AndroidManifest.xml:24:13-50
+284            android:required="false" />
+284-->[androidx.privacysandbox.ads:ads-adservices:1.0.0-beta05] /home/pactivisme/.gradle/caches/transforms-3/b8020345eb0d44e224e216344e9b7387/transformed/jetified-ads-adservices-1.0.0-beta05/AndroidManifest.xml:25:13-37
+285
+286        <meta-data
+286-->[com.google.android.gms:play-services-basement:18.4.0] /home/pactivisme/.gradle/caches/transforms-3/a58cd3db3cf486fcd6eb9ff9759737b3/transformed/jetified-play-services-basement-18.4.0/AndroidManifest.xml:6:9-122
+287            android:name="com.google.android.gms.version"
+287-->[com.google.android.gms:play-services-basement:18.4.0] /home/pactivisme/.gradle/caches/transforms-3/a58cd3db3cf486fcd6eb9ff9759737b3/transformed/jetified-play-services-basement-18.4.0/AndroidManifest.xml:6:20-65
+288            android:value="@integer/google_play_services_version" />
+288-->[com.google.android.gms:play-services-basement:18.4.0] /home/pactivisme/.gradle/caches/transforms-3/a58cd3db3cf486fcd6eb9ff9759737b3/transformed/jetified-play-services-basement-18.4.0/AndroidManifest.xml:6:66-119
+289
+290        <provider
+290-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/pactivisme/.gradle/caches/transforms-3/4c2005acf14649994de936e0f97b983d/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:24:9-32:20
+291            android:name="androidx.startup.InitializationProvider"
+291-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/pactivisme/.gradle/caches/transforms-3/4c2005acf14649994de936e0f97b983d/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:25:13-67
+292            android:authorities="com.budget.budget_management.androidx-startup"
+292-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/pactivisme/.gradle/caches/transforms-3/4c2005acf14649994de936e0f97b983d/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:26:13-68
+293            android:exported="false" >
+293-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/pactivisme/.gradle/caches/transforms-3/4c2005acf14649994de936e0f97b983d/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:27:13-37
+294            <meta-data
+294-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/pactivisme/.gradle/caches/transforms-3/4c2005acf14649994de936e0f97b983d/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:29:13-31:52
+295                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+295-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/pactivisme/.gradle/caches/transforms-3/4c2005acf14649994de936e0f97b983d/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:30:17-78
+296                android:value="androidx.startup" />
+296-->[androidx.lifecycle:lifecycle-process:2.7.0] /home/pactivisme/.gradle/caches/transforms-3/4c2005acf14649994de936e0f97b983d/transformed/jetified-lifecycle-process-2.7.0/AndroidManifest.xml:31:17-49
+297            <meta-data
+297-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
+298                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+298-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
+299                android:value="androidx.startup" />
+299-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
+300        </provider>
+301
+302        <receiver
+302-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
+303            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+303-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
+304            android:directBootAware="false"
+304-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
+305            android:enabled="true"
+305-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
+306            android:exported="true"
+306-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
+307            android:permission="android.permission.DUMP" >
+307-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
+308            <intent-filter>
+308-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
+309                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+309-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
+309-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
+310            </intent-filter>
+311            <intent-filter>
+311-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
+312                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+312-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
+312-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
+313            </intent-filter>
+314            <intent-filter>
+314-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
+315                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+315-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
+315-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
+316            </intent-filter>
+317            <intent-filter>
+317-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
+318                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+318-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
+318-->[androidx.profileinstaller:profileinstaller:1.3.1] /home/pactivisme/.gradle/caches/transforms-3/d0d174d2313e542addb1517a5d0ffd66/transformed/jetified-profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
+319            </intent-filter>
+320        </receiver>
+321    </application>
+322
+323</manifest>
