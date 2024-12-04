@@ -7,19 +7,22 @@
         {
             "name": "flutter_budget_management",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "program": "budget_management/lib/main.dart"
         },
         {
             "name": "flutter_budget_management (profile mode)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "profile"
+            "flutterMode": "profile",
+            "program": "budget_management/lib/main.dart"
         },
         {
             "name": "flutter_budget_management (release mode)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "release"
+            "flutterMode": "release",
+            "program": "budget_management/lib/main.dart"
         }
     ]
 }
