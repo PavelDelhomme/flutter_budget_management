@@ -5,24 +5,24 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "flutter_budget_management",
+            "name": "myfinances",
             "request": "launch",
             "type": "dart",
-            "program": "budget_management/lib/main.dart"
+            "program": "myfinances/lib/main.dart"
         },
         {
-            "name": "flutter_budget_management (profile mode)",
+            "name": "myfinances (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
-            "program": "budget_management/lib/main.dart"
+            "program": "myfinances/lib/main.dart"
         },
         {
-            "name": "flutter_budget_management (release mode)",
+            "name": "myfinances (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",
-            "program": "budget_management/lib/main.dart"
+            "program": "myfinances/lib/main.dart"
         }
     ]
 }
