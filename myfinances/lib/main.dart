@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 void main() {
   runApp(const MyApp());
 }
-
+//todo ajouter la possibilité d'avoir l'initialisation de firebase
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
