@@ -1,14 +1,13 @@
 import 'dart:developer';
 
-import 'package:budget_management/utils/budgets.dart';
 import 'package:budget_management/views/budget/transaction/transaction_form_screen.dart';
-import 'package:budget_management/views/budget/transaction/ancien_detail/transaction_details_modal.dart';
 import 'package:budget_management/views/budget/transaction/transactions_reccuring_view.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../services/budgets.dart';
 import '../../budget/budget_details_screen.dart';
 import '../transaction_details_view.dart';
 
@@ -179,7 +178,7 @@ class _TransactionsViewState extends State<TransactionsView> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await updateBudgetAfterTransactionDeletion(user.uid, amount,
+      await BudgetService().updateBudgetAfterTransactionDeletion(user.uid, amount,
           isDebit: isDebit);
     }
 

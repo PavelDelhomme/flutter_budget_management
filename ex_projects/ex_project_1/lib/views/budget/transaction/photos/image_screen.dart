@@ -1,6 +1,11 @@
+<<<<<<< HEAD:ex_projects/ex_project_1/lib/views/budget/transaction/photos/image_screen.dart
 import 'package:budget_management/services/utils_services/image_service.dart';
+=======
+>>>>>>> devel:lib/views/budget/transaction/photos/image_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../../../services/image_service.dart';
 
 class ImageScreen extends StatelessWidget {
   final String imageUrl;
@@ -30,14 +35,9 @@ class ImageScreen extends StatelessWidget {
     );
 
     if (confirmDeletion) {
-      await removeImage(imageUrl, transaction.reference);
+      await ImageService().removeImage(imageUrl, transaction.reference);
       Navigator.pop(context, "removed"); // Indiquer la suppression
     }
-  }
-
-  Future<void> _replacePhoto(BuildContext context) async {
-    await replaceImage(context, imageUrl, transaction.reference);
-    Navigator.pop(context, "replaced"); // Indiquer le remplacement
   }
 
 
@@ -54,7 +54,7 @@ class ImageScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () async {
-              await replaceImage(context, imageUrl, transaction.reference);
+              await ImageService().replaceImage(context, imageUrl, transaction.reference);
               Navigator.pop(context, "replaced");
             },
           ),

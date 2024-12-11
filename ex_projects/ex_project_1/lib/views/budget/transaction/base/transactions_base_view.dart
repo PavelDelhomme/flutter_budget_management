@@ -7,7 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../utils/transactions.dart';
+import '../../../../services/transactions.dart';
+
 
 class TransactionsBaseView extends StatefulWidget {
   final bool showRecurring; // Indique si l'on affiche uniquement les récurrentes
@@ -91,7 +92,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
 
       // Log le type de transaction pour chaque document
       for (var transaction in transactions) {
-        final bool isDebit = isDebitTransaction(transaction);
+        final bool isDebit = TransactionService().isDebitTransaction(transaction);
         log("Transaction ID: ${transaction.id} - Type: ${isDebit ? 'Débit' : 'Crédit'} - Montant: ${transaction['amount']}");
       }
 
@@ -429,7 +430,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
 
                 List<QueryDocumentSnapshot> transactions = data['transactions'] ?? [];
                 transactions = transactions.where((transaction) {
-                  final bool isDebit = isDebitTransaction(transaction);
+                  final bool isDebit = TransactionService().isDebitTransaction(transaction);
                   if (transactionFilter == "debits") return isDebit;
                   if (transactionFilter == "credits") return !isDebit;
                   return true;
@@ -473,7 +474,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                           itemCount: transactions.length,
                           itemBuilder: (context, index) {
                             var transaction = transactions[index];
-                            final bool isDebit = isDebitTransaction(transaction);
+                            final bool isDebit = TransactionService().isDebitTransaction(transaction);
                             double amount = transaction['amount'].toDouble();
                             DateTime transactionDate = (transaction['date'] as Timestamp).toDate();
                             String formattedDate = DateFormat('d MMMM', 'fr_FR').format(transactionDate);
@@ -515,7 +516,7 @@ class _TransactionsBaseViewState extends State<TransactionsBaseView> {
                                     formattedDate,
                                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                   ),
-                                  title: formatTransactionAmount(amount, isDebit),
+                                  title: TransactionService().formatTransactionAmount(amount, isDebit),
                                   subtitle: FutureBuilder<String>(
                                     future: getCategoryNameOrNotes(transaction),
                                     builder: (context, snapshot) {

@@ -1,9 +1,9 @@
-import 'package:budget_management/utils/budgets.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/user_model.dart';
+import '../../services/budgets.dart';
 
 class InscriptionView extends StatefulWidget {
   const InscriptionView({super.key});
@@ -55,7 +55,7 @@ class InscriptionViewState extends State<InscriptionView> {
 
         await _db.collection('users').doc(newUser.id).set(newUser.toMap());
 
-        await createDefaultCategories(newUser.id);
+        await BudgetService().createDefaultCategories(newUser.id);
 
         if (mounted) {
           Navigator.of(context).pushReplacementNamed("/home");
