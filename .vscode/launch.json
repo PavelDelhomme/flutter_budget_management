@@ -1,0 +1,33 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Web Budget",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug",
+            "args": ["-d", "chrome"]
+        },
+        {
+            "name": "Android Budget",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug",
+            "program": "money_mate/lib/main.dart",
+            "deviceId": "BV9700Pro",
+        },
+        {
+            "name": "Linux Budget",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug",
+            "args": ["-d", "linux"]
+        }
+    ],
+    "compounds": [
+        {
+            "name": "All Platforms",
+            "configurations": ["Web Budget", "Android Budget", "Linux Budget"]
+        }
+    ]
+}

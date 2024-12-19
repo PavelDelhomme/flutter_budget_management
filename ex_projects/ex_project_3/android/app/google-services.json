@@ -1,0 +1,126 @@
+{
+  "project_info": {
+    "project_number": "945943317018",
+    "project_id": "budgetpersonnal",
+    "storage_bucket": "budgetpersonnal.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945943317018:android:006d1e5a32901d002fdfa3",
+        "android_client_info": {
+          "package_name": "com.budget.budget_management"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "945943317018-degtvnd7mahahp65frq3tpg6g20jfpb9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJoPHcpQ4e6N2SSHqBAZul8miJcS-aoY8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "945943317018-degtvnd7mahahp65frq3tpg6g20jfpb9.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "945943317018-849rudr5ocpcofijipoi2pa0tqvuj8lb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.delhomme.personnalBudget"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945943317018:android:8b35c79fb92278ac2fdfa3",
+        "android_client_info": {
+          "package_name": "com.delhomme.budgetmanagement"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "945943317018-degtvnd7mahahp65frq3tpg6g20jfpb9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJoPHcpQ4e6N2SSHqBAZul8miJcS-aoY8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "945943317018-degtvnd7mahahp65frq3tpg6g20jfpb9.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "945943317018-849rudr5ocpcofijipoi2pa0tqvuj8lb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.delhomme.personnalBudget"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945943317018:android:731fcd2cfd2ff5f72fdfa3",
+        "android_client_info": {
+          "package_name": "com.delhomme.personnal_budget"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "945943317018-jfs2e235ejn8iu3s9b32loo9fftaps3s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.delhomme.personnal_budget",
+            "certificate_hash": "e6ac5838850300743000187f83c66687af26c5a4"
+          }
+        },
+        {
+          "client_id": "945943317018-degtvnd7mahahp65frq3tpg6g20jfpb9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJoPHcpQ4e6N2SSHqBAZul8miJcS-aoY8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "945943317018-degtvnd7mahahp65frq3tpg6g20jfpb9.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "945943317018-849rudr5ocpcofijipoi2pa0tqvuj8lb.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.delhomme.personnalBudget"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
