@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.money_mate"
+    namespace = "com.delhomme.money_mate"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

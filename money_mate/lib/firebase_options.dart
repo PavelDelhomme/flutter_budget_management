@@ -65,4 +65,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'moneymate-52a6b.firebasestorage.app',
     iosBundleId: 'com.example.moneyMate',
   );
+
 }
