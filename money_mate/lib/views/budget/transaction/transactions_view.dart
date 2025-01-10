@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 import 'package:money_mate/views/budget/budget/budget_details_screen.dart';
+import 'package:money_mate/views/budget/transaction/transaction_form_screen.dart';
 
 class TransactionsView extends StatefulWidget {
   const TransactionsView({super.key});
@@ -21,6 +22,8 @@ class TransactionsViewState extends State<TransactionsView> {
 
   Future<Map<String, dynamic>> _getTransactionsForSelectedMonth() async {
     final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception("Utilisateur non connecté.");
+    
     DateTime startOfMonth =
         DateTime(selectedMonth.year, selectedMonth.month, 1);
     DateTime endOfMonth =
@@ -301,6 +304,18 @@ class TransactionsViewState extends State<TransactionsView> {
           );
         },
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const TransactionFormScreen(),
+              ),
+            );
+        },
+        tooltip: "Ajouter une transaction",
+        child: const Icon(Icons.add),
+      ),
     );
   }
 
@@ -312,6 +327,22 @@ class TransactionsViewState extends State<TransactionsView> {
       ),
     );
   }
+
+  Future<void> addTransaction(double amount, bool isDebit) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception("Utilisateur non connecté.");
+    }
+
+    await FirebaseFirestore.instance.collection("transactions").add({
+      'user_id': user.uid,
+      'amount': amount,
+      'date': Timestamp.now(),
+      'isRecurring': false,
+      'type': isDebit ? "debit" : "credit",
+    });
+  }
+
 
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
     return await showDialog(
