@@ -12,4 +12,5 @@
 // todo Mise a jour économie de chaque mois 
 
 
-// todo  
+// todo  swipe des transaction
+//formattage des dates
